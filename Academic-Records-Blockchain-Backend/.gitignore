@@ -1,0 +1,3 @@
+# Node modules (ignore all node_modules directories and their contents)
+node_modules/
+**/node_modules/

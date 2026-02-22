@@ -1,0 +1,189 @@
+# Copyright NIT Warangal Academic Records Blockchain Network
+# Configuration for channel and genesis block creation
+
+Organizations:
+  - &OrdererOrg
+      Name: OrdererOrg
+      ID: OrdererMSP
+      MSPDir: /opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/ordererOrganizations/nitw.edu/msp
+      Policies:
+        Readers:
+          Type: Signature
+          Rule: "OR('OrdererMSP.member')"
+        Writers:
+          Type: Signature
+          Rule: "OR('OrdererMSP.member')"
+        Admins:
+          Type: Signature
+          Rule: "OR('OrdererMSP.admin')"
+      OrdererEndpoints:
+        - orderer.nitw.edu:7050
+
+  - &NITWarangal
+      Name: NITWarangalMSP
+      ID: NITWarangalMSP
+      MSPDir: /opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/nitwarangal.nitw.edu/msp
+      Policies:
+        Readers:
+          Type: Signature
+          Rule: "OR('NITWarangalMSP.admin', 'NITWarangalMSP.peer', 'NITWarangalMSP.client')"
+        Writers:
+          Type: Signature
+          Rule: "OR('NITWarangalMSP.admin', 'NITWarangalMSP.client')"
+        Admins:
+          Type: Signature
+          Rule: "OR('NITWarangalMSP.admin')"
+        Endorsement:
+          Type: Signature
+          Rule: "OR('NITWarangalMSP.peer')"
+      AnchorPeers:
+        - Host: peer0.nitwarangal.nitw.edu
+          Port: 7051
+
+  - &Departments
+      Name: DepartmentsMSP
+      ID: DepartmentsMSP
+      MSPDir: /opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/departments.nitw.edu/msp
+      Policies:
+        Readers:
+          Type: Signature
+          Rule: "OR('DepartmentsMSP.admin', 'DepartmentsMSP.peer', 'DepartmentsMSP.client')"
+        Writers:
+          Type: Signature
+          Rule: "OR('DepartmentsMSP.admin', 'DepartmentsMSP.client')"
+        Admins:
+          Type: Signature
+          Rule: "OR('DepartmentsMSP.admin')"
+        Endorsement:
+          Type: Signature
+          Rule: "OR('DepartmentsMSP.peer')"
+      AnchorPeers:
+        - Host: peer0.departments.nitw.edu
+          Port: 9051
+
+  - &Verifiers
+      Name: VerifiersMSP
+      ID: VerifiersMSP
+      MSPDir: /opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/verifiers.nitw.edu/msp
+      Policies:
+        Readers:
+          Type: Signature
+          Rule: "OR('VerifiersMSP.admin', 'VerifiersMSP.peer', 'VerifiersMSP.client')"
+        Writers:
+          Type: Signature
+          Rule: "OR('VerifiersMSP.admin', 'VerifiersMSP.client')"
+        Admins:
+          Type: Signature
+          Rule: "OR('VerifiersMSP.admin')"
+        Endorsement:
+          Type: Signature
+          Rule: "OR('VerifiersMSP.peer')"
+      AnchorPeers:
+        - Host: peer0.verifiers.nitw.edu
+          Port: 11051
+
+Capabilities:
+  Channel: &ChannelCapabilities
+    V2_0: true
+  Orderer: &OrdererCapabilities
+    V2_0: true
+  Application: &ApplicationCapabilities
+    V2_5: true
+
+Application: &ApplicationDefaults
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    LifecycleEndorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Endorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+  Capabilities:
+    <<: *ApplicationCapabilities
+
+Orderer: &OrdererDefaults
+  OrdererType: etcdraft
+  Addresses:
+    - orderer.nitw.edu:7050
+  EtcdRaft:
+    Consenters:
+      - Host: orderer.nitw.edu
+        Port: 7050
+        ClientTLSCert: /opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/ordererOrganizations/nitw.edu/orderers/orderer.nitw.edu/tls/server.crt
+        ServerTLSCert: /opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/ordererOrganizations/nitw.edu/orderers/orderer.nitw.edu/tls/server.crt
+  BatchTimeout: 2s
+  BatchSize:
+    MaxMessageCount: 10
+    AbsoluteMaxBytes: 99 MB
+    PreferredMaxBytes: 512 KB
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    BlockValidation:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+
+Channel: &ChannelDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ChannelCapabilities
+
+Profiles:
+  ThreeOrgsOrdererGenesis:
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *OrdererOrg
+      Capabilities: *OrdererCapabilities
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *NITWarangal
+        - *Departments
+        - *Verifiers
+      Capabilities: *ApplicationCapabilities
+
+  AcademicRecordsChannel:
+    Consortium: NITWConsortium
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *OrdererOrg
+      Capabilities: *OrdererCapabilities
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *NITWarangal
+        - *Departments
+        - *Verifiers
+      Capabilities:
+        <<: *ApplicationCapabilities

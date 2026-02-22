@@ -1,0 +1,11 @@
+**/node_modules/
+**/dist/
+**/.angular/
+**/coverage/
+**/build/
+Academic_RecordsBlockchain/organizations/
+Academic_RecordsBlockchain/channel-artifacts/
+Academic_RecordsBlockchain/chaincode-go/vendor/
+Academic_RecordsBlockchain/wallet/
+Academic-Records-Blockchain-Backend/data/consent-store.json
+**/*.log

@@ -1,0 +1,49 @@
+<nav *ngIf="showNav && authService.isAuthenticated" class="modern-navbar">
+  <div class="navbar-background"></div>
+  <div class="navbar-content">
+    <div class="brand-section">
+      <div class="logo-wrapper">
+        <mat-icon class="logo-icon">school</mat-icon>
+        <div class="logo-rings"></div>
+      </div>
+      <div class="brand-text">
+        <span class="brand-title">{{ title }}</span>
+        <span class="brand-tagline">Blockchain Verified</span>
+      </div>
+    </div>
+    
+    <div class="navbar-actions">
+      <div class="user-profile" *ngIf="user">
+        <button mat-button class="profile-btn" [matMenuTriggerFor]="userMenu">
+          <div class="avatar-wrapper">
+            <mat-icon class="avatar-icon">account_circle</mat-icon>
+            <span class="status-indicator"></span>
+          </div>
+          <mat-icon class="dropdown-icon">expand_more</mat-icon>
+        </button>
+        
+        <mat-menu #userMenu="matMenu" class="modern-menu">
+          <div class="menu-header">
+            <div class="menu-avatar">
+              <mat-icon>account_circle</mat-icon>
+            </div>
+            <div class="menu-user-info">
+              <div class="menu-name">{{ user.name || user.userId }}</div>
+              <div class="menu-role-badge">{{ user.role | titlecase }}</div>
+              <div class="menu-dept" *ngIf="user.department">{{ user.department }}</div>
+            </div>
+          </div>
+          <mat-divider></mat-divider>
+          <button mat-menu-item class="menu-item-logout" (click)="logout()">
+            <mat-icon>exit_to_app</mat-icon>
+            <span>Logout</span>
+          </button>
+        </mat-menu>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="app-container" [class.with-nav]="showNav && authService.isAuthenticated">
+  <router-outlet></router-outlet>
+</div>

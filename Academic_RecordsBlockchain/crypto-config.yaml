@@ -1,0 +1,36 @@
+# Copyright NIT Warangal Academic Records Blockchain Network
+
+# Crypto configuration for generating certificates and keys
+# for all organizations in the NIT Warangal network
+
+OrdererOrgs:
+  - Name: Orderer
+    Domain: nitw.edu
+    EnableNodeOUs: true
+    Specs:
+      - Hostname: orderer
+
+PeerOrgs:
+  - Name: NITWarangal
+    Domain: nitwarangal.nitw.edu
+    EnableNodeOUs: true
+    Template:
+      Count: 2
+    Users:
+      Count: 3
+
+  - Name: Departments
+    Domain: departments.nitw.edu
+    EnableNodeOUs: true
+    Template:
+      Count: 2
+    Users:
+      Count: 5
+
+  - Name: Verifiers
+    Domain: verifiers.nitw.edu
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 2

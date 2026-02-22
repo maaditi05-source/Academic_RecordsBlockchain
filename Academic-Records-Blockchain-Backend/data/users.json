@@ -1,0 +1,137 @@
+[
+  {
+    "id": "admin",
+    "username": "admin",
+    "email": "admin@nitw.ac.in",
+    "passwordHash": "$2a$10$zz1VEUTAqdIrNOTsqOhrG.dWZvI.0aancM5mMlnZTKt3u0SS9JHuO",
+    "role": "admin",
+    "department": null,
+    "createdAt": "2025-11-13T14:15:52.331Z",
+    "isActive": true
+  },
+  {
+    "id": "student-1771485330832",
+    "username": "25CSM2R26",
+    "email": "am25csm2r26@student.nitw.ac.in",
+    "passwordHash": "$2a$10$npTbQRb9N8HwPJVE4LJNjePegONcNS7UkRS4tcJPzs/7d5va3GtM.",
+    "name": "Aditi Mishra",
+    "role": "student",
+    "department": "CSE",
+    "mspId": "NITWarangalMSP",
+    "createdAt": "2026-02-19T07:15:30.832Z",
+    "isActive": true,
+    "passwordChangeRequired": true,
+    "firstLogin": true
+  },
+  {
+    "id": "department-1771485685863",
+    "username": "dept1",
+    "email": "dept1@nitw.ac.in",
+    "passwordHash": "$2a$10$NKry2QbzhQDaCs5dHd.e7Om/q3x65ev4bDpaNAeyytemTIoYgtLYO",
+    "role": "department",
+    "department": "CSE",
+    "createdAt": "2026-02-19T07:21:25.863Z",
+    "updatedAt": "2026-02-19T07:21:25.863Z",
+    "isActive": true
+  },
+  {
+    "id": "student-1771562363102",
+    "username": "CS21B001",
+    "email": "cs21b001@student.nitw.ac.in",
+    "passwordHash": "$2a$10$tZ5ONjFH8mcXGNIcdoEC/.o30fDtKMKdUGA5/l7RpcPfYzEY4tn1m",
+    "name": "John Doe",
+    "role": "student",
+    "department": "CSE",
+    "mspId": "NITWarangalMSP",
+    "createdAt": "2026-02-20T04:39:23.102Z",
+    "isActive": true,
+    "passwordChangeRequired": true,
+    "firstLogin": true
+  },
+  {
+    "id": "student-1771562999355",
+    "username": "CS22B002",
+    "email": "cs22b002@student.nitw.ac.in",
+    "passwordHash": "$2a$10$xSy5c3Zz1r6KHI2z1uuBHO8wQqAB2c54uSpUfMGH85NecjcDTAn0O",
+    "name": "Priya Sharma",
+    "role": "student",
+    "department": "CSE",
+    "mspId": "NITWarangalMSP",
+    "createdAt": "2026-02-20T04:49:59.355Z",
+    "isActive": true,
+    "passwordChangeRequired": true,
+    "firstLogin": true
+  },
+  {
+    "id": "department-1771565264843",
+    "username": "MECH",
+    "email": "mech@nitw.ac.in",
+    "passwordHash": "$2a$10$dgAbkbMmkc84mUtohliIC.BsjWO54NVaTcKLMQXbFag5KjQwwzTIe",
+    "role": "department",
+    "department": "MECH",
+    "createdAt": "2026-02-20T05:27:44.843Z",
+    "updatedAt": "2026-02-20T05:27:44.843Z",
+    "isActive": true
+  },
+  {
+    "id": "department-1771565352842",
+    "username": "CSE",
+    "email": "cse@nitw.ac.in",
+    "passwordHash": "$2a$10$vsHdet8lxqrXQakYSz5wEOs9m9yBrT7Owh2f1aUwEU/4k2XD.cLTS",
+    "role": "department",
+    "department": "CSE",
+    "createdAt": "2026-02-20T05:29:12.842Z",
+    "updatedAt": "2026-02-20T05:29:12.842Z",
+    "isActive": true
+  },
+  {
+    "id": "faculty-mock",
+    "username": "faculty_demo",
+    "email": "faculty@nitw.ac.in",
+    "passwordHash": "$2a$10$.rUdZ5q691wDAu4VNCCFdu/dZOpOvb2nat2tO2BCcfA7C4sj2wIIu",
+    "role": "faculty",
+    "department": "CSE",
+    "createdAt": "2026-02-20T12:58:41.465Z",
+    "isActive": true
+  },
+  {
+    "id": "hod-mock",
+    "username": "hod_demo",
+    "email": "hod@nitw.ac.in",
+    "passwordHash": "$2a$10$.rUdZ5q691wDAu4VNCCFdu/dZOpOvb2nat2tO2BCcfA7C4sj2wIIu",
+    "role": "hod",
+    "department": "CSE",
+    "createdAt": "2026-02-20T12:58:41.465Z",
+    "isActive": true
+  },
+  {
+    "id": "dac_member-mock",
+    "username": "dac_member_demo",
+    "email": "dac_member@nitw.ac.in",
+    "passwordHash": "$2a$10$.rUdZ5q691wDAu4VNCCFdu/dZOpOvb2nat2tO2BCcfA7C4sj2wIIu",
+    "role": "dac_member",
+    "department": "CSE",
+    "createdAt": "2026-02-20T12:58:41.465Z",
+    "isActive": true
+  },
+  {
+    "id": "exam_section-mock",
+    "username": "exam_section_demo",
+    "email": "exam_section@nitw.ac.in",
+    "passwordHash": "$2a$10$.rUdZ5q691wDAu4VNCCFdu/dZOpOvb2nat2tO2BCcfA7C4sj2wIIu",
+    "role": "exam_section",
+    "department": "CSE",
+    "createdAt": "2026-02-20T12:58:41.465Z",
+    "isActive": true
+  },
+  {
+    "id": "dean_academic-mock",
+    "username": "dean_academic_demo",
+    "email": "dean_academic@nitw.ac.in",
+    "passwordHash": "$2a$10$.rUdZ5q691wDAu4VNCCFdu/dZOpOvb2nat2tO2BCcfA7C4sj2wIIu",
+    "role": "dean_academic",
+    "department": "CSE",
+    "createdAt": "2026-02-20T12:58:41.465Z",
+    "isActive": true
+  }
+]

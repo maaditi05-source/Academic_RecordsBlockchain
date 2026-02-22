@@ -1,0 +1,32 @@
+# General
+.DS_Store
+.git
+.gitignore
+.vscode
+.idea
+
+# Fabric generated artifacts
+organizations
+channel-artifacts
+system-genesis-block
+*.tar.gz
+
+# Logs and temp
+nohup.out
+*.log
+
+# Node-specific
+node_modules
+**/node_modules
+
+# Go vendor
+vendor
+**/vendor
+
+# Wallets/identities
+**/wallet
+
+# Env files
+.env
+.env.local
+.env.*.local
