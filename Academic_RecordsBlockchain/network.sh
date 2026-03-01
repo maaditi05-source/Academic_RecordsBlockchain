@@ -16,8 +16,9 @@ CHANNEL_NAME="academic-records-channel"
 CHAINCODE_NAME="academic-records"
 CHAINCODE_PATH="./chaincode-go"
 CHAINCODE_LANG="golang"
-CHAINCODE_LABEL="academic_records_2.0" # Updated with Department-based architecture
+CHAINCODE_LABEL="academic_records_2.0"
 CHAINCODE_VERSION="2.0"
+CHAINCODE_SEQUENCE="1" # Bump this if you get "definition already exists" or "not installed" errors
 ORDERER_CA_TLS_PATH="${PWD}/organizations/ordererOrganizations/nitw.edu/orderers/orderer.nitw.edu/tls/tlscacerts/tls-localhost-7054-ca-orderer.pem"
 ORDERER_ADMIN_MSP_PATH="${PWD}/organizations/ordererOrganizations/nitw.edu/users/Admin@nitw.edu/msp"
 ORDERER_ADDR="orderer.nitw.edu:7050"
@@ -187,21 +188,21 @@ deployChaincode() {
         export CORE_PEER_ADDRESS=${NITW_PEER0_ADDR}
         export CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/nitwarangal.nitw.edu/peers/peer0.nitwarangal.nitw.edu/tls/ca.crt
         export CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/nitwarangal.nitw.edu/users/Admin@nitwarangal.nitw.edu/msp
-        peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDR} --ordererTLSHostnameOverride orderer.nitw.edu --tls --cafile \$ORDERER_CA --channelID ${CHANNEL_NAME} --name ${CHAINCODE_NAME} --version ${CHAINCODE_VERSION} --package-id '${PACKAGE_ID}' --sequence 1 --signature-policy \"OR('NITWarangalMSP.peer','DepartmentsMSP.peer','VerifiersMSP.peer')\" --collections-config /opt/gopath/src/github.com/hyperledger/fabric/peer/collections_config.json
+        peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDR} --ordererTLSHostnameOverride orderer.nitw.edu --tls --cafile \$ORDERER_CA --channelID ${CHANNEL_NAME} --name ${CHAINCODE_NAME} --version ${CHAINCODE_VERSION} --package-id '${PACKAGE_ID}' --sequence ${CHAINCODE_SEQUENCE} --signature-policy \"OR('NITWarangalMSP.peer','DepartmentsMSP.peer','VerifiersMSP.peer')\" --collections-config /opt/gopath/src/github.com/hyperledger/fabric/peer/collections_config.json
 
         # Approve for Departments
         export CORE_PEER_LOCALMSPID=DepartmentsMSP
         export CORE_PEER_ADDRESS=${DEPT_PEER0_ADDR}
         export CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/departments.nitw.edu/peers/peer0.departments.nitw.edu/tls/ca.crt
         export CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/departments.nitw.edu/users/Admin@departments.nitw.edu/msp
-        peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDR} --ordererTLSHostnameOverride orderer.nitw.edu --tls --cafile \$ORDERER_CA --channelID ${CHANNEL_NAME} --name ${CHAINCODE_NAME} --version ${CHAINCODE_VERSION} --package-id '${PACKAGE_ID}' --sequence 1 --signature-policy \"OR('NITWarangalMSP.peer','DepartmentsMSP.peer','VerifiersMSP.peer')\" --collections-config /opt/gopath/src/github.com/hyperledger/fabric/peer/collections_config.json
+        peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDR} --ordererTLSHostnameOverride orderer.nitw.edu --tls --cafile \$ORDERER_CA --channelID ${CHANNEL_NAME} --name ${CHAINCODE_NAME} --version ${CHAINCODE_VERSION} --package-id '${PACKAGE_ID}' --sequence ${CHAINCODE_SEQUENCE} --signature-policy \"OR('NITWarangalMSP.peer','DepartmentsMSP.peer','VerifiersMSP.peer')\" --collections-config /opt/gopath/src/github.com/hyperledger/fabric/peer/collections_config.json
 
         # Approve for Verifiers
         export CORE_PEER_LOCALMSPID=VerifiersMSP
         export CORE_PEER_ADDRESS=${VERI_PEER0_ADDR}
         export CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/verifiers.nitw.edu/peers/peer0.verifiers.nitw.edu/tls/ca.crt
         export CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/verifiers.nitw.edu/users/Admin@verifiers.nitw.edu/msp
-        peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDR} --ordererTLSHostnameOverride orderer.nitw.edu --tls --cafile \$ORDERER_CA --channelID ${CHANNEL_NAME} --name ${CHAINCODE_NAME} --version ${CHAINCODE_VERSION} --package-id '${PACKAGE_ID}' --sequence 1 --signature-policy \"OR('NITWarangalMSP.peer','DepartmentsMSP.peer','VerifiersMSP.peer')\" --collections-config /opt/gopath/src/github.com/hyperledger/fabric/peer/collections_config.json
+        peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDR} --ordererTLSHostnameOverride orderer.nitw.edu --tls --cafile \$ORDERER_CA --channelID ${CHANNEL_NAME} --name ${CHAINCODE_NAME} --version ${CHAINCODE_VERSION} --package-id '${PACKAGE_ID}' --sequence ${CHAINCODE_SEQUENCE} --signature-policy \"OR('NITWarangalMSP.peer','DepartmentsMSP.peer','VerifiersMSP.peer')\" --collections-config /opt/gopath/src/github.com/hyperledger/fabric/peer/collections_config.json
     "
     successln "✓ Chaincode approved by all orgs"
 
@@ -213,7 +214,7 @@ deployChaincode() {
         DEPT_TLS=/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/departments.nitw.edu/peers/peer0.departments.nitw.edu/tls/ca.crt
         VERI_TLS=/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/verifiers.nitw.edu/peers/peer0.verifiers.nitw.edu/tls/ca.crt
         
-        peer lifecycle chaincode commit -o ${ORDERER_ADDR} --ordererTLSHostnameOverride orderer.nitw.edu --tls --cafile \$ORDERER_CA --channelID ${CHANNEL_NAME} --name ${CHAINCODE_NAME} --version ${CHAINCODE_VERSION} --sequence 1 --signature-policy \"OR('NITWarangalMSP.peer','DepartmentsMSP.peer','VerifiersMSP.peer')\" --collections-config /opt/gopath/src/github.com/hyperledger/fabric/peer/collections_config.json --peerAddresses ${NITW_PEER0_ADDR} --tlsRootCertFiles \$NITW_TLS --peerAddresses ${DEPT_PEER0_ADDR} --tlsRootCertFiles \$DEPT_TLS --peerAddresses ${VERI_PEER0_ADDR} --tlsRootCertFiles \$VERI_TLS
+        peer lifecycle chaincode commit -o ${ORDERER_ADDR} --ordererTLSHostnameOverride orderer.nitw.edu --tls --cafile \$ORDERER_CA --channelID ${CHANNEL_NAME} --name ${CHAINCODE_NAME} --version ${CHAINCODE_VERSION} --sequence ${CHAINCODE_SEQUENCE} --signature-policy "OR('NITWarangalMSP.peer','DepartmentsMSP.peer','VerifiersMSP.peer')" --collections-config /opt/gopath/src/github.com/hyperledger/fabric/peer/collections_config.json --peerAddresses ${NITW_PEER0_ADDR} --tlsRootCertFiles \$NITW_TLS --peerAddresses ${DEPT_PEER0_ADDR} --tlsRootCertFiles \$DEPT_TLS --peerAddresses ${VERI_PEER0_ADDR} --tlsRootCertFiles \$VERI_TLS
     "
     successln "✓ Chaincode committed to channel"
 }
