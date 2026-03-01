@@ -354,20 +354,25 @@ async function autoSeedBlockchain() {
             const courses = JSON.parse(fs.readFileSync(COURSES_FILE, 'utf8'));
             let cCreated = 0, cSkipped = 0;
             for (const c of courses) {
+                const department = c.department || 'CSE';
+                const semester = c.semester || 1;
+                const academicYear = "2025-26"; // Consistent with current session
+                const offeringID = `${department}-${c.code}-${semester}-${academicYear}`;
+
                 try {
-                    await gateway.evaluateTransaction('GetCourseOffering', c.code);
+                    await gateway.evaluateTransaction('GetCourseOffering', offeringID);
                     cSkipped++;
                 } catch (_) {
                     try {
+                        // CreateCourseOffering(departmentID, courseCode, courseName, credits, semester, academicYear)
                         await gateway.submitTransaction(
                             'CreateCourseOffering',
+                            department,
                             c.code,
                             c.name,
-                            c.department || 'CSE',
-                            String(c.semester || 1),
                             String(c.credits || 3),
-                            c.faculty || '',
-                            c.type || 'core'
+                            String(semester),
+                            academicYear
                         );
                         cCreated++;
                     } catch (e) {
