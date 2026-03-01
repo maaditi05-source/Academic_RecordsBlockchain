@@ -345,7 +345,7 @@ export class AdminDashboardComponent implements OnInit {
 
   private loadCourses(): Promise<void> {
     return new Promise(resolve => {
-      this.http.get<any>(`${this.apiUrl}/courses/all`, this.authHeaders).subscribe({
+      this.http.get<any>(`${this.apiUrl}/courses`, this.authHeaders).subscribe({
         next: (res) => { this.allCourses = res.success ? res.data : []; resolve(); },
         error: () => resolve()
       });
@@ -375,8 +375,27 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   openAddStudentDialog() {
-    const dialogRef = this.dialog.open(AddStudentDialogComponent, { width: '500px' });
-    dialogRef.afterClosed().subscribe(result => { if (result) this.loadAll(); });
+    const dialogRef = this.dialog.open(AddStudentDialogComponent, {
+      width: '640px',
+      data: { departments: this.allDepartments.map((d: any) => d.departmentId || d.name) }
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.http.post<any>(`${this.apiUrl}/students`, result, this.authHeaders).subscribe({
+          next: (res) => {
+            if (res.success) {
+              this.snackBar.open(`Student ${result.rollNumber} created successfully!`, 'Close', { duration: 3000 });
+              this.loadAll();
+            } else {
+              this.snackBar.open(res.message || 'Failed to create student', 'Close', { duration: 5000 });
+            }
+          },
+          error: (err) => {
+            this.snackBar.open(err.error?.message || 'Error creating student', 'Close', { duration: 5000 });
+          }
+        });
+      }
+    });
   }
 
   viewStudent(student: any) {

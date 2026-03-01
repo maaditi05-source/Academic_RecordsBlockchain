@@ -161,5 +161,19 @@
     "department": "MECH",
     "createdAt": "2026-02-20T05:27:44.843Z",
     "isActive": true
+  },
+  {
+    "id": "student-1772349383235",
+    "username": "TEST001",
+    "email": "test001@student.nitw.ac.in",
+    "passwordHash": "$2a$10$lsktE7xCH2B2iRhEIEdZq.K4C0fy4Q1OeJtePYzxgDoFWnAtjnCde",
+    "name": "Test Student",
+    "role": "student",
+    "department": "CSE",
+    "mspId": "NITWarangalMSP",
+    "createdAt": "2026-03-01T07:16:23.235Z",
+    "isActive": true,
+    "passwordChangeRequired": true,
+    "firstLogin": true
   }
 ]
