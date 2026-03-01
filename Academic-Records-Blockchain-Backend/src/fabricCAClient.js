@@ -30,7 +30,10 @@ class FabricCAClient {
      */
     static getCAClientForRole(role) {
         const walletPath = path.join(__dirname, '../wallet');
-        const baseOrgs = process.env.FABRIC_ORG_PATH || '/home/aditi/workspace/Academic_RecordsBlockchain/organizations';
+        // Define the base path for organizations relative to the current file
+        // Assuming fabricCAClient.js is in 'src/utils', then '../../' points to the project root.
+        // So, '../../Academic_RecordsBlockchain/organizations' would be the correct relative path.
+        const baseOrgsPath = path.resolve(__dirname, '../../Academic_RecordsBlockchain/organizations');
 
         switch (role) {
             case 'department':
@@ -38,7 +41,7 @@ class FabricCAClient {
                     caUrl: 'https://localhost:9054',
                     caName: 'ca.departments.nitw.edu',
                     mspId: 'DepartmentsMSP',
-                    ccpPath: path.join(baseOrgs, 'peerOrganizations/departments.nitw.edu/connection-departments.json'),
+                    ccpPath: path.join(baseOrgsPath, 'peerOrganizations/departments.nitw.edu/connection-departments.json'),
                     walletPath
                 });
             case 'verifier':
@@ -46,7 +49,7 @@ class FabricCAClient {
                     caUrl: 'https://localhost:11054',
                     caName: 'ca.verifiers.nitw.edu',
                     mspId: 'VerifiersMSP',
-                    ccpPath: path.join(baseOrgs, 'peerOrganizations/verifiers.nitw.edu/connection-verifiers.json'),
+                    ccpPath: path.join(baseOrgsPath, 'peerOrganizations/verifiers.nitw.edu/connection-verifiers.json'),
                     walletPath
                 });
             default: // admin, student
