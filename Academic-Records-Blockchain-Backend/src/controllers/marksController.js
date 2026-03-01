@@ -102,7 +102,7 @@ class MarksController {
     }
 
     // ── POST /marks/upload ─────────────────────────────────────────
-    // Exam section uploads marks (single or bulk)
+    // Faculty uploads marks (single or bulk)
     static async uploadMarks(req, res) {
         try {
             const user = req.user;
@@ -114,14 +114,29 @@ class MarksController {
             const marks = loadJSON(MARKS_FILE);
             const courses = loadJSON(COURSES_FILE);
             const created = [];
+            const skipped = [];
 
             for (const entry of entries) {
-                const { studentId, courseCode, semester, year, marksObtained, maxMarks } = entry;
-                if (!studentId || !courseCode || !semester || !marksObtained) {
+                const { studentId, courseCode, marksObtained, maxMarks } = entry;
+                if (!studentId || !courseCode || marksObtained === undefined || marksObtained === null) {
                     continue;
                 }
 
+                // Check for duplicate: same student + same course
+                const existing = marks.find(m => m.studentId === studentId && m.courseCode === courseCode);
+                if (existing) {
+                    skipped.push({ studentId, courseCode, reason: `Marks already uploaded (status: ${existing.status})` });
+                    continue;
+                }
+
+                // Validate course exists and auto-assign semester from course data
                 const course = courses.find(c => c.code === courseCode);
+                if (!course) {
+                    skipped.push({ studentId, courseCode, reason: 'Course not found' });
+                    continue;
+                }
+
+                const semester = course.semester; // Always use course's semester
                 const grade = MarksController._calculateGrade(marksObtained, maxMarks || 100);
 
                 const newMark = {
@@ -129,12 +144,12 @@ class MarksController {
                     studentId,
                     courseCode,
                     semester: parseInt(semester),
-                    year: parseInt(year) || new Date().getFullYear(),
+                    year: parseInt(entry.year) || new Date().getFullYear(),
                     marksObtained: parseFloat(marksObtained),
                     maxMarks: parseInt(maxMarks) || 100,
                     grade: grade.letter,
                     gradePoint: grade.point,
-                    credits: course ? course.credits : parseInt(entry.credits) || 3,
+                    credits: course.credits || 3,
                     status: 'pending',
                     uploadedBy: user.username || user.userId,
                     verifiedBy: null,
@@ -147,9 +162,17 @@ class MarksController {
             }
 
             saveJSON(MARKS_FILE, marks);
-            logger.info(`Exam section uploaded ${created.length} mark(s)`);
+            logger.info(`Faculty uploaded ${created.length} mark(s), skipped ${skipped.length}`);
 
-            res.status(201).json({ success: true, message: `${created.length} mark(s) uploaded`, data: created });
+            if (created.length === 0 && skipped.length > 0) {
+                return res.status(409).json({
+                    success: false,
+                    message: skipped.map(s => `${s.courseCode} for ${s.studentId}: ${s.reason}`).join('; '),
+                    data: skipped
+                });
+            }
+
+            res.status(201).json({ success: true, message: `${created.length} mark(s) uploaded`, data: created, skipped });
         } catch (err) {
             logger.error(`Error uploading marks: ${err.message}`);
             res.status(500).json({ success: false, message: err.message });

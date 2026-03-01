@@ -191,15 +191,15 @@ import { APP_CONFIG } from '../../core/config/app.config';
               </div>
               <div class="form-row">
                 <label>Course Code</label>
-                <select [(ngModel)]="uploadForm.courseCode" class="form-input">
+                <select [(ngModel)]="uploadForm.courseCode" (ngModelChange)="onCourseChange()" class="form-input">
                   <option value="" disabled>Select a course</option>
-                  <option *ngFor="let c of allCourses" [value]="c.code">{{ c.code }} — {{ c.name }}</option>
+                  <option *ngFor="let c of allCourses" [value]="c.code">{{ c.code }} — {{ c.name }} (Sem {{ c.semester }})</option>
                 </select>
               </div>
               <div class="form-row-inline">
                 <div class="form-row">
-                  <label>Semester</label>
-                  <input type="number" [(ngModel)]="uploadForm.semester" min="1" max="8" class="form-input" />
+                  <label>Semester (auto)</label>
+                  <input type="text" [value]="uploadForm.semester ? 'Semester ' + uploadForm.semester : '—'" class="form-input" disabled />
                 </div>
                 <div class="form-row">
                   <label>Marks Obtained</label>
@@ -334,7 +334,7 @@ export class FacultyDashboardComponent implements OnInit {
   canVerifyMarks = false;
   uploadingMarks = false;
   recentUploads: any[] = [];
-  uploadForm = { studentId: '', courseCode: '', semester: 3, marksObtained: 0, maxMarks: 100 };
+  uploadForm: any = { studentId: '', courseCode: '', semester: 0, marksObtained: 0, maxMarks: 100 };
   private apiUrl = APP_CONFIG.api.baseUrl;
 
   constructor(
@@ -435,6 +435,11 @@ export class FacultyDashboardComponent implements OnInit {
 
   logout() { this.authService.logout(); this.router.navigate(['/login']); }
 
+  onCourseChange() {
+    const course = this.allCourses.find((c: any) => c.code === this.uploadForm.courseCode);
+    this.uploadForm.semester = course ? course.semester : 0;
+  }
+
   submitMarks() {
     const f = this.uploadForm;
     if (!f.studentId || !f.courseCode || !f.marksObtained) {
@@ -450,7 +455,7 @@ export class FacultyDashboardComponent implements OnInit {
         if (res.success) {
           this.snackBar.open(`Marks uploaded successfully!`, 'Close', { duration: 2000 });
           this.recentUploads = [...(res.data || []), ...this.recentUploads].slice(0, 10);
-          this.uploadForm = { studentId: '', courseCode: '', semester: 3, marksObtained: 0, maxMarks: 100 };
+          this.uploadForm = { studentId: '', courseCode: '', semester: 0, marksObtained: 0, maxMarks: 100 };
         } else {
           this.snackBar.open(res.message || 'Upload failed', 'Close', { duration: 3000 });
         }
