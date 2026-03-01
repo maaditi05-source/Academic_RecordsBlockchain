@@ -48,7 +48,7 @@ import { APP_CONFIG } from '../../core/config/app.config';
               <span class="stat-number">{{ myCourses.length }}</span>
               <span class="stat-text">Courses</span>
             </div>
-            <div class="header-stat">
+            <div class="header-stat" *ngIf="canVerifyMarks">
               <span class="stat-number">{{ pendingMarks.length }}</span>
               <span class="stat-text">Pending Verif.</span>
             </div>
@@ -123,8 +123,8 @@ import { APP_CONFIG } from '../../core/config/app.config';
           </div>
         </mat-tab>
 
-        <!-- TAB 2: VERIFY MARKS -->
-        <mat-tab>
+        <!-- TAB 2: VERIFY MARKS (exam_section / admin only) -->
+        <mat-tab *ngIf="canVerifyMarks">
           <ng-template mat-tab-label>
             <mat-icon class="tab-icon">fact_check</mat-icon>
             <span>Verify Marks</span>
@@ -171,8 +171,8 @@ import { APP_CONFIG } from '../../core/config/app.config';
 
 
 
-        <!-- TAB 4: UPLOAD MARKS (exam_section / admin only) -->
-        <mat-tab *ngIf="canUploadMarks">
+        <!-- TAB 3: UPLOAD MARKS (all faculty) -->
+        <mat-tab>
           <ng-template mat-tab-label>
             <mat-icon class="tab-icon">upload_file</mat-icon>
             <span>Upload Marks</span>
@@ -182,7 +182,7 @@ import { APP_CONFIG } from '../../core/config/app.config';
               <mat-icon>upload_file</mat-icon>
               <h3>Upload Student Marks</h3>
             </div>
-            <p style="color:#94a3b8;font-size:13px;margin-bottom:20px;">Upload marks for a student. The marks will need to be verified by faculty before they become official.</p>
+            <p style="color:#94a3b8;font-size:13px;margin-bottom:20px;">Upload marks for students in your courses. The marks will be verified by the Exam Section before becoming official.</p>
 
             <div class="upload-form glass-card" style="padding:24px;border-radius:14px;max-width:600px;">
               <div class="form-row">
@@ -331,7 +331,7 @@ export class FacultyDashboardComponent implements OnInit {
   courseStudentMarks: any[] = [];
   pendingMarks: any[] = [];
   allCourses: any[] = [];
-  canUploadMarks = false;
+  canVerifyMarks = false;
   uploadingMarks = false;
   recentUploads: any[] = [];
   uploadForm = { studentId: '', courseCode: '', semester: 3, marksObtained: 0, maxMarks: 100 };
@@ -346,7 +346,7 @@ export class FacultyDashboardComponent implements OnInit {
   ) {
     const stored = localStorage.getItem('user');
     this.currentUser = stored ? JSON.parse(stored) : this.authService.currentUser;
-    this.canUploadMarks = this.currentUser?.role === 'exam_section' || this.currentUser?.role === 'admin';
+    this.canVerifyMarks = this.currentUser?.role === 'exam_section' || this.currentUser?.role === 'admin';
   }
 
   ngOnInit() { this.loadAll(); }

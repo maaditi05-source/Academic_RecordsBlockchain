@@ -106,8 +106,8 @@ class MarksController {
     static async uploadMarks(req, res) {
         try {
             const user = req.user;
-            if (user.role !== 'exam_section' && user.role !== 'admin') {
-                return res.status(403).json({ success: false, message: 'Only exam section or admin can upload marks' });
+            if (user.role !== 'faculty' && user.role !== 'hod' && user.role !== 'admin') {
+                return res.status(403).json({ success: false, message: 'Only faculty, HOD, or admin can upload marks' });
             }
 
             const entries = Array.isArray(req.body) ? req.body : [req.body];
@@ -161,8 +161,8 @@ class MarksController {
     static async verifyMarks(req, res) {
         try {
             const user = req.user;
-            if (user.role !== 'faculty' && user.role !== 'admin' && user.role !== 'hod') {
-                return res.status(403).json({ success: false, message: 'Only faculty, HOD, or admin can verify marks' });
+            if (user.role !== 'exam_section' && user.role !== 'admin') {
+                return res.status(403).json({ success: false, message: 'Only exam section or admin can verify marks' });
             }
 
             const { markId } = req.params;
@@ -202,22 +202,18 @@ class MarksController {
 
             let filtered = marks;
 
-            if (user.role === 'faculty') {
-                // Union courses from users.json AND courses.json faculty assignment
-                const faculty = users.find(u => u.username === (user.username || user.userId));
-                const userCourses = faculty?.courses || [];
-                const assignedCourses = courses
-                    .filter(c => c.faculty === (user.username || user.userId))
-                    .map(c => c.code);
-                const allMyCourses = [...new Set([...userCourses, ...assignedCourses])];
-                filtered = marks.filter(m => allMyCourses.includes(m.courseCode));
+            if (user.role === 'exam_section' || user.role === 'admin') {
+                // Exam section and admin see ALL pending marks
+                filtered = marks;
             } else if (user.role === 'hod' || user.role === 'department') {
                 // HOD/Department see all pending marks for their department
                 const dept = user.department || '';
                 const deptCourses = courses.filter(c => c.department === dept).map(c => c.code);
                 filtered = marks.filter(m => deptCourses.includes(m.courseCode));
+            } else {
+                // Regular faculty: shouldn't see Verify tab, but if they call API, show nothing
+                filtered = [];
             }
-            // admin sees all
 
             const enriched = filtered.map(m => {
                 const course = courses.find(c => c.code === m.courseCode) || {};
