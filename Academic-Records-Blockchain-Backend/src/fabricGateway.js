@@ -135,7 +135,12 @@ class FabricGateway {
                 return result.toString();
             }
         } catch (error) {
-            logger.error(`Failed to evaluate transaction ${functionName}: ${error.message}`);
+            // "does not exist" is expected during auto-seed checks — don't log as error
+            if (error.message && error.message.includes('does not exist')) {
+                logger.debug(`${functionName}: ${error.message}`);
+            } else {
+                logger.error(`Failed to evaluate transaction ${functionName}: ${error.message}`);
+            }
             throw error;
         }
     }

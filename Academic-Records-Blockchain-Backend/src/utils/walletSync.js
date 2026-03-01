@@ -47,7 +47,7 @@ async function syncWalletOnStartup() {
             const normalizeCert = (cert) => cert.replace(/\r\n/g, '\n').trim();
 
             if (normalizeCert(walletAdminCert) !== normalizeCert(networkAdminCert)) {
-                logger.warn('⚠️ Network restart detected: Admin certificate in wallet does not match the current network certificate. Purging stale wallet identities...');
+                logger.info('🔄 Network restart detected — refreshing wallet identities...');
                 isWalletStale = true;
             }
         }
