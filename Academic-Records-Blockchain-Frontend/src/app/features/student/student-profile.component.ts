@@ -671,7 +671,9 @@ export class StudentProfileComponent implements OnInit {
 
   private loadMarks(): Promise<void> {
     return new Promise(resolve => {
-      this.http.get<any>(`${this.apiUrl}/marks/${this.rollNumber}`).subscribe({
+      const token = localStorage.getItem('access_token');
+      const headers = { 'Authorization': `Bearer ${token}` };
+      this.http.get<any>(`${this.apiUrl}/marks/${this.rollNumber}`, { headers }).subscribe({
         next: (res) => {
           if (res.success) {
             this.marks = res.data || [];
@@ -729,7 +731,9 @@ export class StudentProfileComponent implements OnInit {
 
   private loadCGPA(): Promise<void> {
     return new Promise(resolve => {
-      this.http.get<any>(`${this.apiUrl}/marks/${this.rollNumber}/cgpa`).subscribe({
+      const token = localStorage.getItem('access_token');
+      const headers = { 'Authorization': `Bearer ${token}` };
+      this.http.get<any>(`${this.apiUrl}/marks/${this.rollNumber}/cgpa`, { headers }).subscribe({
         next: (res) => {
           if (res.success) this.cgpaData = res.data;
           resolve();

@@ -265,10 +265,27 @@
     "grade": "A+",
     "gradePoint": 10,
     "credits": 3,
-    "status": "pending",
+    "status": "verified",
     "uploadedBy": "exam_section_demo",
-    "verifiedBy": null,
+    "verifiedBy": "exam_section_demo",
     "uploadedAt": "2026-03-01T11:29:08.418Z",
-    "verifiedAt": null
+    "verifiedAt": "2026-03-01T11:47:22.292Z"
+  },
+  {
+    "id": "mark-1772365671744-9b4qn",
+    "studentId": "25CSM2R26",
+    "courseCode": "CS601",
+    "semester": 3,
+    "year": 2026,
+    "marksObtained": 93,
+    "maxMarks": 100,
+    "grade": "A+",
+    "gradePoint": 10,
+    "credits": 3,
+    "status": "verified",
+    "uploadedBy": "faculty_demo",
+    "verifiedBy": "exam_section_demo",
+    "uploadedAt": "2026-03-01T11:47:51.744Z",
+    "verifiedAt": "2026-03-01T11:48:06.776Z"
   }
 ]
