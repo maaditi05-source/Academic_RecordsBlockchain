@@ -1,455 +1,114 @@
-# Academic Records Blockchain — Complete Project Documentation
+# Academic Records Blockchain — Comprehensive Documentation
 
-**Institution:** National Institute of Technology Warangal (NIT Warangal)  
-**Technology:** Hyperledger Fabric v2.x, Node.js, Angular  
-**Base Repository:** [prince-0.1 / Academic_RecordsBlockchain](https://github.com) (enhanced)
+This document provides an end-to-end, comprehensive overview of the Academic Records Blockchain system. It explains the architecture, blockchain mechanics, cryptographic hashing, user roles, detailed workflows, and backend operations.
 
 ---
 
-## Table of Contents
+## 1. System Architecture
 
-1. [Project Overview](#1-project-overview)  
-2. [System Architecture](#2-system-architecture)  
-3. [Technology Stack](#3-technology-stack)  
-4. [Blockchain Network Design](#4-blockchain-network-design)  
-5. [Chaincode (Smart Contracts)](#5-chaincode-smart-contracts)  
-6. [Backend API](#6-backend-api)  
-7. [Frontend Application](#7-frontend-application)  
-8. [Data Flow & Workflows](#8-data-flow--workflows)  
-9. [Startup & Deployment Guide](#9-startup--deployment-guide)  
-10. [Pre-Created User Accounts](#10-pre-created-user-accounts)  
-11. [Enhancements Over the Base Repository](#11-enhancements-over-the-base-repository)
+The project follows a standard modern three-tier decentralized architecture:
 
----
-
-## 1. Project Overview
-
-The **Academic Records Blockchain** is a production-grade, decentralized application for NIT Warangal that cryptographically records and verifies student academic credentials on the Hyperledger Fabric blockchain.
-
-**Core Goals:**
-- Prevent academic document forgery and tampering
-- Streamline multi-stage approval workflows for documents and certificates
-- Give students control over their own data privacy via on-chain consent management
-- Allow third-party employers and agencies to verify credentials without manual paperwork
+1.  **Frontend (Angular 17+ Material):** The user interface where different roles interact with the system. It uses HTTP REST calls to communicate with the backend.
+2.  **Backend (Node.js & Express):** The middleware that acts as a bridge between the frontend and the blockchain network. It manages user authentication (JWT), file generation (jsPDF), and uses the `fabric-network` Gateway SDK to submit transactions to the blockchain.
+3.  **Blockchain Network (Hyperledger Fabric 2.x):** A permissioned, private blockchain network. It consists of:
+    *   **Peers:** Nodes that maintain the ledger and run smart contracts (chaincode).
+    *   **Orderer:** A node that packages transactions into blocks and distributes them to peers.
+    *   **Certificate Authorities (CA):** Issue identity certificates (X.509) to users, allowing them to transact on the network.
+    *   **Ledger:** The immutable database storing current states (World State) and the history of all transactions.
+4.  **Off-Chain Storage (Local/IPFS):** Large files (like PDF documents) are not stored directly on the blockchain because it is expensive and slow. Instead, they are stored off-chain, and only their cryptographic hash and storage reference (CID) are saved on the blockchain.
 
 ---
 
-## 2. System Architecture
+## 2. Core Hyperledger Fabric Mechanics
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                   FRONTEND (Angular SPA)                        │
-│  Student Dashboard │ Faculty Dashboard │ Admin Panel │ Verifier  │
-└────────────────────────────┬────────────────────────────────────┘
-                             │ HTTP/REST + Socket.io (real-time)
-                             ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              BACKEND (Node.js + Express)                        │
-│  Auth (JWT) │ Student API │ Record API │ Certificate API        │
-│  Document API │ Consent API │ Report API │ PDF Generator        │
-│  Fabric CA Client │ Fabric Gateway (SDK) │ Socket.io events     │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │ Fabric Node SDK gRPC
-                               ▼
-┌─────────────────────────────────────────────────────────────────┐
-│         HYPERLEDGER FABRIC NETWORK (Docker)                     │
-│                                                                 │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────┐   │
-│  │ NITWarangal Org │  │ Departments Org  │  │ Verifiers Org│   │
-│  │  Peer (CouchDB) │  │  Peer (CouchDB)  │  │ Peer(CouchDB)│   │
-│  │  CA + Admin MSP │  │  CA + Admin MSP  │  │ CA + Admin   │   │
-│  └─────────────────┘  └─────────────────┘  └──────────────┘   │
-│                                                                 │
-│           Orderer (Solo) — academic-records-channel             │
-│                    Chaincode: academic-records                  │
-└─────────────────────────────────────────────────────────────────┘
-                               │
-                         CouchDB State DB
-                     (rich query / document store)
-```
+### How does Hashing work in this project?
+When an academic document (like a degree certificate) is generated and finalized:
+1.  **Generation:** The backend generates a PDF document.
+2.  **Hashing (SHA-256):** The backend computes a cryptographic hash (a unique digital fingerprint) of the exact PDF file using the SHA-256 algorithm.
+3.  **Storage:** The physical PDF file is stored off-chain (in an IPFS-style local store). The computed **Hash**, the off-chain reference (**CID / URI**), and metadata (who issued it, timestamp) are sent to the chaincode.
+4.  **Immutability:** The chaincode saves this Hash to the ledger. Once written, it can never be altered or deleted.
+5.  **Verification:** When a third-party verifier wants to check a certificate, they upload the PDF. The backend recalculates the SHA-256 hash of the uploaded file and checks if this exact hash exists on the immutable ledger. If a single pixel or character is changed, the hash completely changes, and verification fails.
+
+### How do Fabric Transactions work?
+When the backend wants to update data (e.g., approve a record):
+1.  **Proposal:** The backend (using the admin wallet identity) sends a transaction proposal to the Peer(s).
+2.  **Endorsement:** The Peer runs the Smart Contract (`chaincode.go`). It simulates the changes, signs them to say "this is valid," and sends the endorsement back to the backend.
+3.  **Ordering:** The backend collects the endorsement and sends it to the Orderer.
+4.  **Commitment:** The Orderer packs it into a block and sends it back to all Peers. The Peers append the block to their local copy of the ledger.
 
 ---
 
-## 3. Technology Stack
+## 3. User Roles, Capabilities, and Test Credentials
 
-| Layer | Technology | Purpose |
-|---|---|---|
-| Blockchain | Hyperledger Fabric v2.5.x | Immutable ledger, smart contracts |
-| State DB | CouchDB | Rich JSON queries on ledger state |
-| Smart Contracts | Go (golang) | On-chain business logic |
-| Backend | Node.js + Express | REST API server |
-| Blockchain SDK | `fabric-network` v2.x | Node.js gateway to Fabric |
-| Auth | JWT (JSON Web Tokens) | Stateless session management |
-| Real-time | Socket.io | Live notifications to frontend |
-| PDF Generation | Puppeteer | Dynamic certificate PDF rendering |
-| QR Codes | qrcode | Embeds verification URL in certificate PDF |
-| Frontend | Angular 17 | SPA with role-based dashboards |
-| Containerization | Docker + Docker Compose | Peer/orderer/CA/CouchDB containers |
+The system implements strict Role-Based Access Control (RBAC). Both the Node.js backend and the Go chaincode verify rules before executing any action.
 
----
+| Username | Password | Role | Responsibilities & Capabilities |
+| :--- | :--- | :--- | :--- |
+| `admin` | `password123` | **Admin** | Manages system. Can view overview statistics, manage user credentials, view all departments and courses. Shares `Upload Marks` capability with Exam Section. |
+| `exam_section_demo` | `password123` | **Exam Section** | Uploads raw marks for students. These marks start as "pending". Cannot finalize documents alone. |
+| `faculty_demo`<br>`faculty_demo_2` | `password123` | **Faculty** | Logs in to see assigned courses. Reviews "pending" marks uploaded by Exam Section. Verifies them to make them official. |
+| `hod_demo` | `password123` | **HOD** | Head of Department. Has faculty capabilities plus department-level overrides and approvals. |
+| `dean_academic_demo` | `password123` | **Dean Academic**| Penultimate approver in the certification chain. Validates academic compliance. |
+| `dac_member_1`<br>`dac_member_2`| `password123` | **DAC Member** | Departmental Academic Committee. **The final checkpoint**. Triggers final CGPA calculation and digitally signs the record, moving it to `FINALIZED`. |
+| `25CSM2R26`<br>`CS21B001`<br>`CS22B002`| `password123` | **Student** | Read-only access to their own profile. Can view verified marks, download generated grade sheets, and request official certificates (Degree, Migration, etc.). | 
 
-## 4. Blockchain Network Design
-
-### Organizations & Peers
-
-| Organization | MSP ID | Role |
-|---|---|---|
-| NIT Warangal | `NITWarangalMSP` | Admin authority, issues final certificates |
-| Departments | `DepartmentsMSP` | Faculty advisors, HOD review and approval |
-| Verifiers | `VerifiersMSP` | Employers / external agencies |
-
-### Network Setup
-- **Channel:** `academic-records-channel` (all 3 orgs)
-- **Orderer:** Solo orderer at `orderer.nitw.edu:7050`
-- **CAs:** One Fabric CA per organization for identity management
-- **Consensus:** Solo (single orderer — suitable for dev/staging)
-
-### Key Ports
-| Service | Port |
-|---|---|
-| NITWarangal Peer | 7051 |
-| Departments Peer | 8051 |
-| Verifiers Peer | 9051 |
-| Orderer | 7050 |
-| CouchDB (per peer) | 5984, 6984, 7984 |
-| NITWarangal CA | 7054 |
+*(Note: There are also generic logic units like `CSE` and `MECH` departments representing organizational groupings).*
 
 ---
 
-## 5. Chaincode (Smart Contracts)
+## 4. Distinct Workflows
 
-**Language:** Go  
-**Package:** `academic_records`  
-**Location:** `Academic_RecordsBlockchain/chaincode-go/`
+### A. The Marks Upload & Verification Workflow
+1.  **Action:** The **Exam Section** logs in, goes to "Upload Marks", inputs Student Roll No, Course, and marks obtained.
+2.  **Backend:** Receives data, auto-calculates letter grades (A+, B, etc.) and grade points, and saves it locally in `data/marks.json` with status `pending`.
+3.  **Action:** The **Faculty** assigned to that course logs in and goes to "Verify Marks". They review the pending marks and click "Verify".
+4.  **Result:** The mark status changes to `verified`. The student can now see these marks in their dashboard.
 
-### Data Models on the Ledger
+### B. The Certificate Request & Approval Workflow
+This corresponds exactly to the `roles.pdf` requirements:
 
-| Asset | Key Description |
-|---|---|
-| `Student` | `rollNumber` |
-| `AcademicRecord` | `recordId` (semester records) |
-| `Certificate` | `certificateId` |
-| `CourseOffering` | `departmentId:courseCode:semester` |
-| `Department` | `departmentId` |
-| `DocumentUpload` | `docId` |
-| `SemesterRegistration` | `regId` |
-| `ApprovalRecord` | `recordId` (7-stage pipeline state) |
-| `ConsentRecord` | `consentId` |
-
-### Smart Contract Functions
-
-#### Student Management
-- `CreateStudent` — stores identity + private data in private collection
-- `GetStudent` / `GetAllStudents` / `QueryStudentsByDepartment`
-- `UpdateStudentStatus` / `UpdateStudentDepartment`
-
-#### Academic Records
-- `SubmitAcademicRecord` — stores grades + SGPA/CGPA for a semester
-- `GetAcademicRecord` / `GetStudentRecords` / `GetAllRecords`
-- `ApproveRecord` / `RejectRecord`
-
-#### Certificates
-- `IssueCertificate` — issues final degree after admin approval
-- `VerifyCertificate` — cryptographically verifies authenticity
-- `RevokeCertificate`
-
-#### Document Approvals (7-stage pipeline)
-- `GetApprovalRecord` / `ApproveStep` / `RejectStep`
-- `UpdateDocumentStatus` *(Sprint 3 enhancement)*
-
-#### Consent Management *(Sprint 3 — new)*
-- `GrantConsent` — student grants a verifier access to their records
-- `RevokeConsent` — student revokes a previously granted consent
-- `CheckConsent` — verifier queries whether consent is active on-chain
-- `GetConsentsByStudent` — student views all their consent records
-
-### Endorsement Policy
-```
-OR('NITWarangalMSP.peer', 'DepartmentsMSP.peer', 'VerifiersMSP.peer')
-```
-Any one peer can endorse — maximizes availability.
+1.  **Request:** A **Student** logs into their dashboard and clicks "Request New Certificate" (e.g., Degree Certificate, Transfer Certificate).
+2.  **Approval Chain (The order matters):**
+    *   *Step 1:* Faculty (Skipped for generic certs, used for direct grade approvals).
+    *   *Step 2:* **HOD** reviews and approves. State moves to `HOD_APPROVED`.
+    *   *Step 3:* **Exam Section** reviews and locks it. State moves to `EXAM_LOCKED`.
+    *   *Step 4:* **Dean Academic** reviews and approves. State moves to `DEAN_APPROVED`.
+    *   *Step 5:* **DAC Member** does final validation.
+3.  **Finalization:** When the DAC member approves, the chaincode automatically calculates the student's cumulative CGPA, generates the final digital signature, and moves the state to `FINALIZED`. The student can now download the official PDF.
 
 ---
 
-## 6. Backend API
+## 5. What Happens in the Backend? (Step-by-Step API execution)
 
-**Base URL:** `http://localhost:3000/api`  
-**Swagger Docs:** `http://localhost:3000/api-docs`  
-**Auth:** Bearer JWT token (pass via `Authorization: Bearer <token>` header)
+Let's trace what happens when Dean Academic approves a certificate:
 
-### Route Groups
-
-| Route Prefix | Description |
-|---|---|
-| `/auth` | Login, register, refresh token |
-| `/students` | CRUD for student blockchain records |
-| `/records` | Academic record submission + approval |
-| `/certificates` | Issue, verify, revoke certificates |
-| `/documents` | Upload, status pipeline, versioning |
-| `/approvals` | 7-stage approval workflow management |
-| `/consent` | On-chain consent grant/revoke/check |
-| `/pdf` | Generate and download PDF certificates |
-| `/reports` | Dashboard stats, CSV exports, blockchain explorer, audit trail |
-| `/departments` | Department management |
-| `/faculty` | Faculty advisor dedicated endpoints |
-| `/semester` | Semester registration |
-
-### Key Endpoints
-
-```
-POST   /auth/login
-POST   /auth/register
-GET    /students/all                 ← the endpoint that was returning 500
-POST   /students/create
-GET    /certificates/:certId/verify
-POST   /documents/upload
-PATCH  /documents/status/:docId
-POST   /consent/grant
-DELETE /consent/revoke/:consentId
-GET    /consent/check/:studentId/:requesterId
-GET    /pdf/generate/:certId         ← returns PDF binary
-GET    /reports/explorer
-GET    /reports/audit/:recordId
-GET    /reports/certificates.csv
-```
-
-### Important Utility Scripts
-
-| Script | Command | When to Run |
-|---|---|---|
-| Import admin wallet | `npm run import-admin` | After every `network.sh up` |
-| Seed student blockchain records | `npm run seed` | After every `network.sh up` |
-| Start backend | `npm start` or `npm run dev` | Normal operation |
+1.  **HTTP Request:** Frontend sends `PUT /api/certificates/requests/REQ123` with payload `{ status: 'APPROVED' }` and a Bearer JWT Token.
+2.  **Auth Middleware (`auth.js`):** Backend extracts the JWT, verifies the cryptographic signature with the `JWT_SECRET`, and extracts the `userId` and `role`.
+3.  **Controller Routing:** The request is routed to `approvalController.js -> deanApprove()`.
+4.  **Fabric Gateway Setup:** The backend authenticates with the Hyperledger network. It looks in the `wallet/` directory for the cryptographic identity matching the system `admin` (or the specific user).
+5.  **Transaction Submission:** The backend executes: `gateway.submitTransaction('DeanAcademicApprove', recordId, comment)`.
+6.  **Chaincode Execution:** The Go code inside `chaincode.go` runs. It checks if the current state is `EXAM_LOCKED`. If yes, it updates the state to `DEAN_APPROVED` in the ledger.
+7.  **Response & Notifications:** The backend receives a `Success` from the blockchain. It fires a `Socket.io` event to notify the student's frontend in real-time and returns an HTTP 200 JSON response.
 
 ---
 
-## 7. Frontend Application
+## 6. System Network Initialization & Auto-Seeding
 
-**Framework:** Angular 17  
-**Location:** `Academic-Records-Blockchain-Frontend/`  
-**Dev Server:** `http://localhost:4200`
+Because blockchains are intentionally difficult to modify, initializing the network requires a specific flow:
 
-### Dashboards by Role
+### 1. `./network.sh up` (The Fabric Lifecycle)
+When the network is started, a massive sequence occurs:
+*   Old docker containers and volumes are purged.
+*   Cryptographic keys (X.509 certs, private keys) are generated for the orderer, org peers, and users via the Fabric CA.
+*   The Genesis Block is created, and the Channel is joined by all peers.
+*   The Go chaincode (`chaincode.go`) is compiled, packaged, installed on peers, approved by organizations, and committed to the channel.
 
-| Role | Route | Key Features |
-|---|---|---|
-| **Admin** | `/admin/dashboard` | View all students, approve final certificates, audit logs, notification bell |
-| **Student** | `/student/dashboard` | Upload documents, approval pipeline timeline, download PDF cert, manage consent |
-| **Faculty** | `/faculty/dashboard` | Review pending docs, approve/reject, notification bell |
-| **HOD** | `/faculty/dashboard` | Second-stage approvals |
-| **Verifier** | `/verifier/dashboard` | Paste student ID + document hash → verify authenticity |
-| **Department** | `/department/dashboard` | Department-level management |
+### 2. `npm start` (The Backend Auto-Seed)
+When the backend starts, the ledger is initially empty. To make testing seamless, `server.js` runs `autoSeedBlockchain()`:
+*   It reads `data/users.json`, `data/departments.json`, and `data/courses.json`.
+*   It checks the blockchain (e.g., `GetStudent`, `GetDepartment`) to see if the entries exist.
+*   If they do not exist, it automatically submits transactions (`CreateStudent`, `CreateDepartment`, `CreateCourseOffering`) to populate the blockchain.
+*   **Idempotency:** Because it checks first, you can restart the backend 100 times without duplicating data on the blockchain.
 
-### Key Angular Components
-
-```
-src/app/features/
-  admin/admin-dashboard.component
-  student/student-dashboard.component
-  faculty/faculty-dashboard.component
-  verifier/verifier-dashboard.component
-  auth/login.component
-
-src/app/shared/
-  notification-bell/notification-bell.component   ← global notification UI
-```
-
----
-
-## 8. Data Flow & Workflows
-
-### A. Student Document Upload → Certificate
-
-```
-Student uploads PDF
-    │
-    ▼
-Backend: SHA-256 hash calculated, IPFS upload attempted (3-tier: Kubo → Infura → local)
-    │  Chaincode: UploadDocument (stores hash + IPFS CID on ledger)
-    │
-    ▼  [UPLOADED]
-Faculty Advisor reviews → Approves / Rejects
-    │
-    ▼  [UNDER_REVIEW]
-Department HOD reviews → Approves
-    │
-    ▼  [AUTHENTICATED]
-Exam Section → Approves
-    ▼
-DAC Member → Approves
-    ▼
-Dean Academic → Approves
-    │
-    ▼  [APPROVED]
-Admin: IssueCertificate chaincode call
-    │  Backend: pdfService generates QR-code PDF certificate
-    │
-    ▼  [ON_CHAIN]
-Student: Downloads PDF from /api/pdf/generate/:certId
-```
-
-### B. Verifier Checking a Certificate (With Consent)
-
-```
-Student (on dashboard): GrantConsent(verifierId, scope, expiry)
-    │  Chaincode stores ConsentRecord on ledger
-    ▼
-Verifier: Queries /consent/check/:studentId/:verifierId
-    │  Chaincode: CheckConsent → returns active consent or throws
-    ▼
-Verifier: Calls /certificates/:certId/verify
-    │  Chaincode: VerifyCertificate → true / false
-    ▼
-Verifier sees: ✅ Certificate is VALID
-```
-
-### C. Real-time Notifications
-
-```
-Any approval step happens in backend
-    │
-    ▼
-notificationService.emit(userId, event, payload)  [Socket.io]
-    │
-    ▼
-Angular NotificationBellComponent receives socket event
-    │  Increments unread badge, shows dropdown item
-    ▼
-Faculty / Admin sees notification instantly — no refresh required
-```
-
----
-
-## 9. Startup & Deployment Guide
-
-### Prerequisites
-
-- Docker + Docker Compose  
-- Node.js ≥ 18  
-- Go 1.21+ (for chaincode build)  
-- `fabric-ca-client` binary in PATH (`~/fabric-bin/bin/fabric-ca-client`)
-
-### Full Startup Sequence
-
-#### Step 1: Start the Blockchain Network
-```bash
-cd "Academic_RecordsBlockchain"
-sudo env PATH="$HOME/fabric-bin/bin:$PATH" ./network.sh up
-# Wait for: 🎉 NETWORK IS UP AND RUNNING!
-```
-
-#### Step 2: Fix Permissions & Sync Admin Wallet
-```bash
-# Fix ownership of generated crypto materials
-sudo chown -R $USER:$USER organizations/
-
-# Import fresh admin identity into the backend wallet
-cd "../Academic-Records-Blockchain-Backend"
-npm run import-admin
-```
-
-#### Step 3: Seed Student Records to Blockchain
-```bash
-# Re-create student blockchain records (wiped with every network restart)
-npm run seed
-```
-
-#### Step 4: Start the Backend
-```bash
-npm start
-# Server on http://localhost:3000
-# Swagger at http://localhost:3000/api-docs
-```
-
-#### Step 5: Start the Frontend
-```bash
-cd "../Academic-Records-Blockchain-Frontend"
-npm start
-# App on http://localhost:4200
-```
-
-### After Every `network.sh up`
-
-Run steps 2 → 3 → 4 to restore the backend to a working state. The `data/users.json` auth accounts survive restarts and do **not** need to be re-created.
-
----
-
-## 10. Pre-Created User Accounts
-
-**Default password for all demo accounts:** `password123`  
-**Student default password:** their roll number (e.g., `25CSM2R26`)
-
-| Username | Email | Role |
-|---|---|---|
-| `admin` | admin@nitw.ac.in | Admin |
-| `faculty_demo` | faculty@nitw.ac.in | Faculty Advisor |
-| `hod_demo` | hod@nitw.ac.in | Head of Department |
-| `dac_member_demo` | dac_member@nitw.ac.in | DAC Member |
-| `exam_section_demo` | exam_section@nitw.ac.in | Exam Section |
-| `dean_academic_demo` | dean_academic@nitw.ac.in | Dean Academic |
-| `cse` | cse@nitw.ac.in | Department (CSE) |
-| `mech` | mech@nitw.ac.in | Department (MECH) |
-| `25CSM2R26` | am25csm2r26@student.nitw.ac.in | Student (Aditi Mishra) |
-| `CS21B001` | cs21b001@student.nitw.ac.in | Student (John Doe) |
-| `CS22B002` | cs22b002@student.nitw.ac.in | Student (Priya Sharma) |
-
----
-
-## 11. Enhancements Over the Base Repository
-
-The base "Prince Kumar" repository provided a functional Hyperledger Fabric skeleton. All of the following features were designed and implemented from scratch.
-
-### Enhancement 1: 7-Stage Document Approval Pipeline
-
-- **Base repo:** Binary approve/reject with no intermediate tracking  
-- **Enhancement:** Full 7-stage state machine: `UPLOADED → UNDER_REVIEW → AUTHENTICATED → APPROVED → ON_CHAIN` with dedicated roles at each stage (Faculty Advisor → HOD → DAC Member → Exam Section → Dean Academic → Admin)
-- A separate `ApprovalRecord` asset on-chain tracks who approved at each stage, with timestamps and transaction IDs as an immutable audit trail
-
-### Enhancement 2: Real-time Notification System
-
-- **Base repo:** No notifications; users had to manually refresh pages  
-- **Enhancement:** Socket.io integration in the backend emits events on every approval state change. The Angular `<app-notification-bell>` component (admin and faculty dashboards) shows a live unread badge count and dropdown list of pending actions — no page refresh needed
-
-### Enhancement 3: On-Chain Consent Management
-
-- **Base repo:** No data access controls between orgs; any enrolled peer could query any student data  
-- **Enhancement:** Added 4 new chaincode functions (`GrantConsent`, `RevokeConsent`, `CheckConsent`, `GetConsentsByStudent`). Verifiers are **blocked at the smart-contract level** from reading any student record unless the student has explicitly granted time-scoped consent. Students manage this from their dashboard
-
-### Enhancement 4: Automated PDF Certificate Generation
-
-- **Base repo:** No certificate download; only raw JSON data was returned  
-- **Enhancement:** Puppeteer-based PDF service (`pdfService.js`) dynamically renders a professional academic certificate from verified on-chain data, embeds a QR code linking to the verification URL, and serves it as a downloadable binary from `GET /api/pdf/generate/:certId`
-
-### Enhancement 5: IPFS Document Storage
-
-- **Base repo:** No distributed file storage; files were stored locally or not at all  
-- **Enhancement:** 3-tier IPFS upload pipeline: local Kubo node → Infura gateway → local filesystem fallback. The IPFS CID is stored on-chain alongside the SHA-256 hash, meaning documents are referenced both immutably on-chain and retrievably from a distributed network
-
-### Enhancement 6: Blockchain Explorer & Reporting
-
-- **Base repo:** No visibility into raw ledger state  
-- **Enhancement:** `reportController.js` provides:
-  - Dashboard summary stats (total students, pending approvals, issued certificates)
-  - Raw blockchain explorer (`GET /reports/explorer?type=records|certificates|students`)
-  - Per-record audit trail with full approval history (`GET /reports/audit/:recordId`)
-  - Bulk CSV exports for students, certificates, and approvals
-
-### Enhancement 7: Swagger API Documentation
-
-- **Base repo:** No API documentation  
-- **Enhancement:** Full OpenAPI 3.0 Swagger docs auto-generated and served at `/api-docs`
-
-### Enhancement 8: Wallet Sync & Post-Restart Recovery
-
-- **Base repo:** No handling of stale wallet identities after a network restart  
-- **Enhancement:** `walletSync.js` detects on startup if the admin wallet cert mismatches the current network's cert (indicating a network restart) and automatically purges and re-imports the admin identity. A `seedBlockchain.js` script (`npm run seed`) re-populates student records on the fresh ledger
-
-### Enhancement 9: Student Visual Approval Timeline (Frontend)
-
-- **Base repo:** No frontend visualization of the approval pipeline  
-- **Enhancement:** The Student Dashboard includes an animated timeline showing each stage of the document approval with colour-coded statuses (pending / approved / rejected) and the name of the approver at each step
-
-### Enhancement 10: Privacy-First Architecture
-
-- **Base repo:** Student data stored in a single public collection  
-- **Enhancement:** Student sensitive data (phone, Aadhaar hash, personal email) is stored in a **Fabric Private Data Collection** (`StudentPrivateDetails`) — different from the public ledger. Only the NITWarangal peer can access the private collection; other orgs only see public fields
+### 3. Wallet Management
+The `wallet/` directory holds the private keys used to talk to the blockchain. When the Fabric network is destroyed and recreated (via `network.sh`), **all old certificates become invalid**. The backend automatically detects stale keys and overwrites them with fresh ones from the newly spawned CA, guaranteeing smooth reconnections.
