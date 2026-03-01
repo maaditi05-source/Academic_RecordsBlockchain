@@ -214,7 +214,7 @@ deployChaincode() {
         DEPT_TLS=/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/departments.nitw.edu/peers/peer0.departments.nitw.edu/tls/ca.crt
         VERI_TLS=/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/verifiers.nitw.edu/peers/peer0.verifiers.nitw.edu/tls/ca.crt
         
-        peer lifecycle chaincode commit -o ${ORDERER_ADDR} --ordererTLSHostnameOverride orderer.nitw.edu --tls --cafile \$ORDERER_CA --channelID ${CHANNEL_NAME} --name ${CHAINCODE_NAME} --version ${CHAINCODE_VERSION} --sequence ${CHAINCODE_SEQUENCE} --signature-policy "OR('NITWarangalMSP.peer','DepartmentsMSP.peer','VerifiersMSP.peer')" --collections-config /opt/gopath/src/github.com/hyperledger/fabric/peer/collections_config.json --peerAddresses ${NITW_PEER0_ADDR} --tlsRootCertFiles \$NITW_TLS --peerAddresses ${DEPT_PEER0_ADDR} --tlsRootCertFiles \$DEPT_TLS --peerAddresses ${VERI_PEER0_ADDR} --tlsRootCertFiles \$VERI_TLS
+        peer lifecycle chaincode commit -o ${ORDERER_ADDR} --ordererTLSHostnameOverride orderer.nitw.edu --tls --cafile \$ORDERER_CA --channelID ${CHANNEL_NAME} --name ${CHAINCODE_NAME} --version ${CHAINCODE_VERSION} --sequence ${CHAINCODE_SEQUENCE} --signature-policy \"OR('NITWarangalMSP.peer','DepartmentsMSP.peer','VerifiersMSP.peer')\" --collections-config /opt/gopath/src/github.com/hyperledger/fabric/peer/collections_config.json --peerAddresses ${NITW_PEER0_ADDR} --tlsRootCertFiles \$NITW_TLS --peerAddresses ${DEPT_PEER0_ADDR} --tlsRootCertFiles \$DEPT_TLS --peerAddresses ${VERI_PEER0_ADDR} --tlsRootCertFiles \$VERI_TLS
     "
     successln "✓ Chaincode committed to channel"
 }
