@@ -1,0 +1,74 @@
+[
+    {
+        "code": "CS301",
+        "name": "Data Structures & Algorithms",
+        "department": "CSE",
+        "semester": 3,
+        "credits": 4,
+        "faculty": "faculty_demo",
+        "type": "core"
+    },
+    {
+        "code": "CS302",
+        "name": "Database Management Systems",
+        "department": "CSE",
+        "semester": 3,
+        "credits": 4,
+        "faculty": "faculty_demo",
+        "type": "core"
+    },
+    {
+        "code": "CS303",
+        "name": "Computer Networks",
+        "department": "CSE",
+        "semester": 3,
+        "credits": 3,
+        "faculty": "faculty_demo_2",
+        "type": "core"
+    },
+    {
+        "code": "CS401",
+        "name": "Operating Systems",
+        "department": "CSE",
+        "semester": 4,
+        "credits": 4,
+        "faculty": "faculty_demo_2",
+        "type": "core"
+    },
+    {
+        "code": "CS402",
+        "name": "Software Engineering",
+        "department": "CSE",
+        "semester": 4,
+        "credits": 3,
+        "faculty": "faculty_demo_2",
+        "type": "core"
+    },
+    {
+        "code": "CS501",
+        "name": "Machine Learning",
+        "department": "CSE",
+        "semester": 5,
+        "credits": 4,
+        "faculty": "faculty_demo",
+        "type": "elective"
+    },
+    {
+        "code": "MA201",
+        "name": "Engineering Mathematics III",
+        "department": "CSE",
+        "semester": 3,
+        "credits": 3,
+        "faculty": "faculty_demo",
+        "type": "core"
+    },
+    {
+        "code": "CS601",
+        "name": "Blockchain Technology",
+        "department": "CSE",
+        "semester": 6,
+        "credits": 3,
+        "faculty": "faculty_demo_2",
+        "type": "elective"
+    }
+]

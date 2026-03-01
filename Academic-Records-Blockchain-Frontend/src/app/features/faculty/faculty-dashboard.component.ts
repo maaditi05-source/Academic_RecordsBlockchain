@@ -1,863 +1,554 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTableModule } from '@angular/material/table';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatBadgeModule } from '@angular/material/badge';
+import { MatDividerModule } from '@angular/material/divider';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { AuthService } from '../../core/services/auth.service';
+import { BlockchainService } from '../../core/services/blockchain.service';
 import { APP_CONFIG } from '../../core/config/app.config';
-import { NotificationBellComponent } from '../../shared/notification-bell.component';
 
 @Component({
   selector: 'app-faculty-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, NotificationBellComponent],
+  imports: [
+    CommonModule, MatTabsModule, MatCardModule, MatButtonModule, MatIconModule,
+    MatTableModule, MatChipsModule, MatProgressSpinnerModule, MatSnackBarModule,
+    MatTooltipModule, MatBadgeModule, MatDividerModule, HttpClientModule, FormsModule
+  ],
   template: `
-    <div class="faculty-container">
+    <div class="dashboard-container">
       <!-- Header -->
-      <div class="faculty-header">
-        <div class="header-left">
-          <div class="logo-badge">
-            <span class="logo-icon">🎓</span>
-          </div>
-          <div>
-            <h1 class="header-title">Faculty Dashboard</h1>
-            <p class="header-subtitle">Academic Records Approval System — NIT Warangal</p>
-          </div>
-        </div>
-        <div class="header-right">
-          <span class="user-badge">{{ currentUser?.username || 'Faculty' }}</span>
-          <app-notification-bell></app-notification-bell>
-          <button class="logout-btn" (click)="logout()">Sign Out</button>
-        </div>
-      </div>
-
-      <!-- Stats Row -->
-      <div class="stats-row">
-        <div class="stat-card">
-          <div class="stat-icon pending-icon">⏳</div>
-          <div class="stat-info">
-            <div class="stat-value">{{ pendingApprovals.length }}</div>
-            <div class="stat-label">Pending Approval</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon approved-icon">✅</div>
-          <div class="stat-info">
-            <div class="stat-value">{{ approvedCount }}</div>
-            <div class="stat-label">Approved This Week</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon docs-icon">📄</div>
-          <div class="stat-info">
-            <div class="stat-value">{{ docCount }}</div>
-            <div class="stat-label">Documents Verified</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab Navigation -->
-      <div class="tab-bar">
-        <button class="tab-btn" [class.active]="activeTab === 'queue'" (click)="activeTab='queue'; loadQueue()">
-          📋 Approval Queue
-        </button>
-        <button class="tab-btn" [class.active]="activeTab === 'upload'" (click)="activeTab='upload'">
-          📤 Upload Document
-        </button>
-        <button class="tab-btn" [class.active]="activeTab === 'verify'" (click)="activeTab='verify'">
-          🔍 Verify Document
-        </button>
-        <button class="tab-btn" [class.active]="activeTab === 'semester'" (click)="activeTab='semester'">
-          📅 Semester Registration
-        </button>
-      </div>
-
-      <!-- APPROVAL QUEUE TAB -->
-      <div class="tab-content" *ngIf="activeTab === 'queue'">
-        <div class="section-header">
-          <h2>Records Awaiting Your Approval</h2>
-          <button class="refresh-btn" (click)="loadQueue()">↻ Refresh</button>
-        </div>
-
-        <div *ngIf="loading" class="loading-state">
-          <div class="spinner"></div>
-          <p>Loading approval queue...</p>
-        </div>
-
-        <div *ngIf="!loading && pendingApprovals.length === 0" class="empty-state">
-          <div class="empty-icon">✓</div>
-          <p>No records pending approval</p>
-        </div>
-
-        <div class="records-grid" *ngIf="!loading">
-          <div class="record-card" *ngFor="let record of pendingApprovals">
-            <div class="record-header">
-              <div class="record-id">{{ record.recordId }}</div>
-              <div class="status-badge" [class]="getStatusClass(record.currentStatus || record.status)">
-                {{ record.currentStatus || record.status }}
-              </div>
+      <header class="dash-header">
+        <div class="header-content">
+          <div class="header-left">
+            <div class="avatar-ring">
+              <div class="avatar"><mat-icon>school</mat-icon></div>
             </div>
-            <div class="record-details">
-              <div class="detail-row">
-                <span class="detail-label">Student</span>
-                <span class="detail-value">{{ record.studentId }}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Department</span>
-                <span class="detail-value">{{ record.department }}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Semester</span>
-                <span class="detail-value">Semester {{ record.semester }}</span>
-              </div>
-            </div>
-
-            <!-- Approval Pipeline -->
-            <div class="approval-pipeline">
-              <div class="pipeline-step" [class.done]="isPipelineDone(record, 'department')" [class.active]="isPipelineActive(record, 'department')">
-                <div class="step-dot"></div>
-                <div class="step-label">Submit</div>
-              </div>
-              <div class="pipeline-line"></div>
-              <div class="pipeline-step" [class.done]="isPipelineDone(record, 'faculty')" [class.active]="isPipelineActive(record, 'faculty')">
-                <div class="step-dot"></div>
-                <div class="step-label">Faculty</div>
-              </div>
-              <div class="pipeline-line"></div>
-              <div class="pipeline-step" [class.done]="isPipelineDone(record, 'hod')" [class.active]="isPipelineActive(record, 'hod')">
-                <div class="step-dot"></div>
-                <div class="step-label">HOD</div>
-              </div>
-              <div class="pipeline-line"></div>
-              <div class="pipeline-step" [class.done]="isPipelineDone(record, 'dac_member')" [class.active]="isPipelineActive(record, 'dac_member')">
-                <div class="step-dot"></div>
-                <div class="step-label">DAC</div>
-              </div>
-              <div class="pipeline-line"></div>
-              <div class="pipeline-step" [class.done]="isPipelineDone(record, 'exam_section')" [class.active]="isPipelineActive(record, 'exam_section')">
-                <div class="step-dot"></div>
-                <div class="step-label">ES</div>
-              </div>
-              <div class="pipeline-line"></div>
-              <div class="pipeline-step" [class.done]="isPipelineDone(record, 'dean_academic')" [class.active]="isPipelineActive(record, 'dean_academic')">
-                <div class="step-dot"></div>
-                <div class="step-label">Dean</div>
-              </div>
-            </div>
-
-            <div class="record-actions">
-              <input class="comment-input" [(ngModel)]="record._comment" placeholder="Optional comment..." />
-              <button class="approve-btn" (click)="approveRecord(record)" [disabled]="record._loading">
-                <span *ngIf="!record._loading">✓ Approve</span>
-                <span *ngIf="record._loading">Processing...</span>
-              </button>
-              <button class="reject-btn" (click)="openReject(record)" [disabled]="record._loading">
-                ✗ Reject
-              </button>
+            <div class="header-info">
+              <h1>{{ getDashboardTitle() }}</h1>
+              <p class="subtitle">
+                <span class="dept-badge">{{ currentUser?.department || 'System' }}</span>
+                <span class="role-badge">{{ formatRole(currentUser?.role) }}</span>
+              </p>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- DOCUMENT UPLOAD TAB -->
-      <div class="tab-content" *ngIf="activeTab === 'upload'">
-        <div class="section-header">
-          <h2>Upload and Hash Document</h2>
-        </div>
-        <div class="upload-card">
-          <div class="upload-description">
-            <p>Upload any academic document (grade sheet, certificate, etc.). 
-               The system will compute its <strong>SHA-256 hash</strong> and store it permanently on the blockchain for authenticity verification.</p>
-          </div>
-          <div class="form-group">
-            <label>Student Roll Number</label>
-            <input class="form-input" [(ngModel)]="uploadForm.studentId" placeholder="e.g. CS21B001" />
-          </div>
-          <div class="form-group">
-            <label>Document Type</label>
-            <select class="form-input" [(ngModel)]="uploadForm.docType">
-              <option value="GRADE_SHEET">Grade Sheet</option>
-              <option value="MARKSHEET">Mark Sheet</option>
-              <option value="TRANSCRIPT">Transcript</option>
-              <option value="DEGREE_CERT">Degree Certificate</option>
-              <option value="OTHER">Other</option>
-            </select>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Semester (0 = Not semester-specific)</label>
-              <input class="form-input" [(ngModel)]="uploadForm.semester" type="number" min="0" max="8" />
+          <div class="header-right">
+            <div class="header-stat">
+              <span class="stat-number">{{ myCourses.length }}</span>
+              <span class="stat-text">Courses</span>
             </div>
-            <div class="form-group">
-              <label>Academic Year</label>
-              <input class="form-input" [(ngModel)]="uploadForm.academicYear" placeholder="e.g. 2024-25" />
+            <div class="header-stat">
+              <span class="stat-number">{{ pendingMarks.length }}</span>
+              <span class="stat-text">Pending Verif.</span>
             </div>
-          </div>
-
-          <!-- Drag & Drop Area -->
-          <div class="drop-zone" 
-               [class.drag-over]="isDragOver"
-               (dragover)="onDragOver($event)"
-               (dragleave)="onDragLeave($event)"
-               (drop)="onDrop($event)"
-               (click)="fileInput.click()">
-            <div class="drop-icon">📁</div>
-            <div class="drop-text" *ngIf="!selectedFile">
-              <strong>Drag & drop</strong> or <span class="browse-link">browse</span>
-              <br><small>PDF, JPEG, PNG — max 10MB</small>
-            </div>
-            <div class="file-selected" *ngIf="selectedFile">
-              <span class="file-icon">📄</span> {{ selectedFile.name }}
-              <br><small>{{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB</small>
-            </div>
-          </div>
-          <input #fileInput type="file" style="display:none" accept=".pdf,.jpg,.jpeg,.png" (change)="onFileSelect($event)" />
-
-          <button class="upload-submit-btn" (click)="uploadDocument()" [disabled]="uploading || !selectedFile">
-            <span *ngIf="!uploading">🔗 Upload & Store Hash on Blockchain</span>
-            <span *ngIf="uploading">Uploading...</span>
-          </button>
-
-          <div class="upload-result" *ngIf="uploadResult">
-            <div class="result-success" *ngIf="uploadResult.success">
-              <div class="result-title">✅ Document Anchored on Blockchain</div>
-              <div class="result-hash">
-                <span class="hash-label">SHA-256 Hash:</span>
-                <code class="hash-value">{{ uploadResult.data?.sha256Hash }}</code>
-              </div>
-              <div class="result-meta">
-                <span>Doc ID: {{ uploadResult.data?.docId }}</span>
-              </div>
-            </div>
-            <div class="result-error" *ngIf="!uploadResult.success">
-              ❌ {{ uploadResult.message }}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- VERIFY DOCUMENT TAB -->
-      <div class="tab-content" *ngIf="activeTab === 'verify'">
-        <div class="section-header">
-          <h2>Verify Document Authenticity</h2>
-        </div>
-        <div class="verify-card">
-          <p class="verify-description">Upload a document to verify if it matches the blockchain record. Any tampering will be detected.</p>
-          
-          <div class="verify-toggle">
-            <button [class.active]="verifyMode === 'upload'" (click)="verifyMode='upload'">Upload File</button>
-            <button [class.active]="verifyMode === 'hash'" (click)="verifyMode='hash'">Enter Hash</button>
-          </div>
-
-          <div *ngIf="verifyMode === 'upload'">
-            <div class="drop-zone" (click)="verifyFileInput.click()">
-              <div class="drop-icon">🔍</div>
-              <div *ngIf="!verifyFile">Click to select file to verify</div>
-              <div *ngIf="verifyFile">{{ verifyFile.name }}</div>
-            </div>
-            <input #verifyFileInput type="file" style="display:none" accept=".pdf,.jpg,.jpeg,.png" (change)="onVerifyFileSelect($event)" />
-            <button class="verify-btn" (click)="verifyDocument()" [disabled]="verifying || !verifyFile">
-              <span *ngIf="!verifying">🔍 Verify on Blockchain</span>
-              <span *ngIf="verifying">Verifying...</span>
+            <button mat-raised-button color="warn" (click)="logout()">
+              <mat-icon>logout</mat-icon> Logout
             </button>
           </div>
-
-          <div *ngIf="verifyMode === 'hash'">
-            <div class="form-group">
-              <label>SHA-256 Hash</label>
-              <input class="form-input" [(ngModel)]="hashToVerify" placeholder="Enter the 64-character SHA-256 hash..." />
-            </div>
-            <button class="verify-btn" (click)="verifyByHash()" [disabled]="verifying || !hashToVerify">
-              <span *ngIf="!verifying">🔍 Check Hash on Blockchain</span>
-              <span *ngIf="verifying">Checking...</span>
-            </button>
-          </div>
-
-          <div class="verify-result" *ngIf="verifyResult">
-            <div class="verify-authentic" *ngIf="verifyResult.data?.verified">
-              <div class="verify-icon">✅</div>
-              <div class="verify-title">Document is Authentic</div>
-              <div class="verify-detail">Hash matches blockchain record</div>
-              <div class="verify-hash"><code>{{ verifyResult.data?.sha256Hash }}</code></div>
-            </div>
-            <div class="verify-tampered" *ngIf="!verifyResult.data?.verified">
-              <div class="verify-icon">⚠️</div>
-              <div class="verify-title">Document Not Found</div>
-              <div class="verify-detail">{{ verifyResult.data?.message }}</div>
-            </div>
-          </div>
         </div>
+      </header>
+
+      <div *ngIf="loading" class="loading-state">
+        <mat-spinner diameter="48"></mat-spinner>
+        <p>Loading faculty data...</p>
       </div>
 
-      <!-- SEMESTER REGISTRATION TAB -->
-      <div class="tab-content" *ngIf="activeTab === 'semester'">
-        <div class="section-header">
-          <h2>Semester Registration</h2>
-        </div>
-        <div class="semester-card">
-          <div class="form-group">
-            <label>Student Roll Number</label>
-            <input class="form-input" [(ngModel)]="semForm.studentId" placeholder="e.g. CS21B001" />
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Semester</label>
-              <select class="form-input" [(ngModel)]="semForm.semester">
-                <option *ngFor="let s of [1,2,3,4,5,6,7,8]" [value]="s">Semester {{ s }}</option>
-              </select>
+      <mat-tab-group *ngIf="!loading" animationDuration="300ms" class="main-tabs">
+        <!-- TAB 1: MY COURSES -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">menu_book</mat-icon>
+            <span>My Courses</span>
+          </ng-template>
+          <div class="tab-content">
+            <div class="course-grid">
+              <div class="course-card glass-card" *ngFor="let course of myCourses"
+                (click)="selectCourse(course)" [class.selected]="selectedCourse?.code === course.code">
+                <div class="course-header">
+                  <span class="course-code-badge">{{ course.code }}</span>
+                  <span class="course-type" [class.elective]="course.type === 'elective'">{{ course.type }}</span>
+                </div>
+                <h4>{{ course.name }}</h4>
+                <div class="course-meta">
+                  <span><mat-icon>event</mat-icon> Sem {{ course.semester }}</span>
+                  <span><mat-icon>star</mat-icon> {{ course.credits }} Credits</span>
+                </div>
+              </div>
             </div>
-            <div class="form-group">
-              <label>Academic Year</label>
-              <input class="form-input" [(ngModel)]="semForm.academicYear" placeholder="e.g. 2024-25" />
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Faculty Advisor Name</label>
-            <input class="form-input" [(ngModel)]="semForm.facultyAdvisor" placeholder="Full name of faculty advisor" />
-          </div>
-          <button class="submit-btn" (click)="registerSemester()" [disabled]="semLoading">
-            <span *ngIf="!semLoading">📅 Register for Semester</span>
-            <span *ngIf="semLoading">Registering...</span>
-          </button>
-          <div class="success-msg" *ngIf="semResult?.success">✅ {{ semResult.message }}</div>
-          <div class="error-msg" *ngIf="semResult && !semResult.success">❌ {{ semResult.message }}</div>
-        </div>
-      </div>
 
-      <!-- Reject Modal -->
-      <div class="modal-overlay" *ngIf="rejectModal" (click)="rejectModal=null">
-        <div class="modal-box" (click)="$event.stopPropagation()">
-          <h3>Reject Record</h3>
-          <p>Record: <strong>{{ rejectModal?.recordId }}</strong></p>
-          <textarea class="modal-textarea" [(ngModel)]="rejectReason" placeholder="Provide a clear reason for rejection..."></textarea>
-          <div class="modal-actions">
-            <button class="cancel-btn" (click)="rejectModal=null">Cancel</button>
-            <button class="confirm-reject-btn" (click)="confirmReject()" [disabled]="!rejectReason">Confirm Rejection</button>
+            <!-- Selected Course Students -->
+            <div *ngIf="selectedCourse" class="course-detail mt-3">
+              <div class="section-title">
+                <mat-icon>people</mat-icon>
+                <h3>Students in {{ selectedCourse.code }}: {{ selectedCourse.name }}</h3>
+              </div>
+              <div class="marks-table-wrapper" *ngIf="courseStudentMarks.length > 0">
+                <table class="modern-table">
+                  <thead>
+                    <tr>
+                      <th>Roll Number</th>
+                      <th>Student Name</th>
+                      <th>Marks</th>
+                      <th>Grade</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let m of courseStudentMarks">
+                      <td><span class="course-code">{{ m.studentId }}</span></td>
+                      <td>{{ m.studentName || m.studentId }}</td>
+                      <td><strong>{{ m.marksObtained }}</strong>/{{ m.maxMarks }}</td>
+                      <td><span class="grade-chip" [attr.data-grade]="m.grade">{{ m.grade }}</span></td>
+                      <td><span class="status-badge" [class]="m.status">{{ m.status }}</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div *ngIf="courseStudentMarks.length === 0" class="empty-state">
+                <mat-icon>people_outline</mat-icon>
+                <p>No student marks recorded for this course yet</p>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </mat-tab>
+
+        <!-- TAB 2: VERIFY MARKS -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">fact_check</mat-icon>
+            <span>Verify Marks</span>
+            <span class="pending-count" *ngIf="pendingMarks.length > 0">{{ pendingMarks.length }}</span>
+          </ng-template>
+          <div class="tab-content">
+            <div *ngIf="pendingMarks.length > 0">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th>Student ID</th>
+                    <th>Course</th>
+                    <th>Semester</th>
+                    <th>Marks</th>
+                    <th>Grade</th>
+                    <th>Uploaded By</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let m of pendingMarks">
+                    <td class="course-code">{{ m.studentId }}</td>
+                    <td>{{ m.courseName || m.courseCode }}</td>
+                    <td>{{ m.semester }}</td>
+                    <td><strong>{{ m.marksObtained }}</strong>/{{ m.maxMarks }}</td>
+                    <td><span class="grade-chip" [attr.data-grade]="m.grade">{{ m.grade }}</span></td>
+                    <td>{{ m.uploadedBy }}</td>
+                    <td>
+                      <button mat-raised-button color="primary" (click)="verifyMark(m)"
+                        [disabled]="m.verifying" class="verify-btn">
+                        <mat-icon>check</mat-icon> Verify
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div *ngIf="pendingMarks.length === 0" class="empty-state">
+              <mat-icon>check_circle</mat-icon>
+              <p>All marks are verified! No pending items.</p>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- TAB 3: CERTIFICATE REQUESTS -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">approval</mat-icon>
+            <span>Cert Requests</span>
+            <span class="pending-count" *ngIf="pendingApprovals.length > 0">{{ pendingApprovals.length }}</span>
+          </ng-template>
+          <div class="tab-content">
+            <div *ngIf="pendingApprovals.length > 0" class="approval-grid">
+              <div class="approval-card glass-card" *ngFor="let r of pendingApprovals">
+                <div class="approval-header">
+                  <mat-icon>description</mat-icon>
+                  <h4>{{ r.requestId }}</h4>
+                </div>
+                <p class="text-muted">Student: <strong>{{ r.studentId }}</strong></p>
+                <p class="text-muted">Type: {{ r.certificateType }}</p>
+                <p class="text-muted">Purpose: {{ r.purpose }}</p>
+                <p class="text-muted">Requested: {{ r.requestDate | date:'medium' }}</p>
+                <span class="status-badge pending">{{ r.status }}</span>
+                <div class="approval-actions mt-2">
+                  <button mat-raised-button color="primary" (click)="approveRecord(r)" [disabled]="r.processing">
+                    <mat-icon>check</mat-icon> Approve
+                  </button>
+                  <button mat-stroked-button color="warn" (click)="rejectRecord(r)" [disabled]="r.processing">
+                    <mat-icon>close</mat-icon> Reject
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="pendingApprovals.length === 0" class="empty-state">
+              <mat-icon>thumb_up</mat-icon>
+              <p>No pending certificate requests</p>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- TAB 4: UPLOAD MARKS (exam_section / admin only) -->
+        <mat-tab *ngIf="canUploadMarks">
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">upload_file</mat-icon>
+            <span>Upload Marks</span>
+          </ng-template>
+          <div class="tab-content">
+            <div class="section-title">
+              <mat-icon>upload_file</mat-icon>
+              <h3>Upload Student Marks</h3>
+            </div>
+            <p style="color:#94a3b8;font-size:13px;margin-bottom:20px;">Upload marks for a student. The marks will need to be verified by faculty before they become official.</p>
+
+            <div class="upload-form glass-card" style="padding:24px;border-radius:14px;max-width:600px;">
+              <div class="form-row">
+                <label>Student ID (Roll Number)</label>
+                <input type="text" [(ngModel)]="uploadForm.studentId" placeholder="e.g. 25CSM2R26" class="form-input" />
+              </div>
+              <div class="form-row">
+                <label>Course Code</label>
+                <select [(ngModel)]="uploadForm.courseCode" class="form-input">
+                  <option value="" disabled>Select a course</option>
+                  <option *ngFor="let c of allCourses" [value]="c.code">{{ c.code }} — {{ c.name }}</option>
+                </select>
+              </div>
+              <div class="form-row-inline">
+                <div class="form-row">
+                  <label>Semester</label>
+                  <input type="number" [(ngModel)]="uploadForm.semester" min="1" max="8" class="form-input" />
+                </div>
+                <div class="form-row">
+                  <label>Marks Obtained</label>
+                  <input type="number" [(ngModel)]="uploadForm.marksObtained" min="0" max="100" class="form-input" />
+                </div>
+                <div class="form-row">
+                  <label>Max Marks</label>
+                  <input type="number" [(ngModel)]="uploadForm.maxMarks" min="1" class="form-input" />
+                </div>
+              </div>
+              <button mat-raised-button color="primary" (click)="submitMarks()" [disabled]="uploadingMarks"
+                style="width:100%;border-radius:10px!important;margin-top:16px;">
+                <mat-icon>cloud_upload</mat-icon>
+                {{ uploadingMarks ? 'Uploading...' : 'Upload Marks' }}
+              </button>
+            </div>
+
+            <!-- Recent uploads -->
+            <div *ngIf="recentUploads.length > 0" style="margin-top:24px;">
+              <div class="section-title">
+                <mat-icon>history</mat-icon>
+                <h3>Recent Uploads</h3>
+              </div>
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th>Student</th><th>Course</th><th>Sem</th><th>Marks</th><th>Grade</th><th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let u of recentUploads">
+                    <td class="course-code">{{ u.studentId }}</td>
+                    <td>{{ u.courseCode }}</td>
+                    <td>{{ u.semester }}</td>
+                    <td><strong>{{ u.marksObtained }}</strong>/{{ u.maxMarks }}</td>
+                    <td><span class="grade-chip" [attr.data-grade]="u.grade">{{ u.grade }}</span></td>
+                    <td><span class="status-badge" [class]="u.status">{{ u.status }}</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
     </div>
   `,
   styles: [`
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-    .faculty-container {
-      min-height: 100vh;
-      background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-      color: #fff;
-      font-family: 'Inter', 'Segoe UI', sans-serif;
-      padding-bottom: 40px;
-    }
+    .dashboard-container { max-width: 1200px; margin: 0 auto; padding: 24px; min-height: 100vh; }
 
-    .faculty-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px 32px;
-      background: rgba(255,255,255,0.05);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+    .dash-header {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+      border-radius: 20px; padding: 32px; margin-bottom: 24px; position: relative; overflow: hidden;
+      &::before { content:''; position:absolute; inset:0; background:radial-gradient(circle at 90% 20%,rgba(255,255,255,0.1) 0%,transparent 50%); }
     }
-    .header-left { display: flex; align-items: center; gap: 16px; }
-    .logo-badge {
-      width: 48px; height: 48px;
-      background: linear-gradient(135deg, #7c3aed, #2563eb);
-      border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 24px;
-    }
-    .header-title { font-size: 22px; font-weight: 700; }
-    .header-subtitle { font-size: 13px; color: rgba(255,255,255,0.6); }
-    .header-right { display: flex; align-items: center; gap: 12px; }
-    .user-badge {
-      background: rgba(124,58,237,0.3);
-      border: 1px solid rgba(124,58,237,0.5);
-      padding: 6px 16px; border-radius: 20px;
-      font-size: 13px; font-weight: 600;
-    }
-    .logout-btn {
-      background: rgba(239,68,68,0.2);
-      border: 1px solid rgba(239,68,68,0.4);
-      color: #fca5a5; padding: 6px 16px;
-      border-radius: 8px; cursor: pointer;
-      font-size: 13px;
-      transition: all 0.2s;
-    }
-    .logout-btn:hover { background: rgba(239,68,68,0.4); }
+    .header-content { display:flex; justify-content:space-between; align-items:center; position:relative; z-index:1; flex-wrap:wrap; gap:16px; }
+    .header-left { display:flex; align-items:center; gap:20px; }
+    .avatar-ring { width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg,#a78bfa,#c084fc); padding:3px; }
+    .avatar { width:100%; height:100%; border-radius:50%; background:rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center; mat-icon{color:#fff;font-size:28px;width:28px;height:28px;} }
+    .header-info h1 { color:#fff; font-size:1.5rem; font-weight:700; margin:0; }
+    .subtitle { display:flex; gap:8px; margin-top:8px; }
+    .dept-badge { padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; background:rgba(255,255,255,0.2); color:#fff; }
+    .role-badge { padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; background:rgba(167,139,250,0.3); color:#a78bfa; }
+    .header-right { display:flex; align-items:center; gap:24px; }
+    .header-stat { text-align:center; .stat-number{display:block;font-size:1.5rem;font-weight:700;color:#fff;} .stat-text{font-size:0.7rem;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:1px;} }
 
-    .stats-row {
-      display: flex; gap: 16px; padding: 24px 32px;
-    }
-    .stat-card {
-      flex: 1; background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 16px; padding: 20px;
-      display: flex; align-items: center; gap: 16px;
-      transition: transform 0.2s;
-    }
-    .stat-card:hover { transform: translateY(-2px); }
-    .stat-icon { font-size: 36px; }
-    .stat-value { font-size: 28px; font-weight: 800; }
-    .stat-label { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+    .loading-state { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:300px; gap:16px; p{color:var(--text-secondary);} }
+    .main-tabs ::ng-deep .mat-mdc-tab-header { background:rgba(15,23,42,0.7)!important; border-radius:16px 16px 0 0; border:1px solid rgba(148,163,184,0.1); border-bottom:none; }
+    .tab-icon { margin-right:8px; font-size:20px; }
+    .tab-content { padding:24px; animation:fadeIn 0.4s ease-out; }
 
-    .tab-bar {
-      display: flex; gap: 4px; padding: 0 32px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+    .course-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; }
+    .course-card {
+      padding:20px; border-radius:14px; cursor:pointer;
+      background:rgba(15,23,42,0.6); border:1px solid rgba(148,163,184,0.08);
+      transition:all 0.3s ease;
+      &:hover { border-color:rgba(167,139,250,0.3); transform:translateY(-2px); }
+      &.selected { border-color:rgba(167,139,250,0.5); background:rgba(99,102,241,0.08); }
     }
-    .tab-btn {
-      background: none; border: none; color: rgba(255,255,255,0.6);
-      padding: 12px 20px; cursor: pointer; font-size: 14px;
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s;
-    }
-    .tab-btn.active {
-      color: #a78bfa;
-      border-bottom-color: #a78bfa;
-    }
-    .tab-btn:hover { color: #fff; }
+    .course-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .course-code-badge { font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--accent-violet); font-size:14px; }
+    .course-type { font-size:11px; text-transform:uppercase; padding:2px 8px; border-radius:8px; background:rgba(45,212,191,0.15); color:var(--accent-teal); &.elective{background:rgba(251,191,36,0.15);color:var(--accent-amber);} }
+    .course-card h4 { font-size:15px; font-weight:600; margin:0 0 8px; color:var(--text-primary); }
+    .course-meta { display:flex; gap:16px; font-size:13px; color:var(--text-secondary); span{display:flex;align-items:center;gap:4px;} mat-icon{font-size:14px;width:14px;height:14px;} }
 
-    .tab-content { padding: 24px 32px; }
+    .section-title { display:flex; align-items:center; gap:8px; margin-bottom:16px; h3{font-size:1rem;font-weight:600;} mat-icon{color:var(--accent-violet);} }
 
-    .section-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 20px;
+    .marks-table-wrapper { overflow-x:auto; border-radius:12px; }
+    .modern-table {
+      width:100%; border-collapse:collapse; background:rgba(15,23,42,0.5); border-radius:12px; overflow:hidden;
+      thead tr { background:linear-gradient(135deg,rgba(99,102,241,0.4),rgba(139,92,246,0.4)); th{padding:14px 16px;color:#e2e8f0;font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;text-align:left;} }
+      tbody tr { border-bottom:1px solid rgba(148,163,184,0.06); transition:background 0.2s; &:hover{background:rgba(167,139,250,0.04);} &:nth-child(even){background:rgba(17,24,39,0.3);} td{padding:12px 16px;color:var(--text-primary);font-size:14px;} }
     }
-    .section-header h2 { font-size: 18px; font-weight: 600; }
-    .refresh-btn {
-      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-      color: #fff; padding: 6px 14px; border-radius: 8px; cursor: pointer;
+    .course-code { font-family:'JetBrains Mono',monospace; font-weight:600; color:var(--accent-cyan); font-size:13px; }
+    .grade-chip { display:inline-block; padding:3px 10px; border-radius:12px; font-weight:700; font-size:13px; background:rgba(45,212,191,0.15); color:var(--accent-teal);
+      &[data-grade="A+"]{color:#34d399;background:rgba(52,211,153,0.15);} &[data-grade="A"]{color:#2dd4bf;background:rgba(45,212,191,0.15);} &[data-grade="B+"]{color:#38bdf8;background:rgba(56,189,248,0.15);}
+      &[data-grade="B"]{color:#60a5fa;background:rgba(96,165,250,0.15);} &[data-grade="F"]{color:#fb7185;background:rgba(251,113,133,0.15);}
     }
+    .verify-btn { border-radius:10px!important; }
+    .pending-count { background:var(--accent-rose); color:#fff; border-radius:10px; padding:2px 8px; font-size:11px; font-weight:700; margin-left:6px; }
 
-    .loading-state, .empty-state {
-      text-align: center; padding: 60px;
-      color: rgba(255,255,255,0.5);
-    }
-    .spinner {
-      width: 40px; height: 40px;
-      border: 3px solid rgba(255,255,255,0.2);
-      border-top-color: #7c3aed;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 16px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state { text-align:center; padding:48px; color:var(--text-muted); mat-icon{font-size:48px;width:48px;height:48px;opacity:0.4;margin-bottom:12px;} p{font-size:16px;} }
 
-    .records-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
-    .record-card {
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 16px; padding: 20px;
-    }
-    .record-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 16px;
-    }
-    .record-id { font-size: 13px; color: rgba(255,255,255,0.5); font-family: monospace; }
-    .status-badge {
-      font-size: 11px; font-weight: 700; padding: 4px 10px;
-      border-radius: 20px; text-transform: uppercase;
-    }
-    .status-submitted { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
-    .status-faculty-approved { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
-    .status-draft { background: rgba(107,114,128,0.3); color: #9ca3af; border: 1px solid rgba(107,114,128,0.3); }
-    .status-approved { background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+    .approval-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+    .approval-card { padding:20px; border-radius:14px; background:rgba(15,23,42,0.6); border:1px solid rgba(148,163,184,0.08); }
+    .approval-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; mat-icon{color:var(--accent-amber);} h4{margin:0;font-weight:600;} }
+    .approval-actions { display:flex; gap:8px; button{border-radius:10px!important;} }
 
-    .record-details { margin-bottom: 16px; }
-    .detail-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .detail-label { font-size: 12px; color: rgba(255,255,255,0.5); }
-    .detail-value { font-size: 13px; font-weight: 500; }
-
-    /* Approval Pipeline */
-    .approval-pipeline {
-      display: flex; align-items: center;
-      margin: 16px 0; padding: 12px;
-      background: rgba(255,255,255,0.04);
-      border-radius: 10px;
+    .upload-form {
+      background: rgba(15,23,42,0.6); border: 1px solid rgba(148,163,184,0.1);
     }
-    .pipeline-step { display: flex; flex-direction: column; align-items: center; min-width: 36px; }
-    .step-dot {
-      width: 14px; height: 14px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.2);
-      border: 2px solid rgba(255,255,255,0.2);
-    }
-    .pipeline-step.done .step-dot {
-      background: #10b981; border-color: #10b981;
-    }
-    .pipeline-step.active .step-dot {
-      background: #7c3aed; border-color: #a78bfa;
-      box-shadow: 0 0 8px #7c3aed;
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { box-shadow: 0 0 4px #7c3aed; }
-      50% { box-shadow: 0 0 12px #a78bfa; }
-    }
-    .step-label { font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 4px; }
-    .pipeline-step.done .step-label { color: #10b981; }
-    .pipeline-step.active .step-label { color: #a78bfa; font-weight: 600; }
-    .pipeline-line { flex: 1; height: 2px; background: rgba(255,255,255,0.1); margin: 0 2px; margin-bottom: 14px; }
-
-    .record-actions { display: flex; gap: 8px; margin-top: 14px; }
-    .comment-input {
-      flex: 1; background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.15);
-      color: #fff; padding: 8px 12px; border-radius: 8px;
-      font-size: 13px; outline: none;
-    }
-    .approve-btn {
-      background: linear-gradient(135deg, #059669, #10b981);
-      border: none; color: #fff;
-      padding: 8px 16px; border-radius: 8px;
-      cursor: pointer; font-size: 13px; font-weight: 600;
-      white-space: nowrap;
-    }
-    .approve-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .reject-btn {
-      background: rgba(239,68,68,0.2);
-      border: 1px solid rgba(239,68,68,0.4);
-      color: #fca5a5; padding: 8px 16px;
-      border-radius: 8px; cursor: pointer; font-size: 13px;
-    }
-
-    /* Upload Card */
-    .upload-card, .verify-card, .semester-card {
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 16px; padding: 28px;
-      max-width: 680px;
-    }
-    .upload-description, .verify-description { color: rgba(255,255,255,0.7); margin-bottom: 24px; font-size: 14px; line-height: 1.6; }
-    strong { color: #a78bfa; }
-
-    .form-group { margin-bottom: 16px; }
-    .form-group label { display: block; font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 6px; }
+    .form-row { margin-bottom:16px; label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:#94a3b8;margin-bottom:6px;font-weight:600;} }
     .form-input {
-      width: 100%; background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.15);
-      color: #fff; padding: 10px 14px; border-radius: 10px;
-      font-size: 14px; outline: none;
-      transition: border-color 0.2s;
+      width:100%; padding:10px 14px; border-radius:10px; border:1px solid rgba(148,163,184,0.15);
+      background:rgba(15,23,42,0.8); color:#e2e8f0; font-size:14px; box-sizing:border-box;
+      &:focus { outline:none; border-color:rgba(167,139,250,0.5); }
     }
-    .form-input:focus { border-color: #7c3aed; }
-    .form-input option { background: #302b63; }
-    .form-row { display: flex; gap: 16px; }
-    .form-row .form-group { flex: 1; }
+    select.form-input { appearance:auto; }
+    .form-row-inline { display:flex; gap:16px; }
+    .form-row-inline .form-row { flex:1; }
 
-    .drop-zone {
-      border: 2px dashed rgba(124,58,237,0.4);
-      border-radius: 14px; padding: 40px;
-      text-align: center; cursor: pointer;
-      transition: all 0.2s; margin: 16px 0;
-      background: rgba(124,58,237,0.05);
-    }
-    .drop-zone:hover, .drop-zone.drag-over {
-      border-color: #7c3aed;
-      background: rgba(124,58,237,0.1);
-    }
-    .drop-icon { font-size: 36px; margin-bottom: 10px; }
-    .browse-link { color: #a78bfa; text-decoration: underline; }
-
-    .upload-submit-btn {
-      width: 100%;
-      background: linear-gradient(135deg, #7c3aed, #2563eb);
-      border: none; color: #fff;
-      padding: 14px; border-radius: 10px;
-      font-size: 15px; font-weight: 700; cursor: pointer;
-      transition: opacity 0.2s;
-    }
-    .upload-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .upload-result { margin-top: 20px; }
-    .result-success {
-      background: rgba(16,185,129,0.1);
-      border: 1px solid rgba(16,185,129,0.3);
-      border-radius: 12px; padding: 16px;
-    }
-    .result-title { font-weight: 700; margin-bottom: 12px; color: #34d399; }
-    .hash-label { font-size: 12px; color: rgba(255,255,255,0.6); display: block; margin-bottom: 4px; }
-    .hash-value {
-      font-family: monospace; font-size: 12px;
-      word-break: break-all; color: #a78bfa;
-      background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px;
-      display: block;
-    }
-    .result-error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 16px; color: #fca5a5; }
-
-    /* Verify */
-    .verify-toggle { display: flex; gap: 8px; margin-bottom: 20px; }
-    .verify-toggle button {
-      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
-      color: rgba(255,255,255,0.7); padding: 8px 16px; border-radius: 8px; cursor: pointer;
-    }
-    .verify-toggle button.active { background: rgba(124,58,237,0.3); border-color: #7c3aed; color: #a78bfa; }
-    .verify-btn {
-      width: 100%; background: rgba(59,130,246,0.3); border: 1px solid #3b82f6;
-      color: #93c5fd; padding: 12px; border-radius: 10px; cursor: pointer;
-      font-size: 14px; font-weight: 600; margin-top: 12px;
-    }
-    .verify-result { margin-top: 20px; }
-    .verify-authentic {
-      background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3);
-      border-radius: 12px; padding: 24px; text-align: center;
-    }
-    .verify-tampered {
-      background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3);
-      border-radius: 12px; padding: 24px; text-align: center;
-    }
-    .verify-icon { font-size: 36px; margin-bottom: 8px; }
-    .verify-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
-    .verify-detail { font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 12px; }
-    .verify-hash code { font-family: monospace; font-size: 11px; word-break: break-all; }
-
-    /* Semester */
-    .submit-btn {
-      width: 100%; background: linear-gradient(135deg, #2563eb, #1d4ed8);
-      border: none; color: #fff; padding: 12px; border-radius: 10px;
-      font-size: 14px; font-weight: 700; cursor: pointer;
-    }
-    .submit-btn:disabled { opacity: 0.5; }
-    .success-msg { margin-top: 12px; color: #34d399; font-size: 14px; }
-    .error-msg { margin-top: 12px; color: #fca5a5; font-size: 14px; }
-
-    /* Modal */
-    .modal-overlay {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
-      display: flex; align-items: center; justify-content: center; z-index: 1000;
-    }
-    .modal-box {
-      background: #1e1b4b; border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 16px; padding: 28px; width: 480px;
-    }
-    .modal-box h3 { font-size: 18px; margin-bottom: 8px; }
-    .modal-box p { color: rgba(255,255,255,0.6); margin-bottom: 16px; font-size: 14px; }
-    .modal-textarea {
-      width: 100%; background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.15);
-      color: #fff; padding: 12px; border-radius: 10px;
-      font-size: 14px; min-height: 100px; resize: vertical; outline: none;
-    }
-    .modal-actions { display: flex; gap: 10px; margin-top: 16px; justify-content: flex-end; }
-    .cancel-btn {
-      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-      color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer;
-    }
-    .confirm-reject-btn {
-      background: linear-gradient(135deg, #dc2626, #b91c1c);
-      border: none; color: #fff; padding: 10px 20px;
-      border-radius: 8px; cursor: pointer; font-weight: 600;
-    }
-    .confirm-reject-btn:disabled { opacity: 0.5; }
+    @media(max-width:768px) { .header-content{flex-direction:column;text-align:center;} .header-left{flex-direction:column;} .header-right{justify-content:center;} .form-row-inline{flex-direction:column;} }
   `]
 })
 export class FacultyDashboardComponent implements OnInit {
-  activeTab = 'queue';
-  loading = false;
-  pendingApprovals: any[] = [];
-  approvedCount = 0;
-  docCount = 0;
-
-  // Upload form
-  uploadForm = { studentId: '', docType: 'GRADE_SHEET', semester: 0, academicYear: '' };
-  selectedFile: File | null = null;
-  isDragOver = false;
-  uploading = false;
-  uploadResult: any = null;
-
-  // Verify
-  verifyMode = 'upload';
-  verifyFile: File | null = null;
-  verifying = false;
-  verifyResult: any = null;
-  hashToVerify = '';
-
-  // Semester
-  semForm = { studentId: '', semester: 1, academicYear: '', facultyAdvisor: '' };
-  semLoading = false;
-  semResult: any = null;
-
-  // Reject modal
-  rejectModal: any = null;
-  rejectReason = '';
-
   currentUser: any;
+  loading = true;
+  myCourses: any[] = [];
+  selectedCourse: any = null;
+  courseStudentMarks: any[] = [];
+  pendingMarks: any[] = [];
+  pendingApprovals: any[] = [];
+  allCourses: any[] = [];
+  canUploadMarks = false;
+  uploadingMarks = false;
+  recentUploads: any[] = [];
+  uploadForm = { studentId: '', courseCode: '', semester: 3, marksObtained: 0, maxMarks: 100 };
   private apiUrl = APP_CONFIG.api.baseUrl;
 
-  constructor(private http: HttpClient, private router: Router) { }
-
-  ngOnInit() {
-    const stored = localStorage.getItem('user') || sessionStorage.getItem('user');
-    if (stored) this.currentUser = JSON.parse(stored);
-    this.loadQueue();
+  constructor(
+    private authService: AuthService,
+    private blockchainService: BlockchainService,
+    private http: HttpClient,
+    private snackBar: MatSnackBar,
+    private router: Router
+  ) {
+    const stored = localStorage.getItem('user');
+    this.currentUser = stored ? JSON.parse(stored) : this.authService.currentUser;
+    this.canUploadMarks = this.currentUser?.role === 'exam_section' || this.currentUser?.role === 'admin';
   }
 
-  private getHeaders() {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    return new HttpHeaders({ Authorization: `Bearer ${token}` });
+  ngOnInit() { this.loadAll(); }
+
+  getDashboardTitle(): string {
+    const role = this.currentUser?.role || 'faculty';
+    if (role === 'hod') return 'HOD Dashboard';
+    if (role === 'dac_member') return 'DAC Dashboard';
+    if (role === 'exam_section') return 'Exam Section Dashboard';
+    if (role === 'dean_academic') return 'Dean Academic Dashboard';
+    return 'Faculty Dashboard';
   }
 
-  loadQueue() {
+  formatRole(role?: string): string {
+    if (!role) return 'Faculty';
+    if (role === 'hod') return 'HOD';
+    return role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  }
+
+  async loadAll() {
     this.loading = true;
-    this.http.get<any>(`${this.apiUrl}/approval/queue/SUBMITTED`, { headers: this.getHeaders() })
-      .subscribe({
+    try {
+      await Promise.all([this.loadCourses(), this.loadPendingMarks(), this.loadApprovals(), this.loadAllCourses()]);
+    } finally { this.loading = false; }
+  }
+
+  private loadCourses(): Promise<void> {
+    return new Promise(resolve => {
+      const username = this.currentUser?.username || this.currentUser?.userId;
+      const token = localStorage.getItem('access_token');
+      const headers = { 'Authorization': `Bearer ${token}` };
+      this.http.get<any>(`${this.apiUrl}/courses?faculty=${username}`, { headers }).subscribe({
+        next: (res) => { this.myCourses = res.success ? res.data : []; resolve(); },
+        error: () => resolve()
+      });
+    });
+  }
+
+  private loadAllCourses(): Promise<void> {
+    return new Promise(resolve => {
+      const token = localStorage.getItem('access_token');
+      const headers = { 'Authorization': `Bearer ${token}` };
+      this.http.get<any>(`${this.apiUrl}/courses`, { headers }).subscribe({
+        next: (res) => { this.allCourses = res.success ? res.data : []; resolve(); },
+        error: () => resolve()
+      });
+    });
+  }
+
+  private loadPendingMarks(): Promise<void> {
+    return new Promise(resolve => {
+      const token = localStorage.getItem('access_token');
+      const headers = { 'Authorization': `Bearer ${token}` };
+      this.http.get<any>(`${this.apiUrl}/marks/pending`, { headers }).subscribe({
+        next: (res) => { this.pendingMarks = res.success ? res.data : []; resolve(); },
+        error: () => resolve()
+      });
+    });
+  }
+
+  private loadApprovals(): Promise<void> {
+    return new Promise(resolve => {
+      const token = localStorage.getItem('access_token');
+      const headers = { 'Authorization': `Bearer ${token}` };
+      this.http.get<any>(`${this.apiUrl}/certificates/requests`, { headers }).subscribe({
         next: (res) => {
-          this.pendingApprovals = res.data?.records || (Array.isArray(res.data) ? res.data : []);
-          // Fetch approval status for each record
-          this.pendingApprovals.forEach(r => this.loadApprovalStatus(r));
-          this.loading = false;
+          const all = res.success ? (Array.isArray(res.data) ? res.data : []) : [];
+          this.pendingApprovals = all.filter((r: any) => r.status === 'PENDING');
+          resolve();
         },
-        error: () => { this.pendingApprovals = []; this.loading = false; }
+        error: () => { this.pendingApprovals = []; resolve(); }
       });
+    });
   }
 
-  loadApprovalStatus(record: any) {
-    this.http.get<any>(`${this.apiUrl}/approval/status/${record.recordId || record.recordID}`, { headers: this.getHeaders() })
-      .subscribe({
-        next: (res) => { Object.assign(record, res.data); },
-        error: () => { }
-      });
+  selectCourse(course: any) {
+    this.selectedCourse = course;
+    const token = localStorage.getItem('access_token');
+    const headers = { 'Authorization': `Bearer ${token}` };
+    this.http.get<any>(`${this.apiUrl}/marks/course/${course.code}`, { headers }).subscribe({
+      next: (res) => { this.courseStudentMarks = res.success ? res.data : []; },
+      error: () => { this.courseStudentMarks = []; }
+    });
   }
 
-  getStatusClass(status: string): string {
-    const map: { [key: string]: string } = {
-      'SUBMITTED': 'status-badge status-submitted',
-      'FACULTY_APPROVED': 'status-badge status-faculty-approved',
-      'DRAFT': 'status-badge status-draft',
-      'APPROVED': 'status-badge status-approved',
-    };
-    return map[status] || 'status-badge status-draft';
-  }
-
-  isPipelineDone(record: any, role: string): boolean {
-    const chain: any[] = record.approvalChain || [];
-    return chain.some((s: any) => s.role === role);
-  }
-
-  isPipelineActive(record: any, role: string): boolean {
-    const statusToRole: { [key: string]: string } = {
-      'SUBMITTED': 'department',
-      'FACULTY_APPROVED': 'faculty',
-      'HOD_APPROVED': 'hod',
-      'DAC_APPROVED': 'dac_member',
-      'ES_APPROVED': 'exam_section',
-      'APPROVED': 'dean_academic'
-    };
-    const nextRole = statusToRole[record.currentStatus || record.status || 'DRAFT'];
-    return nextRole === role && !this.isPipelineDone(record, role);
+  verifyMark(mark: any) {
+    mark.verifying = true;
+    const token = localStorage.getItem('access_token');
+    const headers = { 'Authorization': `Bearer ${token}` };
+    this.http.patch<any>(`${this.apiUrl}/marks/${mark.id}/verify`, {}, { headers }).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.snackBar.open(`Marks for ${mark.studentId} verified!`, 'Close', { duration: 2000 });
+          this.pendingMarks = this.pendingMarks.filter(m => m.id !== mark.id);
+        }
+        mark.verifying = false;
+      },
+      error: () => { mark.verifying = false; this.snackBar.open('Verification failed', 'Close', { duration: 2000 }); }
+    });
   }
 
   approveRecord(record: any) {
-    record._loading = true;
-    const id = record.recordId || record.recordID;
-    this.http.post<any>(`${this.apiUrl}/approval/faculty/${id}`,
-      { comment: record._comment || '' },
-      { headers: this.getHeaders() }
-    ).subscribe({
-      next: () => {
-        record._loading = false;
-        this.approvedCount++;
-        this.loadQueue();
+    record.processing = true;
+    const token = localStorage.getItem('access_token');
+    const headers = { 'Authorization': `Bearer ${token}` };
+    this.http.put<any>(`${this.apiUrl}/certificates/requests/${record.requestId}`, { status: 'APPROVED' }, { headers }).subscribe({
+      next: (res) => {
+        record.processing = false;
+        if (res.success) {
+          this.snackBar.open('Certificate request approved!', 'Close', { duration: 2000 });
+          this.pendingApprovals = this.pendingApprovals.filter(r => r !== record);
+        } else {
+          this.snackBar.open(res.message || 'Approval failed', 'Close', { duration: 3000 });
+        }
       },
-      error: (err) => {
-        record._loading = false;
-        alert('Error: ' + (err.error?.message || 'Approval failed'));
+      error: (err: any) => {
+        record.processing = false;
+        this.snackBar.open(`Approval failed: ${err.error?.message || err.message}`, 'Close', { duration: 3000 });
       }
     });
   }
 
-  openReject(record: any) {
-    this.rejectModal = record;
-    this.rejectReason = '';
-  }
-
-  confirmReject() {
-    if (!this.rejectReason) return;
-    const id = this.rejectModal.recordId || this.rejectModal.recordID;
-    this.http.post<any>(`${this.apiUrl}/approval/reject/${id}`,
-      { reason: this.rejectReason },
-      { headers: this.getHeaders() }
-    ).subscribe({
-      next: () => { this.rejectModal = null; this.loadQueue(); },
-      error: (err) => alert('Error: ' + (err.error?.message || 'Rejection failed'))
+  rejectRecord(record: any) {
+    record.processing = true;
+    const token = localStorage.getItem('access_token');
+    const headers = { 'Authorization': `Bearer ${token}` };
+    this.http.put<any>(`${this.apiUrl}/certificates/requests/${record.requestId}`, { status: 'REJECTED' }, { headers }).subscribe({
+      next: (res) => {
+        record.processing = false;
+        if (res.success) {
+          this.snackBar.open('Certificate request rejected', 'Close', { duration: 2000 });
+          this.pendingApprovals = this.pendingApprovals.filter(r => r !== record);
+        }
+      },
+      error: (err: any) => {
+        record.processing = false;
+        this.snackBar.open(`Rejection failed: ${err.error?.message || err.message}`, 'Close', { duration: 3000 });
+      }
     });
   }
 
-  // Drag & drop
-  onDragOver(e: DragEvent) { e.preventDefault(); this.isDragOver = true; }
-  onDragLeave(e: DragEvent) { this.isDragOver = false; }
-  onDrop(e: DragEvent) {
-    e.preventDefault(); this.isDragOver = false;
-    if (e.dataTransfer?.files[0]) this.selectedFile = e.dataTransfer.files[0];
-  }
-  onFileSelect(e: Event) {
-    const input = e.target as HTMLInputElement;
-    if (input.files?.[0]) this.selectedFile = input.files[0];
-  }
-  onVerifyFileSelect(e: Event) {
-    const input = e.target as HTMLInputElement;
-    if (input.files?.[0]) this.verifyFile = input.files[0];
-  }
+  logout() { this.authService.logout(); this.router.navigate(['/login']); }
 
-  uploadDocument() {
-    if (!this.selectedFile || !this.uploadForm.studentId) return;
-    this.uploading = true;
-    this.uploadResult = null;
-
-    const formData = new FormData();
-    formData.append('file', this.selectedFile);
-    formData.append('studentId', this.uploadForm.studentId);
-    formData.append('docType', this.uploadForm.docType);
-    formData.append('semester', String(this.uploadForm.semester));
-    formData.append('academicYear', this.uploadForm.academicYear);
-
-    this.http.post<any>(`${this.apiUrl}/documents/upload`, formData, { headers: this.getHeaders() })
-      .subscribe({
-        next: (res) => { this.uploadResult = res; this.uploading = false; this.docCount++; },
-        error: (err) => { this.uploadResult = { success: false, message: err.error?.message || 'Upload failed' }; this.uploading = false; }
-      });
-  }
-
-  verifyDocument() {
-    if (!this.verifyFile) return;
-    this.verifying = true;
-    this.verifyResult = null;
-
-    const formData = new FormData();
-    formData.append('file', this.verifyFile);
-
-    this.http.post<any>(`${this.apiUrl}/documents/verify`, formData)
-      .subscribe({
-        next: (res) => { this.verifyResult = res; this.verifying = false; },
-        error: (err) => { this.verifyResult = { data: { verified: false, message: err.error?.message } }; this.verifying = false; }
-      });
-  }
-
-  verifyByHash() {
-    if (!this.hashToVerify) return;
-    this.verifying = true;
-    this.verifyResult = null;
-
-    this.http.get<any>(`${this.apiUrl}/documents/verify/${this.hashToVerify}`)
-      .subscribe({
-        next: (res) => { this.verifyResult = res; this.verifying = false; },
-        error: (err) => { this.verifyResult = { data: { verified: false, message: 'Not found' } }; this.verifying = false; }
-      });
-  }
-
-  registerSemester() {
-    this.semLoading = true;
-    this.semResult = null;
-
-    this.http.post<any>(`${this.apiUrl}/semester/register`, this.semForm, { headers: this.getHeaders() })
-      .subscribe({
-        next: (res) => { this.semResult = res; this.semLoading = false; },
-        error: (err) => { this.semResult = { success: false, message: err.error?.message || 'Registration failed' }; this.semLoading = false; }
-      });
-  }
-
-  logout() {
-    localStorage.clear(); sessionStorage.clear();
-    this.router.navigate(['/auth/login']);
+  submitMarks() {
+    const f = this.uploadForm;
+    if (!f.studentId || !f.courseCode || !f.marksObtained) {
+      this.snackBar.open('Please fill all required fields', 'Close', { duration: 3000 });
+      return;
+    }
+    this.uploadingMarks = true;
+    const token = localStorage.getItem('access_token');
+    const headers = { 'Authorization': `Bearer ${token}` };
+    this.http.post<any>(`${this.apiUrl}/marks/upload`, f, { headers }).subscribe({
+      next: (res) => {
+        this.uploadingMarks = false;
+        if (res.success) {
+          this.snackBar.open(`Marks uploaded successfully!`, 'Close', { duration: 2000 });
+          this.recentUploads = [...(res.data || []), ...this.recentUploads].slice(0, 10);
+          this.uploadForm = { studentId: '', courseCode: '', semester: 3, marksObtained: 0, maxMarks: 100 };
+        } else {
+          this.snackBar.open(res.message || 'Upload failed', 'Close', { duration: 3000 });
+        }
+      },
+      error: (err: any) => {
+        this.uploadingMarks = false;
+        this.snackBar.open(`Upload failed: ${err.error?.message || err.message}`, 'Close', { duration: 3000 });
+      }
+    });
   }
 }

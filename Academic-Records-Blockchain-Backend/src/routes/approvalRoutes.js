@@ -12,14 +12,14 @@ router.post('/faculty/:recordId', authenticateToken, requireRole('faculty', 'adm
 // HOD approval
 router.post('/hod/:recordId', authenticateToken, requireRole('department', 'hod', 'admin'), ApprovalController.hodApprove);
 
-// DAC approval
-router.post('/dac/:recordId', authenticateToken, requireRole('department', 'dac_member', 'admin'), ApprovalController.dacApprove);
-
 // Exam Section approval
 router.post('/examsection/:recordId', authenticateToken, requireRole('admin', 'exam_section'), ApprovalController.examSectionApprove);
 
-// Dean Academic approval (final)
+// Dean Academic approval
 router.post('/dean/:recordId', authenticateToken, requireRole('admin', 'dean_academic'), ApprovalController.deanApprove);
+
+// DAC approval (final)
+router.post('/dac/:recordId', authenticateToken, requireRole('department', 'dac_member', 'admin'), ApprovalController.dacApprove);
 
 // Reject and send back to DRAFT
 router.post('/reject/:recordId', authenticateToken, ApprovalController.rejectRecord);

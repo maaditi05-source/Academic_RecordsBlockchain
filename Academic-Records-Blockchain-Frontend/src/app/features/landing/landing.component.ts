@@ -281,7 +281,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #0a0e1a 0%, #1e293b 50%, #0f172a 100%);
       color: white;
       text-align: center;
       overflow: hidden;
@@ -294,8 +294,8 @@ import { MatToolbarModule } from '@angular/material/toolbar';
       right: 0;
       bottom: 0;
       background: 
-        radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.3) 0%, transparent 50%);
+        radial-gradient(circle at 20% 50%, rgba(56, 189, 248, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
       animation: pulse 15s ease-in-out infinite;
     }
 
@@ -412,8 +412,9 @@ import { MatToolbarModule } from '@angular/material/toolbar';
     }
 
     .cta-btn.primary {
-      background: white !important;
-      color: #667eea !important;
+      background: rgba(56, 189, 248, 0.15) !important;
+      color: #38bdf8 !important;
+      border: 2px solid rgba(56, 189, 248, 0.4) !important;
     }
 
     .cta-btn.primary:hover {
@@ -522,7 +523,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
     .section-badge {
       display: inline-block;
       padding: 0.5rem 1.5rem;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #38bdf8 0%, #8b5cf6 100%);
       color: white;
       border-radius: 50px;
       font-size: 0.85rem;
@@ -536,7 +537,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
       font-size: 3rem;
       font-weight: 800;
       margin: 1rem 0;
-      color: #1a1a1a;
+      color: #e2e8f0;
       letter-spacing: -1px;
     }
 
@@ -546,7 +547,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 
     .section-subtitle {
       font-size: 1.2rem;
-      color: #666;
+      color: #94a3b8;
       margin: 0;
       font-weight: 300;
     }
@@ -557,7 +558,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 
     /* Features Section */
     .features-section {
-      background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%);
+      background: linear-gradient(to bottom, #0f172a 0%, #1e293b 100%);
     }
 
     .features-grid {
@@ -572,8 +573,8 @@ import { MatToolbarModule } from '@angular/material/toolbar';
       padding: 3rem 2rem !important;
       transition: all 0.4s ease;
       border-radius: 20px !important;
-      border: 2px solid #f0f0f0;
-      background: white !important;
+      border: 1px solid rgba(56, 189, 248, 0.15);
+      background: rgba(15, 23, 42, 0.8) !important;
       overflow: hidden;
     }
 
@@ -584,7 +585,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
       left: 0;
       right: 0;
       height: 4px;
-      background: linear-gradient(90deg, #667eea, #764ba2);
+      background: linear-gradient(90deg, #38bdf8, #8b5cf6);
       transform: scaleX(0);
       transition: transform 0.4s ease;
     }
@@ -595,15 +596,15 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 
     .feature-card:hover {
       transform: translateY(-12px);
-      box-shadow: 0 20px 40px rgba(102, 126, 234, 0.2) !important;
-      border-color: #667eea;
+      box-shadow: 0 20px 40px rgba(56, 189, 248, 0.15) !important;
+      border-color: rgba(56, 189, 248, 0.4);
     }
 
     .feature-icon-wrapper {
       width: 90px;
       height: 90px;
       margin: 0 auto 1.5rem;
-      background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(139, 92, 246, 0.1));
       border-radius: 20px;
       display: flex;
       align-items: center;
@@ -631,12 +632,12 @@ import { MatToolbarModule } from '@angular/material/toolbar';
     .feature-card h3 {
       font-size: 1.4rem;
       margin: 1rem 0;
-      color: #1a1a1a;
+      color: #e2e8f0;
       font-weight: 700;
     }
 
     .feature-card p {
-      color: #666;
+      color: #94a3b8;
       line-height: 1.7;
       margin-bottom: 1rem;
     }
@@ -644,18 +645,18 @@ import { MatToolbarModule } from '@angular/material/toolbar';
     .feature-badge {
       display: inline-block;
       padding: 0.4rem 1rem;
-      background: #f0f0f0;
+      background: rgba(56, 189, 248, 0.1);
       border-radius: 20px;
       font-size: 0.75rem;
       font-weight: 600;
-      color: #667eea;
+      color: #38bdf8;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
     /* How It Works Section */
     .how-it-works-section {
-      background: white;
+      background: #0f172a;
     }
 
     .steps-container {
@@ -677,7 +678,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
       right: 20px;
       width: 50px;
       height: 50px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #38bdf8 0%, #8b5cf6 100%);
       color: white;
       border-radius: 50%;
       display: flex;
@@ -693,7 +694,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
       width: 100px;
       height: 100px;
       margin: 0 auto 2rem;
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(139, 92, 246, 0.1));
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -703,25 +704,25 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 
     .step:hover .step-icon-bg {
       transform: scale(1.1) rotate(10deg);
-      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+      box-shadow: 0 8px 25px rgba(56, 189, 248, 0.3);
     }
 
     .step-icon {
       font-size: 3rem;
       width: 3rem;
       height: 3rem;
-      color: #667eea;
+      color: #38bdf8;
     }
 
     .step-content h3 {
       font-size: 1.4rem;
       margin-bottom: 1rem;
-      color: #1a1a1a;
+      color: #e2e8f0;
       font-weight: 700;
     }
 
     .step-content p {
-      color: #666;
+      color: #94a3b8;
       line-height: 1.7;
     }
 
@@ -731,13 +732,13 @@ import { MatToolbarModule } from '@angular/material/toolbar';
       right: -1.5rem;
       width: 3rem;
       height: 2px;
-      background: linear-gradient(90deg, #667eea, transparent);
+      background: linear-gradient(90deg, #38bdf8, transparent);
       transform: translateY(-50%);
     }
 
     /* Quick Actions Section */
     .quick-actions-section {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
       position: relative;
       overflow: hidden;
     }
@@ -766,7 +767,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
       position: relative;
       padding: 0 !important;
       border-radius: 24px !important;
-      background: white !important;
+      background: rgba(15, 23, 42, 0.9) !important;
       overflow: hidden;
       transition: all 0.4s ease;
     }
@@ -777,7 +778,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
       left: 0;
       right: 0;
       height: 8px;
-      background: linear-gradient(90deg, #667eea, #764ba2);
+      background: linear-gradient(90deg, #38bdf8, #8b5cf6);
       transform: scaleX(0);
       transform-origin: left;
       transition: transform 0.4s ease;
@@ -818,18 +819,18 @@ import { MatToolbarModule } from '@angular/material/toolbar';
       height: 4rem;
     }
 
-    .verifier-card .action-icon { color: #667eea; }
-    .login-card .action-icon { color: #764ba2; }
+    .verifier-card .action-icon { color: #38bdf8; }
+    .login-card .action-icon { color: #8b5cf6; }
 
     .action-card h3 {
       font-size: 2rem;
       margin-bottom: 1rem;
-      color: #1a1a1a;
+      color: #e2e8f0;
       font-weight: 700;
     }
 
     .action-card p {
-      color: #666;
+      color: #94a3b8;
       margin-bottom: 1.5rem;
       line-height: 1.7;
     }
@@ -866,7 +867,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 
     /* Technology Section */
     .technology-section {
-      background: linear-gradient(to bottom, #ffffff 0%, #f8f9fa 100%);
+      background: linear-gradient(to bottom, #1e293b 0%, #0f172a 100%);
     }
 
     .tech-stack {
@@ -878,16 +879,16 @@ import { MatToolbarModule } from '@angular/material/toolbar';
     .tech-item {
       text-align: center;
       padding: 2rem;
-      background: white;
+      background: rgba(15, 23, 42, 0.8);
       border-radius: 16px;
-      border: 2px solid #f0f0f0;
+      border: 1px solid rgba(56, 189, 248, 0.15);
       transition: all 0.3s ease;
     }
 
     .tech-item:hover {
       transform: translateY(-8px);
-      border-color: #667eea;
-      box-shadow: 0 12px 30px rgba(102, 126, 234, 0.15);
+      border-color: rgba(56, 189, 248, 0.4);
+      box-shadow: 0 12px 30px rgba(56, 189, 248, 0.15);
     }
 
     .tech-icon-wrapper {
@@ -917,19 +918,19 @@ import { MatToolbarModule } from '@angular/material/toolbar';
       display: block;
       font-weight: 700;
       font-size: 1.1rem;
-      color: #1a1a1a;
+      color: #e2e8f0;
       margin-bottom: 0.5rem;
     }
 
     .tech-item p {
-      color: #666;
+      color: #94a3b8;
       font-size: 0.95rem;
       margin: 0;
     }
 
     /* Footer */
     .footer {
-      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+      background: linear-gradient(135deg, #0a0e1a 0%, #0f172a 100%);
       color: white;
       padding: 4rem 0 1.5rem;
     }
@@ -994,7 +995,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
       font-size: 1.2rem;
       width: 1.2rem;
       height: 1.2rem;
-      color: #667eea;
+      color: #38bdf8;
       transition: all 0.3s ease;
     }
 
@@ -1141,5 +1142,5 @@ export class LandingComponent {
     { icon: 'lock', name: 'Cryptographic Security', description: 'Military-grade encryption' }
   ];
 
-  constructor(private router: Router) {}
+  constructor(private router: Router) { }
 }

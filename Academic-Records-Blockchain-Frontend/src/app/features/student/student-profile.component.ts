@@ -1,1466 +1,562 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { MatTabsModule } from '@angular/material/tabs';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableModule } from '@angular/material/table';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { HttpClient } from '@angular/common/http';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSelectModule } from '@angular/material/select';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatBadgeModule } from '@angular/material/badge';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
 import { BlockchainService } from '../../core/services/blockchain.service';
-import { Student, AcademicRecord, Certificate } from '../../core/models/blockchain.model';
 import { CertificateRequestDialogComponent } from './certificate-request-dialog.component';
+import { APP_CONFIG } from '../../core/config/app.config';
 import jsPDF from 'jspdf';
-import QRCode from 'qrcode';
-import { APP_CONFIG, getVerificationUrl } from '../../core/config/app.config';
 
 @Component({
   selector: 'app-student-profile',
   standalone: true,
   imports: [
-    CommonModule,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatTabsModule,
-    MatTableModule,
-    MatChipsModule,
-    MatProgressSpinnerModule,
-    MatSnackBarModule,
-    MatDialogModule
+    CommonModule, MatTabsModule, MatCardModule, MatButtonModule, MatIconModule,
+    MatTableModule, MatChipsModule, MatProgressSpinnerModule, MatSnackBarModule,
+    MatDialogModule, MatTooltipModule, MatSelectModule, MatDividerModule,
+    MatBadgeModule, HttpClientModule
   ],
   template: `
-    <div class="profile-container" *ngIf="!loading; else loadingTemplate">
-      <!-- Animated Background -->
-      <div class="bg-shapes">
-        <div class="shape shape-1"></div>
-        <div class="shape shape-2"></div>
-        <div class="shape shape-3"></div>
-      </div>
-
-      <!-- Header -->
-      <div class="profile-header">
+    <!-- Dashboard Header -->
+    <div class="dashboard-container">
+      <header class="dash-header">
         <div class="header-content">
           <div class="header-left">
-            <button mat-icon-button class="back-button" (click)="goBack()" *ngIf="isViewingAsAdmin" matTooltip="Back to Dashboard">
-              <mat-icon>arrow_back</mat-icon>
-            </button>
-            <div class="logo-wrapper">
-              <div class="avatar-circle">
-                <mat-icon>person</mat-icon>
-              </div>
+            <div class="avatar-ring">
+              <div class="avatar">{{ getInitials() }}</div>
             </div>
-            <div class="student-info">
-              <div class="welcome-text">
-                <mat-icon class="dashboard-icon">account_circle</mat-icon>
-                <h1>{{student?.name || 'Student Name'}}</h1>
-              </div>
-              <div class="student-meta">
-                <span class="roll-number">
-                  <mat-icon>badge</mat-icon>
-                  {{student?.rollNumber || rollNumber}}
-                </span>
-                <span class="department">
-                  <mat-icon>domain</mat-icon>
-                  {{student?.department || 'Department'}}
-                </span>
-                <span class="enrollment-year">
-                  <mat-icon>event</mat-icon>
-                  Year {{student?.enrollmentYear || 'N/A'}}
-                </span>
-                <mat-chip class="status-chip" [class]="getStatusClass(student?.status || '')">
-                  {{student?.status || 'N/A'}}
-                </mat-chip>
-              </div>
+            <div class="header-info">
+              <h1>{{ student?.name || currentUser?.name || 'Student' }}</h1>
+              <p class="subtitle">
+                <span class="roll-badge">{{ rollNumber || '—' }}</span>
+                <span class="dept-badge">{{ student?.department || 'CSE' }}</span>
+                <span class="year-badge" *ngIf="student?.enrollmentYear">Batch {{ student?.enrollmentYear }}</span>
+              </p>
             </div>
           </div>
-          <div class="header-actions" *ngIf="!isViewingAsAdmin">
-            <button mat-raised-button color="primary" (click)="requestCertificate()" class="action-btn">
-              <mat-icon>request_page</mat-icon>
-              <span>Request Certificate</span>
-            </button>
-            <button mat-raised-button color="warn" (click)="logout()" class="action-btn">
-              <mat-icon>logout</mat-icon>
-              <span>Logout</span>
+          <div class="header-right">
+            <div class="header-stat" *ngIf="cgpaData">
+              <span class="stat-number">{{ cgpaData.cgpa }}</span>
+              <span class="stat-text">CGPA</span>
+            </div>
+            <div class="header-stat" *ngIf="cgpaData">
+              <span class="stat-number">{{ cgpaData.totalCredits }}</span>
+              <span class="stat-text">Credits</span>
+            </div>
+            <button mat-raised-button color="warn" (click)="logout()" class="logout-btn">
+              <mat-icon>logout</mat-icon> Logout
             </button>
           </div>
         </div>
+      </header>
+
+      <!-- Loading State -->
+      <div *ngIf="loading" class="loading-state">
+        <mat-spinner diameter="48"></mat-spinner>
+        <p>Loading your academic data...</p>
       </div>
 
-      <!-- Quick Stats -->
-      <div class="stats-cards">
-        <mat-card class="stat-card">
-          <div class="stat-icon-wrapper cgpa">
-            <mat-icon>school</mat-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value">{{student?.currentCGPA?.toFixed(2) || '0.00'}}</div>
-            <div class="stat-label">Current CGPA</div>
-          </div>
-          <div class="stat-badge cgpa-badge">GPA</div>
-        </mat-card>
-
-        <mat-card class="stat-card">
-          <div class="stat-icon-wrapper credits">
-            <mat-icon>library_books</mat-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value">{{student?.totalCreditsEarned || 0}}</div>
-            <div class="stat-label">Credits Earned</div>
-          </div>
-          <div class="stat-badge credits-badge">Credits</div>
-        </mat-card>
-
-        <mat-card class="stat-card">
-          <div class="stat-icon-wrapper records">
-            <mat-icon>assignment</mat-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value">{{records.length}}</div>
-            <div class="stat-label">Academic Records</div>
-          </div>
-          <div class="stat-badge records-badge">Records</div>
-        </mat-card>
-
-        <mat-card class="stat-card">
-          <div class="stat-icon-wrapper certificates">
-            <mat-icon>workspace_premium</mat-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value">{{certificates.length}}</div>
-            <div class="stat-label">Certificates</div>
-          </div>
-          <div class="stat-badge certificates-badge">Certs</div>
-        </mat-card>
-      </div>
-
-      <!-- Main Content -->
-      <mat-card class="content-card">
-        <mat-tab-group>
-          <!-- Profile Tab -->
-          <mat-tab label="Profile">
-            <div class="tab-content">
-              <div class="profile-details">
-                <h2>Personal Information</h2>
-                
-                <div class="details-grid">
-                  <div class="detail-item">
-                    <span class="label">Full Name</span>
-                    <span class="value">{{student?.name || 'N/A'}}</span>
-                  </div>
-
-                  <div class="detail-item">
-                    <span class="label">Roll Number</span>
-                    <span class="value">{{student?.rollNumber || 'N/A'}}</span>
-                  </div>
-
-                  <div class="detail-item">
-                    <span class="label">Student ID</span>
-                    <span class="value">{{student?.studentId || student?.rollNumber || 'N/A'}}</span>
-                  </div>
-
-                  <div class="detail-item">
-                    <span class="label">Email</span>
-                    <span class="value">{{student?.email || 'N/A'}}</span>
-                  </div>
-
-                  <div class="detail-item">
-                    <span class="label">Department</span>
-                    <span class="value">{{student?.department || 'N/A'}}</span>
-                  </div>
-
-                  <div class="detail-item">
-                    <span class="label">Enrollment Year</span>
-                    <span class="value">{{student?.enrollmentYear || 'N/A'}}</span>
-                  </div>
-
-                  <div class="detail-item">
-                    <span class="label">Admission Category</span>
-                    <span class="value">{{student?.admissionCategory || 'N/A'}}</span>
-                  </div>
-
-                  <div class="detail-item">
-                    <span class="label">Current CGPA</span>
-                    <span class="value">{{student?.currentCGPA?.toFixed(2) || '0.00'}}</span>
-                  </div>
-
-                  <div class="detail-item">
-                    <span class="label">Total Credits Earned</span>
-                    <span class="value">{{student?.totalCreditsEarned || 0}}</span>
-                  </div>
-
-                  <div class="detail-item">
-                    <span class="label">Status</span>
-                    <span class="value">
-                      <mat-chip [class]="getStatusClass(student?.status || '')">
-                        {{student?.status || 'N/A'}}
-                      </mat-chip>
-                    </span>
-                  </div>
-
-                  <div class="detail-item">
-                    <span class="label">Created At</span>
-                    <span class="value">{{formatDate(student?.createdAt)}}</span>
-                  </div>
-
-                  <div class="detail-item">
-                    <span class="label">Last Modified</span>
-                    <span class="value">{{formatDate(student?.modifiedAt)}}</span>
-                  </div>
+      <!-- Main Content Tabs -->
+      <mat-tab-group *ngIf="!loading" animationDuration="300ms" class="main-tabs">
+        <!-- ═══ TAB 1: MY INFO ═══ -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">person</mat-icon>
+            <span>My Info</span>
+          </ng-template>
+          <div class="tab-content">
+            <div class="info-grid">
+              <div class="info-card glass-card" *ngFor="let item of profileFields">
+                <div class="info-icon" [style.background]="item.color">
+                  <mat-icon>{{ item.icon }}</mat-icon>
+                </div>
+                <div class="info-text">
+                  <span class="label">{{ item.label }}</span>
+                  <span class="value">{{ item.value || 'N/A' }}</span>
                 </div>
               </div>
             </div>
-          </mat-tab>
 
-          <!-- Academic Records Tab -->
-          <mat-tab label="Academic Records">
-            <div class="tab-content">
-              <div class="tab-header">
-                <h2>Academic Records ({{records.length}})</h2>
-                <button mat-raised-button color="primary" (click)="loadRecords()">
-                  <mat-icon>refresh</mat-icon>
-                  Refresh
+            <div class="section-title mt-4">
+              <mat-icon>shield</mat-icon>
+              <h3>Account Status</h3>
+            </div>
+            <div class="status-row">
+              <span class="status-badge" [class]="student?.status?.toLowerCase() || 'active'">
+                {{ student?.status || 'ACTIVE' }}
+              </span>
+              <span class="text-muted ml-2">Since {{ student?.createdAt | date:'mediumDate' }}</span>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- ═══ TAB 2: COURSES & MARKS ═══ -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">school</mat-icon>
+            <span>Courses & Marks</span>
+          </ng-template>
+          <div class="tab-content">
+            <!-- Enrolled Courses -->
+            <div class="section-title" style="margin-bottom: 16px;">
+              <mat-icon>class</mat-icon>
+              <h3>Enrolled Courses</h3>
+            </div>
+            <div class="course-grid" *ngIf="enrolledCourses.length > 0">
+              <div class="course-enroll-card glass-card" *ngFor="let c of enrolledCourses">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                  <span class="course-code">{{ c.code }}</span>
+                  <span class="course-type-tag" [class.elective]="c.type === 'elective'">{{ c.type }}</span>
+                </div>
+                <h4 style="color: #e2e8f0; font-size: 14px; margin: 0 0 8px;">{{ c.name }}</h4>
+                <div style="display:flex;gap:16px;font-size:12px;color:#94a3b8;">
+                  <span><mat-icon style="font-size:14px;width:14px;height:14px;vertical-align:middle;">event</mat-icon> Sem {{ c.semester }}</span>
+                  <span><mat-icon style="font-size:14px;width:14px;height:14px;vertical-align:middle;">star</mat-icon> {{ c.credits }} Cr</span>
+                </div>
+                <p style="margin:6px 0 0;font-size:12px;color:#64748b;">Faculty: {{ c.facultyName || c.faculty }}</p>
+              </div>
+            </div>
+            <div *ngIf="enrolledCourses.length === 0" class="empty-state" style="padding:24px;">
+              <mat-icon>school</mat-icon>
+              <p>No courses found for your department</p>
+            </div>
+
+            <mat-divider style="margin: 24px 0;"></mat-divider>
+
+            <!-- Semester Selector -->
+            <div class="section-title" style="margin-bottom: 16px;">
+              <mat-icon>grading</mat-icon>
+              <h3>Marks & Grades</h3>
+            </div>
+            <div class="semester-bar">
+              <button mat-stroked-button *ngFor="let sem of semesters"
+                [class.active-sem]="selectedSemester === sem"
+                (click)="selectSemester(sem)">
+                Sem {{ sem }}
+              </button>
+              <button mat-stroked-button [class.active-sem]="selectedSemester === 0"
+                (click)="selectSemester(0)">
+                All
+              </button>
+            </div>
+
+            <!-- Marks Table -->
+            <div class="marks-table-wrapper" *ngIf="filteredMarks.length > 0">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th>Course Code</th>
+                    <th>Course Name</th>
+                    <th>Semester</th>
+                    <th>Credits</th>
+                    <th>Marks</th>
+                    <th>Grade</th>
+                    <th>GP</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let m of filteredMarks" class="fade-in">
+                    <td><span class="course-code">{{ m.courseCode }}</span></td>
+                    <td>{{ m.courseName }}</td>
+                    <td>{{ m.semester }}</td>
+                    <td>{{ m.credits }}</td>
+                    <td><strong>{{ m.marksObtained }}</strong>/{{ m.maxMarks }}</td>
+                    <td><span class="grade-chip" [attr.data-grade]="m.grade">{{ m.grade }}</span></td>
+                    <td>{{ m.gradePoint }}</td>
+                    <td><span class="status-badge" [class]="m.status">{{ m.status }}</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- SGPA Summary -->
+            <div class="sgpa-bar" *ngIf="selectedSemester > 0 && semesterData">
+              <div class="sgpa-item">
+                <span class="sgpa-label">SGPA</span>
+                <span class="sgpa-value">{{ semesterData.sgpa }}</span>
+              </div>
+              <div class="sgpa-item">
+                <span class="sgpa-label">Credits</span>
+                <span class="sgpa-value">{{ semesterData.totalCredits }}</span>
+              </div>
+            </div>
+
+            <div *ngIf="filteredMarks.length === 0" class="empty-state">
+              <mat-icon>menu_book</mat-icon>
+              <p>No marks recorded yet for this selection</p>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- ═══ TAB 3: GRADE SHEETS ═══ -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">description</mat-icon>
+            <span>Grade Sheets</span>
+          </ng-template>
+          <div class="tab-content">
+            <div class="gradesheet-grid">
+              <!-- Semester-wise downloads -->
+              <div class="gs-card glass-card" *ngFor="let sem of semesters">
+                <div class="gs-header">
+                  <mat-icon>assignment</mat-icon>
+                  <h4>Semester {{ sem }}</h4>
+                </div>
+                <p class="gs-info text-muted">{{ getMarkCountForSem(sem) }} courses</p>
+                <button mat-raised-button class="gs-download" (click)="downloadGradeSheet(sem)">
+                  <mat-icon>download</mat-icon> Download Grade Sheet
                 </button>
               </div>
 
-              <div *ngIf="records.length > 0; else noRecords" class="records-list">
-                <div *ngFor="let record of records" class="record-card">
-                  <div class="record-header">
-                    <div class="record-title-section">
-                      <div class="semester-badge">
-                        <mat-icon>calendar_month</mat-icon>
-                        <span>Semester {{record.semester}}</span>
-                      </div>
-                      <div class="record-meta">
-                        <span class="record-id">
-                          <mat-icon>fingerprint</mat-icon>
-                          {{record.recordId}}
-                        </span>
-                        <span class="record-dept">
-                          <mat-icon>domain</mat-icon>
-                          {{record.department}}
-                        </span>
-                      </div>
-                    </div>
-                    <div class="record-stats">
-                      <mat-chip class="status-chip" [class]="getStatusClass(record.status)">
-                        <mat-icon>{{getStatusIcon(record.status)}}</mat-icon>
-                        {{record.status}}
-                      </mat-chip>
-                      <div class="gpa-badges">
-                        <div class="gpa-badge sgpa">
-                          <span class="gpa-label">SGPA</span>
-                          <span class="gpa-value">{{record.sgpa.toFixed(2) || '0.00'}}</span>
-                        </div>
-                        <div class="gpa-badge cgpa">
-                          <span class="gpa-label">CGPA</span>
-                          <span class="gpa-value">{{record.cgpa.toFixed(2) || '0.00'}}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="courses-table" *ngIf="record.courses && record.courses.length > 0">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Course Code</th>
-                          <th>Course Name</th>
-                          <th>Credits</th>
-                          <th>Grade</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr *ngFor="let course of record.courses">
-                          <td>{{course.courseCode}}</td>
-                          <td>{{course.courseName}}</td>
-                          <td>{{course.credits}}</td>
-                          <td><strong>{{course.grade}}</strong></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <!-- Approval Pipeline (new) -->
-                  <div class="approval-pipeline" *ngIf="record.status !== 'DRAFT'">
-                    <div class="pipeline-label">Approval Pipeline</div>
-                    <div class="pipeline-steps">
-                      <div class="pipeline-step" *ngFor="let step of getApprovalSteps(record.status)"
-                           [class.done]="step.done" [class.active]="step.active">
-                        <div class="step-dot">{{ step.done ? '✓' : (step.active ? '●' : '') }}</div>
-                        <div class="step-name">{{ step.label }}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="record-footer">
-                    <div class="record-summary">
-                      <span class="credits">Total Credits: {{record.totalCredits || 0}}</span>
-                      <span class="sgpa">SGPA: {{record.sgpa.toFixed(2) || '0.00'}}</span>
-                      <span class="cgpa">CGPA: {{record.cgpa.toFixed(2) || '0.00'}}</span>
-                    </div>
-                    <div class="record-actions">
-                      <button mat-stroked-button color="primary" (click)="downloadRecord(record)">
-                        <mat-icon>download</mat-icon>
-                        Download
-                      </button>
-                      <button mat-stroked-button color="accent" (click)="shareRecord(record)">
-                        <mat-icon>share</mat-icon>
-                        Share
-                      </button>
-                    </div>
-                    <span class="submission-date">
-                      Submitted: {{formatDate(record.timestamp)}}
-                    </span>
-                  </div>
+              <!-- Consolidated Marksheet -->
+              <div class="gs-card glass-card consolidated" *ngIf="semesters.length > 0">
+                <div class="gs-header">
+                  <mat-icon>library_books</mat-icon>
+                  <h4>Consolidated Marksheet</h4>
                 </div>
-              </div>
-
-              <ng-template #noRecords>
-                <div class="empty-state">
-                  <mat-icon>assignment_late</mat-icon>
-                  <h3>No Academic Records</h3>
-                  <p>Academic records will appear here once submitted and approved</p>
-                </div>
-              </ng-template>
-            </div>
-          </mat-tab>
-
-          <!-- Certificates Tab -->
-          <mat-tab label="Certificates">
-            <div class="tab-content">
-              <div class="tab-header">
-                <h2>Certificates ({{certificates.length}})</h2>
-                <button mat-raised-button color="primary" (click)="loadCertificates()">
-                  <mat-icon>refresh</mat-icon>
-                  Refresh
+                <p class="gs-info text-muted">All {{ semesters.length }} semesters combined</p>
+                <button mat-raised-button color="primary" class="gs-download" (click)="downloadConsolidated()">
+                  <mat-icon>download</mat-icon> Download Consolidated
                 </button>
               </div>
-
-              <div *ngIf="certificates.length > 0; else noCertificates" class="certificates-grid">
-                <mat-card *ngFor="let cert of certificates" class="certificate-card">
-                  <div class="cert-icon">
-                    <mat-icon>workspace_premium</mat-icon>
-                  </div>
-                  <h3>{{cert.degreeAwarded || cert.type || 'Certificate'}}</h3>
-                  <p class="cert-id">ID: {{cert.certificateId}}</p>
-                  <div class="cert-details">
-                    <p><strong>Student:</strong> {{cert.studentId}}</p>
-                    <p *ngIf="cert.finalCGPA"><strong>Final CGPA:</strong> {{cert.finalCGPA.toFixed(2)}}</p>
-                    <p><strong>Issued:</strong> {{formatDate(cert.issueDate)}}</p>
-                    <p *ngIf="cert.expiryDate"><strong>Expires:</strong> {{formatDate(cert.expiryDate)}}</p>
-                    <p><strong>Status:</strong> 
-                      <mat-chip [class]="cert.isValid ? 'status-approved' : 'status-rejected'">
-                        {{cert.isValid ? 'VALID' : (cert.revoked ? 'REVOKED' : 'EXPIRED')}}
-                      </mat-chip>
-                    </p>
-                    <p *ngIf="cert.revoked && cert.revocationReason">
-                      <strong>Reason:</strong> {{cert.revocationReason}}
-                    </p>
-                  </div>
-                  <div class="cert-actions">
-                    <button mat-button color="primary" (click)="viewCertificate(cert)">
-                      <mat-icon>visibility</mat-icon>
-                      View
-                    </button>
-                    <button mat-button color="accent" (click)="downloadCertificate(cert)" [disabled]="!cert.isValid">
-                      <mat-icon>download</mat-icon>
-                      Download
-                    </button>
-                  </div>
-                </mat-card>
-              </div>
-
-              <ng-template #noCertificates>
-                <div class="empty-state">
-                  <mat-icon>card_membership</mat-icon>
-                  <h3>No Certificates Yet</h3>
-                  <p>Certificates will be available here once issued by the administration</p>
-                </div>
-              </ng-template>
             </div>
-          </mat-tab>
-        </mat-tab-group>
-      </mat-card>
+          </div>
+        </mat-tab>
+
+        <!-- ═══ TAB 4: CERTIFICATES ═══ -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">verified</mat-icon>
+            <span>Certificates</span>
+            <span class="cert-count" *ngIf="certificates.length > 0">{{ certificates.length }}</span>
+          </ng-template>
+          <div class="tab-content">
+            <div class="cert-actions">
+              <button mat-raised-button color="primary" (click)="requestCertificate()">
+                <mat-icon>add_circle</mat-icon> Request New Certificate
+              </button>
+            </div>
+
+            <div class="cert-grid" *ngIf="certificates.length > 0">
+              <div class="cert-card glass-card" *ngFor="let cert of certificates">
+                <div class="cert-top">
+                  <mat-icon class="cert-icon" [style.color]="cert.status === 'APPROVED' || cert.status === 'ISSUED' ? '#4ade80' : cert.status === 'REJECTED' ? '#f87171' : '#fbbf24'">
+                    {{ cert.status === 'APPROVED' || cert.status === 'ISSUED' ? 'verified' : cert.status === 'REJECTED' ? 'cancel' : 'pending_actions' }}
+                  </mat-icon>
+                  <span class="cert-type">{{ cert.certificateType || 'Academic' }}</span>
+                </div>
+                <h4 style="color: #e2e8f0; font-size: 14px; word-break: break-all;">{{ cert.certificateId || cert.id }}</h4>
+                <p style="color: #94a3b8; margin: 4px 0;" *ngIf="cert.purpose">Purpose: {{ cert.purpose }}</p>
+                <p style="color: #94a3b8; margin: 4px 0;">{{ cert.isRequest ? 'Requested' : 'Issued' }}: {{ (cert.requestDate || cert.issueDate || cert.createdAt) | date:'mediumDate' }}</p>
+                <p style="color: #64748b; font-size: 12px; margin: 4px 0;" *ngIf="cert.processedBy">Approved by: {{ cert.processedBy }}</p>
+                <p style="color: #64748b; font-size: 12px; margin: 4px 0;" *ngIf="cert.processedDate">Approved: {{ cert.processedDate | date:'mediumDate' }}</p>
+
+                <div class="cert-status" style="margin: 8px 0;">
+                  <span class="status-badge" [class]="cert.status?.toLowerCase() || 'pending'">
+                    {{ cert.status || 'PENDING' }}
+                  </span>
+                </div>
+
+                <button mat-raised-button color="primary"
+                  *ngIf="cert.status === 'ISSUED' || cert.status === 'APPROVED'"
+                  (click)="downloadCertificate(cert)" class="cert-dl-btn" style="margin-top: 8px; width: 100%;">
+                  <mat-icon>download</mat-icon> Download Certificate PDF
+                </button>
+              </div>
+            </div>
+
+            <div *ngIf="certificates.length === 0" class="empty-state">
+              <mat-icon>card_membership</mat-icon>
+              <p>No certificates yet. Request one to get started!</p>
+            </div>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
     </div>
-
-    <ng-template #loadingTemplate>
-      <div class="loading-container">
-        <mat-spinner></mat-spinner>
-        <p>Loading student data...</p>
-      </div>
-    </ng-template>
   `,
   styles: [`
-    /* Container & Background */
-    .profile-container {
+    .dashboard-container {
+      max-width: 1200px; margin: 0 auto; padding: 24px;
       min-height: 100vh;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-      padding: 2rem;
-      position: relative;
-      overflow-x: hidden;
     }
 
-    /* Animated Background Shapes */
-    .bg-shapes {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    .shape {
-      position: absolute;
-      opacity: 0.1;
-      animation: float 25s infinite ease-in-out;
-    }
-
-    .shape-1 {
-      width: 300px;
-      height: 300px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border-radius: 50%;
-      top: 10%;
-      left: 10%;
-      animation-delay: 0s;
-    }
-
-    .shape-2 {
-      width: 400px;
-      height: 400px;
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-      border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
-      top: 50%;
-      right: 10%;
-      animation-delay: 5s;
-    }
-
-    .shape-3 {
-      width: 250px;
-      height: 250px;
-      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-      border-radius: 63% 37% 54% 46% / 55% 48% 52% 45%;
-      bottom: 10%;
-      left: 20%;
-      animation-delay: 10s;
-    }
-
-    @keyframes float {
-      0%, 100% {
-        transform: translate(0, 0) rotate(0deg);
-      }
-      25% {
-        transform: translate(30px, -50px) rotate(90deg);
-      }
-      50% {
-        transform: translate(-20px, 30px) rotate(180deg);
-      }
-      75% {
-        transform: translate(50px, 20px) rotate(270deg);
+    /* ── Header ────────────────────────────────────────────── */
+    .dash-header {
+      background: linear-gradient(135deg, #0f766e 0%, #0891b2 50%, #6366f1 100%);
+      border-radius: 20px; padding: 32px; margin-bottom: 24px;
+      position: relative; overflow: hidden;
+      &::before {
+        content: ''; position: absolute; inset: 0;
+        background: radial-gradient(circle at 90% 20%, rgba(255,255,255,0.1) 0%, transparent 50%);
       }
     }
-
-    /* Header Styles */
-    .profile-header {
-      position: relative;
-      z-index: 1;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      border-radius: 24px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-      margin-bottom: 2rem;
-      overflow: hidden;
-    }
-
-    .profile-header::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-    }
-
     .header-content {
-      padding: 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1.5rem;
+      display: flex; justify-content: space-between; align-items: center;
+      position: relative; z-index: 1; flex-wrap: wrap; gap: 16px;
     }
-
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 1.5rem;
-      flex: 1;
+    .header-left { display: flex; align-items: center; gap: 20px; }
+    .avatar-ring {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: linear-gradient(135deg, #2dd4bf, #22d3ee);
+      padding: 3px; flex-shrink: 0;
     }
-
-    .back-button {
-      background: rgba(102, 126, 234, 0.1);
-      color: #667eea;
-      transition: all 0.3s ease;
+    .avatar {
+      width: 100%; height: 100%; border-radius: 50%;
+      background: rgba(0,0,0,0.4); display: flex;
+      align-items: center; justify-content: center;
+      font-size: 1.5rem; font-weight: 700; color: #fff;
     }
-
-    .back-button:hover {
-      background: rgba(102, 126, 234, 0.2);
-      transform: translateX(-5px);
+    .header-info h1 { color: #fff; font-size: 1.75rem; font-weight: 700; margin: 0; }
+    .subtitle { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+    .roll-badge, .dept-badge, .year-badge {
+      padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
     }
+    .roll-badge { background: rgba(255,255,255,0.2); color: #fff; }
+    .dept-badge { background: rgba(45,212,191,0.3); color: #2dd4bf; }
+    .year-badge { background: rgba(167,139,250,0.3); color: #a78bfa; }
 
-    .logo-wrapper {
-      position: relative;
-    }
-
-    .avatar-circle {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
-      animation: pulse 3s infinite;
-    }
-
-    .avatar-circle mat-icon {
-      font-size: 48px;
-      width: 48px;
-      height: 48px;
-      color: white;
-    }
-
-    @keyframes pulse {
-      0%, 100% {
-        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+    .header-right { display: flex; align-items: center; gap: 24px; }
+    .header-stat {
+      text-align: center;
+      .stat-number {
+        display: block; font-size: 1.75rem; font-weight: 700; color: #fff;
       }
-      50% {
-        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.5);
+      .stat-text { font-size: 0.75rem; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 1px; }
+    }
+    .logout-btn { border-radius: 12px !important; }
+
+    /* ── Loading ───────────────────────────────────────────── */
+    .loading-state {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 300px; gap: 16px;
+      p { color: var(--text-secondary); }
+    }
+
+    /* ── Main Tabs ─────────────────────────────────────────── */
+    .main-tabs {
+      ::ng-deep .mat-mdc-tab-header {
+        background: rgba(15,23,42,0.7) !important; border-radius: 16px 16px 0 0;
+        border: 1px solid rgba(148,163,184,0.1); border-bottom: none;
       }
     }
+    .tab-icon { margin-right: 8px; font-size: 20px; }
+    .tab-content { padding: 24px; animation: fadeIn 0.4s ease-out; }
 
-    .student-info {
-      flex: 1;
+    /* ── Info Grid ──────────────────────────────────────────── */
+    .info-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;
     }
-
-    .welcome-text {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .welcome-text h1 {
-      margin: 0;
-      font-size: 1.75rem;
-      font-weight: 700;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .dashboard-icon {
-      font-size: 32px;
-      width: 32px;
-      height: 32px;
-      color: #667eea;
-    }
-
-    .student-meta {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 1rem;
-      font-size: 0.875rem;
-      color: #666;
-    }
-
-    .student-meta > span {
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
-
-    .student-meta mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      color: #667eea;
-    }
-
-    .roll-number {
-      font-weight: 600;
-      color: #667eea;
-    }
-
-    .status-chip {
-      font-size: 0.75rem;
-      height: 24px;
-      padding: 0 12px;
-      font-weight: 600;
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 1rem;
-    }
-
-    .action-btn {
-      border-radius: 12px;
-      padding: 0 24px;
-      height: 44px;
-      font-weight: 600;
+    .info-card {
+      display: flex; align-items: center; gap: 16px;
+      padding: 20px; border-radius: 14px;
+      background: rgba(15,23,42,0.6); border: 1px solid rgba(148,163,184,0.08);
       transition: all 0.3s ease;
+      &:hover { border-color: rgba(56,189,248,0.2); transform: translateY(-2px); }
+    }
+    .info-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      mat-icon { color: #fff; }
+    }
+    .info-text {
+      display: flex; flex-direction: column;
+      .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+      .value { font-size: 16px; font-weight: 600; color: var(--text-primary); margin-top: 2px; }
     }
 
-    .action-btn mat-icon {
-      margin-right: 8px;
+    .section-title {
+      display: flex; align-items: center; gap: 8px;
+      h3 { font-size: 1.1rem; font-weight: 600; }
+      mat-icon { color: var(--accent-teal); }
+    }
+    .status-row { margin-top: 12px; display: flex; align-items: center; }
+
+    /* ── Semester Bar ───────────────────────────────────────── */
+    .semester-bar {
+      display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+      button {
+        border-radius: 20px !important; border-color: rgba(148,163,184,0.2) !important;
+        color: var(--text-secondary) !important; font-weight: 500 !important;
+        &.active-sem {
+          background: linear-gradient(135deg, #0f766e, #0891b2) !important;
+          color: #fff !important; border-color: transparent !important;
+        }
+      }
     }
 
-    .action-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    /* ── Modern Table ──────────────────────────────────────── */
+    .marks-table-wrapper { overflow-x: auto; border-radius: 12px; }
+    .modern-table {
+      width: 100%; border-collapse: collapse;
+      background: rgba(15,23,42,0.5); border-radius: 12px; overflow: hidden;
+      thead tr {
+        background: linear-gradient(135deg, rgba(15,118,110,0.5), rgba(8,145,178,0.5));
+        th {
+          padding: 14px 16px; color: #e2e8f0; font-weight: 600; font-size: 13px;
+          text-transform: uppercase; letter-spacing: 0.5px; text-align: left;
+        }
+      }
+      tbody tr {
+        border-bottom: 1px solid rgba(148,163,184,0.06);
+        transition: background 0.2s;
+        &:hover { background: rgba(56,189,248,0.04); }
+        &:nth-child(even) { background: rgba(17,24,39,0.3); }
+        td {
+          padding: 12px 16px; color: var(--text-primary); font-size: 14px;
+        }
+      }
+    }
+    .course-code {
+      font-family: 'JetBrains Mono', monospace; font-weight: 600;
+      color: var(--accent-cyan); font-size: 13px;
+    }
+    .grade-chip {
+      display: inline-block; padding: 3px 10px; border-radius: 12px;
+      font-weight: 700; font-size: 13px;
+      background: rgba(45,212,191,0.15); color: var(--accent-teal);
+      &[data-grade="A+"] { color: #34d399; background: rgba(52,211,153,0.15); }
+      &[data-grade="A"] { color: #2dd4bf; background: rgba(45,212,191,0.15); }
+      &[data-grade="B+"] { color: #38bdf8; background: rgba(56,189,248,0.15); }
+      &[data-grade="B"] { color: #60a5fa; background: rgba(96,165,250,0.15); }
+      &[data-grade="C"] { color: #fbbf24; background: rgba(251,191,36,0.15); }
+      &[data-grade="D"] { color: #fb923c; background: rgba(251,146,60,0.15); }
+      &[data-grade="F"] { color: #fb7185; background: rgba(251,113,133,0.15); }
     }
 
-    /* Stats Cards */
-    .stats-cards {
-      position: relative;
-      z-index: 1;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-
-    .stat-card {
-      position: relative;
-      padding: 1.75rem;
-      border-radius: 20px;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      overflow: hidden;
-      cursor: pointer;
-    }
-
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .stat-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
-    }
-
-    .stat-card:hover::before {
-      opacity: 1;
-    }
-
-    .stat-icon-wrapper {
-      width: 56px;
-      height: 56px;
-      border-radius: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 1rem;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .stat-icon-wrapper::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      opacity: 0.1;
-      transition: opacity 0.3s ease;
-    }
-
-    .stat-card:hover .stat-icon-wrapper::before {
-      opacity: 0.2;
-    }
-
-    .stat-icon-wrapper.cgpa {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-
-    .stat-icon-wrapper.credits {
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    }
-
-    .stat-icon-wrapper.records {
-      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    }
-
-    .stat-icon-wrapper.certificates {
-      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-    }
-
-    .stat-icon-wrapper mat-icon {
-      font-size: 28px;
-      width: 28px;
-      height: 28px;
-      color: white;
-      z-index: 1;
-    }
-
-    .stat-content {
-      flex: 1;
-    }
-
-    .stat-value {
-      font-size: 2rem;
-      font-weight: 700;
-      color: #1a1a2e;
-      margin-bottom: 0.25rem;
-      line-height: 1;
-    }
-
-    .stat-label {
-      font-size: 0.875rem;
-      color: #64748b;
-      font-weight: 500;
-    }
-
-    .stat-badge {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      padding: 0.25rem 0.75rem;
+    .sgpa-bar {
+      display: flex; gap: 24px; margin-top: 20px; padding: 16px 24px;
+      background: rgba(15,118,110,0.1); border: 1px solid rgba(45,212,191,0.2);
       border-radius: 12px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      opacity: 0.6;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+    }
+    .sgpa-item {
+      display: flex; flex-direction: column;
+      .sgpa-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; }
+      .sgpa-value { font-size: 1.5rem; font-weight: 700; color: var(--accent-teal); }
     }
 
-    .cgpa-badge {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
+    /* ── Empty State ───────────────────────────────────────── */
+    .empty-state {
+      text-align: center; padding: 48px; color: var(--text-muted);
+      mat-icon { font-size: 48px; width: 48px; height: 48px; opacity: 0.4; margin-bottom: 12px; }
+      p { font-size: 16px; }
     }
 
-    .credits-badge {
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-      color: white;
+    /* ── Grade Sheet Grid ──────────────────────────────────── */
+    .gradesheet-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;
     }
-
-    .records-badge {
-      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-      color: white;
-    }
-
-    .certificates-badge {
-      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-      color: white;
-    }
-
-    /* Main Content Card */
-    .content-card {
-      position: relative;
-      z-index: 1;
-      border-radius: 24px;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-      margin-bottom: 2rem;
-      overflow: hidden;
-    }
-
-    /* Material Tabs Customization */
-    .content-card ::ng-deep .mat-mdc-tab-group {
-      font-family: inherit;
-    }
-
-    .content-card ::ng-deep .mat-mdc-tab-header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border-radius: 24px 24px 0 0;
-    }
-
-    .content-card ::ng-deep .mat-mdc-tab-labels {
-      padding: 0 1rem;
-    }
-
-    .content-card ::ng-deep .mat-mdc-tab {
-      color: rgba(255, 255, 255, 0.7);
-      font-weight: 600;
-      min-width: 120px;
-      height: 56px;
-    }
-
-    .content-card ::ng-deep .mat-mdc-tab.mdc-tab--active {
-      color: white;
-    }
-
-    .content-card ::ng-deep .mat-mdc-tab:hover {
-      color: white;
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .content-card ::ng-deep .mdc-tab-indicator__content--underline {
-      border-color: white;
-      border-width: 3px;
-    }
-
-    .content-card ::ng-deep .mat-mdc-tab-body-content {
-      overflow-x: hidden;
-    }
-
-    /* Tab Content */
-    .tab-content {
-      padding: 2rem;
-    }
-
-    .tab-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2rem;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    .tab-header h2 {
-      margin: 0;
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #1a1a2e;
-    }
-
-    .tab-header button {
-      border-radius: 12px;
-      font-weight: 600;
-    }
-
-    /* Profile Details */
-    .profile-details h2 {
-      margin: 0 0 2rem 0;
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #1a1a2e;
-    }
-
-    .details-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1.5rem;
-    }
-
-    .detail-item {
-      padding: 1.25rem;
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-      border-radius: 12px;
-      border-left: 4px solid #667eea;
+    .gs-card {
+      padding: 24px; border-radius: 14px;
+      background: rgba(15,23,42,0.6); border: 1px solid rgba(148,163,184,0.08);
       transition: all 0.3s ease;
+      &:hover { border-color: rgba(56,189,248,0.2); transform: translateY(-2px); }
+      &.consolidated {
+        border-color: rgba(45,212,191,0.3);
+        background: linear-gradient(135deg, rgba(15,118,110,0.1), rgba(8,145,178,0.1));
+      }
     }
-
-    .detail-item:hover {
-      transform: translateX(5px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    .gs-header {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+      mat-icon { color: var(--accent-teal); }
+      h4 { font-weight: 600; margin: 0; }
     }
+    .gs-info { margin-bottom: 16px; }
+    .gs-download { width: 100%; border-radius: 10px !important; }
 
-    .detail-item .label {
-      display: block;
-      font-size: 0.75rem;
-      color: #64748b;
-      text-transform: uppercase;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      margin-bottom: 0.5rem;
+    /* ── Certificates ──────────────────────────────────────── */
+    .cert-actions { margin-bottom: 20px; }
+    .cert-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;
     }
-
-    .detail-item .value {
-      display: block;
-      font-size: 1rem;
-      color: #1a1a2e;
-      font-weight: 600;
-    }
-
-    /* Academic Records */
-    .records-list {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-
-    .record-card {
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.03) 0%, rgba(118, 75, 162, 0.03) 100%);
-      border-radius: 16px;
-      padding: 1.5rem;
-      border: 2px solid rgba(102, 126, 234, 0.1);
+    .cert-card {
+      padding: 24px; border-radius: 14px;
+      background: rgba(15,23,42,0.6); border: 1px solid rgba(148,163,184,0.08);
       transition: all 0.3s ease;
+      &:hover { border-color: rgba(56,189,248,0.2); }
     }
-
-    .record-card:hover {
-      border-color: #667eea;
-      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
-      transform: translateY(-4px);
+    .cert-top {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
     }
-
-    .record-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 1.25rem;
-      gap: 1rem;
-      flex-wrap: wrap;
+    .cert-icon { color: var(--accent-amber); font-size: 28px; width: 28px; height: 28px; }
+    .cert-type {
+      font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+      color: var(--text-muted); font-weight: 600;
     }
+    .cert-status { margin: 12px 0; }
+    .cert-dl-btn { width: 100%; margin-top: 8px; border-radius: 10px !important; }
 
-    .record-title-section {
-      flex: 1;
-    }
-
-    .semester-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border-radius: 12px;
-      font-weight: 600;
-      font-size: 1rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .semester-badge mat-icon {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-    }
-
-    .record-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      font-size: 0.875rem;
-      color: #64748b;
-    }
-
-    .record-meta > span {
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
-
-    .record-meta mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      color: #667eea;
-    }
-
-    .record-stats {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 0.75rem;
-    }
-
-    .status-chip mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      margin-right: 4px;
-    }
-
-    .gpa-badges {
-      display: flex;
-      gap: 0.75rem;
-    }
-
-    .gpa-badge {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 0.5rem 1rem;
-      border-radius: 12px;
-      min-width: 80px;
-    }
-
-    .gpa-badge.sgpa {
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-      border: 2px solid rgba(102, 126, 234, 0.3);
-    }
-
-    .gpa-badge.cgpa {
-      background: linear-gradient(135deg, rgba(240, 147, 251, 0.1) 0%, rgba(245, 87, 108, 0.1) 100%);
-      border: 2px solid rgba(240, 147, 251, 0.3);
-    }
-
-    .gpa-label {
-      font-size: 0.7rem;
-      font-weight: 600;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .gpa-value {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: #667eea;
-      margin-top: 0.25rem;
-    }
-
-    /* Courses Table */
-    .courses-table {
-      margin: 1.5rem 0;
-      overflow-x: auto;
-      border-radius: 12px;
-    }
-
-    .courses-table table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-      background: white;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    }
-
-    .courses-table th,
-    .courses-table td {
-      padding: 1rem;
-      text-align: left;
-    }
-
-    .courses-table thead {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-
-    .courses-table th {
-      color: white;
-      font-weight: 600;
-      font-size: 0.875rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .courses-table tbody tr {
-      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-      transition: background 0.2s ease;
-    }
-
-    .courses-table tbody tr:hover {
-      background: rgba(102, 126, 234, 0.05);
-    }
-
-    .courses-table tbody tr:last-child {
-      border-bottom: none;
-    }
-
-    .courses-table td {
-      color: #1a1a2e;
-      font-size: 0.875rem;
-    }
-
-    .courses-table td strong {
-      color: #667eea;
-      font-size: 1rem;
-    }
-
-    /* ── Approval Pipeline Timeline ─────────────────────────── */
+    /* ── Approval Pipeline ─────────────────────────────────── */
     .approval-pipeline {
-      margin: 1rem 0 0.5rem;
-      padding: 1rem 0.5rem;
-      border-top: 1px solid rgba(102, 126, 234, 0.12);
-    }
-    .pipeline-label {
-      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.8px; color: #64748b; margin-bottom: 0.75rem;
-    }
-    .pipeline-steps {
-      display: flex; gap: 0; position: relative;
-      justify-content: space-between;
-    }
-    .pipeline-steps::before {
-      content: ''; position: absolute; top: 14px; left: 0; right: 0;
-      height: 2px; background: #e2e8f0; z-index: 0;
+      display: flex; gap: 4px; margin: 12px 0; flex-wrap: wrap;
     }
     .pipeline-step {
-      display: flex; flex-direction: column; align-items: center; gap: 6px;
-      flex: 1; position: relative; z-index: 1;
-    }
-    .step-dot {
-      width: 28px; height: 28px; border-radius: 50%;
-      background: #e2e8f0; border: 2px solid #cbd5e1;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 700; color: #94a3b8;
-      transition: all 0.3s;
-    }
-    .pipeline-step.done .step-dot {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      border-color: #667eea; color: white;
-    }
-    .pipeline-step.active .step-dot {
-      background: white; border: 2.5px solid #f59e0b;
-      color: #f59e0b; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
-      animation: pulseDot 1.5s infinite;
-    }
-    @keyframes pulseDot {
-      0%,100% { box-shadow: 0 0 0 4px rgba(245,158,11,0.2); }
-      50% { box-shadow: 0 0 0 8px rgba(245,158,11,0.1); }
-    }
-    .step-name {
-      font-size: 0.65rem; font-weight: 600; color: #94a3b8;
-      text-align: center; white-space: nowrap;
-    }
-    .pipeline-step.done .step-name { color: #667eea; }
-    .pipeline-step.active .step-name { color: #f59e0b; font-weight: 700; }
-
-    .record-footer {
-
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 1.25rem;
-      padding-top: 1.25rem;
-      border-top: 2px solid rgba(102, 126, 234, 0.1);
-      flex-wrap: wrap;
-      gap: 1rem;
+      display: flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 16px; font-size: 11px;
+      background: rgba(148,163,184,0.08); color: var(--text-muted);
+      &.done { background: rgba(52,211,153,0.15); color: var(--success); mat-icon { font-size: 14px; width: 14px; height: 14px; } }
+      &.pending { background: rgba(251,191,36,0.15); color: var(--warning); mat-icon { font-size: 14px; width: 14px; height: 14px; } }
+      &.rejected { background: rgba(251,113,133,0.15); color: var(--danger); mat-icon { font-size: 14px; width: 14px; height: 14px; } }
     }
 
-    .record-summary {
-      display: flex;
-      gap: 1.5rem;
-      flex-wrap: wrap;
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: #64748b;
-    }
-
-    .record-summary .credits,
-    .record-summary .sgpa,
-    .record-summary .cgpa {
-      color: #667eea;
-    }
-
-    .record-actions {
-      display: flex;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-    }
-
-    .record-actions button {
-      height: 36px !important;
-      font-size: 0.875rem !important;
-      font-weight: 600 !important;
-      border-radius: 8px !important;
-      border-width: 2px !important;
-      transition: all 0.3s ease !important;
-    }
-
-    .record-actions button mat-icon {
-      font-size: 1.125rem;
-      width: 1.125rem;
-      height: 1.125rem;
-      margin-right: 4px;
-    }
-
-    .record-actions button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-    }
-
-    .submission-date {
-      font-size: 0.8rem;
-      color: #94a3b8;
-      font-style: italic;
-    }
-
-    /* Certificates Grid */
-    .certificates-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 1.5rem;
-    }
-
-    .certificate-card {
-      position: relative;
-      padding: 2rem 1.5rem;
-      border-radius: 16px;
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.03) 0%, rgba(118, 75, 162, 0.03) 100%);
-      border: 2px solid rgba(102, 126, 234, 0.1);
-      transition: all 0.3s ease;
-      text-align: center;
-    }
-
-    .certificate-card:hover {
-      border-color: #667eea;
-      box-shadow: 0 12px 32px rgba(102, 126, 234, 0.2);
-      transform: translateY(-8px);
-    }
-
-    .cert-icon {
-      margin-bottom: 1rem;
-      position: relative;
-    }
-
-    .cert-icon mat-icon {
-      font-size: 64px;
-      width: 64px;
-      height: 64px;
-      background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: pulse 3s infinite;
-    }
-
-    .certificate-card h3 {
-      margin: 0 0 0.75rem 0;
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: #1a1a2e;
-    }
-
-    .cert-id {
-      font-size: 0.75rem;
-      color: #64748b;
-      margin-bottom: 1rem;
-      font-family: monospace;
-    }
-
-    .cert-details {
-      margin: 1.25rem 0;
-      padding: 1rem;
-      background: white;
-      border-radius: 12px;
-      text-align: left;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    }
-
-    .cert-details p {
-      margin: 0.5rem 0;
-      font-size: 0.875rem;
-      color: #64748b;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .cert-details strong {
-      color: #1a1a2e;
-      font-weight: 600;
-    }
-
-    .cert-actions {
-      display: flex;
-      gap: 0.75rem;
-      justify-content: center;
-      margin-top: 1.25rem;
-    }
-
-    .cert-actions button {
-      border-radius: 12px;
-      font-weight: 600;
-      transition: all 0.3s ease;
-    }
-
-    .cert-actions button:hover:not([disabled]) {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    /* Empty State */
-    .empty-state {
-      text-align: center;
-      padding: 4rem 2rem;
-    }
-
-    .empty-state mat-icon {
-      font-size: 80px;
-      width: 80px;
-      height: 80px;
-      color: #cbd5e1;
-      margin-bottom: 1rem;
-    }
-
-    .empty-state h3 {
-      margin: 0 0 0.75rem 0;
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: #64748b;
-    }
-
-    .empty-state p {
-      margin: 0;
-      color: #94a3b8;
-      font-size: 0.875rem;
-    }
-
-    /* Status Chips */
-    mat-chip.status-pending,
-    mat-chip.status-submitted {
-      background-color: #FFF9C4 !important;
-      color: #F57F17 !important;
-    }
-
-    mat-chip.status-approved,
-    mat-chip.status-active {
-      background-color: #C8E6C9 !important;
-      color: #2E7D32 !important;
-    }
-
-    mat-chip.status-rejected {
-      background-color: #FFCDD2 !important;
-      color: #C62828 !important;
-    }
-
-    mat-chip.status-draft {
-      background-color: #E3F2FD !important;
-      color: #1565C0 !important;
-    }
-
-    /* Loading State */
-    .loading-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    }
-
-    .loading-container p {
-      margin-top: 1.5rem;
-      color: #64748b;
-      font-size: 1rem;
-      font-weight: 500;
-    }
-
-    /* Responsive Design */
-    @media (max-width: 1024px) {
-      .stats-cards {
-        grid-template-columns: repeat(2, 1fr);
-      }
+    .cert-count {
+      background: var(--accent-teal); color: #0a0e1a;
+      border-radius: 10px; padding: 2px 8px; font-size: 11px;
+      font-weight: 700; margin-left: 6px;
     }
 
     @media (max-width: 768px) {
-      .profile-container {
-        padding: 1rem;
-      }
-
-      .header-content {
-        padding: 1.5rem;
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .header-left {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-      }
-
-      .student-meta {
-        flex-direction: column;
-        align-items: center;
-      }
-
-      .header-actions {
-        flex-direction: column;
-        width: 100%;
-      }
-
-      .action-btn {
-        width: 100%;
-      }
-
-      .stats-cards {
-        grid-template-columns: 1fr;
-      }
-
-      .tab-content {
-        padding: 1.5rem;
-      }
-
-      .details-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .record-header {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .record-stats {
-        align-items: flex-start;
-      }
-
-      .gpa-badges {
-        width: 100%;
-      }
-
-      .gpa-badge {
-        flex: 1;
-      }
-
-      .certificates-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .courses-table {
-        font-size: 0.8rem;
-      }
-
-      .courses-table th,
-      .courses-table td {
-        padding: 0.75rem 0.5rem;
-      }
+      .header-content { flex-direction: column; text-align: center; }
+      .header-left { flex-direction: column; }
+      .header-right { justify-content: center; }
+      .info-grid { grid-template-columns: 1fr; }
     }
-
-    @media (max-width: 480px) {
-      .welcome-text h1 {
-        font-size: 1.25rem;
-      }
-
-      .stat-value {
-        font-size: 1.5rem;
-      }
-
-      .tab-header {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .tab-header button {
-        width: 100%;
-      }
+    .course-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;
+    }
+    .course-enroll-card {
+      padding: 16px; border-radius: 12px;
+      background: rgba(15,23,42,0.6); border: 1px solid rgba(148,163,184,0.08);
+      transition: all 0.3s ease;
+      &:hover { border-color: rgba(56,189,248,0.2); transform: translateY(-2px); }
+    }
+    .course-type-tag {
+      font-size: 10px; text-transform: uppercase; padding: 2px 8px; border-radius: 8px;
+      background: rgba(45,212,191,0.15); color: #2dd4bf; font-weight: 600;
+      &.elective { background: rgba(251,191,36,0.15); color: #fbbf24; }
     }
   `]
 })
 export class StudentProfileComponent implements OnInit {
-  student: Student | null = null;
-  records: AcademicRecord[] = [];
-  certificates: Certificate[] = [];
   currentUser = this.authService.currentUser;
   rollNumber: string | null = null;
   loading = true;
+  student: any = null;
+  marks: any[] = [];
+  filteredMarks: any[] = [];
+  certificates: any[] = [];
+  enrolledCourses: any[] = [];
+  semesters: number[] = [];
+  selectedSemester = 0;
+  cgpaData: any = null;
+  semesterData: any = null;
+  profileFields: any[] = [];
   isViewingAsAdmin = false;
+  private apiUrl = APP_CONFIG.api.baseUrl;
 
   constructor(
     private authService: AuthService,
@@ -1473,20 +569,14 @@ export class StudentProfileComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    // Get roll number from route params or use current user
     this.route.params.subscribe(params => {
       this.rollNumber = params['rollNumber'];
-
-      // Check if viewing as admin (route contains rollNumber param)
       this.isViewingAsAdmin = !!this.rollNumber && this.currentUser?.role === 'admin';
-
-      // If no roll number in params, use current user's ID
       if (!this.rollNumber) {
         this.rollNumber = this.currentUser?.userId || null;
       }
-
       if (this.rollNumber) {
-        this.loadStudentData();
+        this.loadAllData();
       } else {
         this.snackBar.open('Unable to identify student', 'Close', { duration: 3000 });
         this.loading = false;
@@ -1494,506 +584,439 @@ export class StudentProfileComponent implements OnInit {
     });
   }
 
-  loadStudentData(): void {
-    if (!this.rollNumber) return;
-
+  async loadAllData() {
     this.loading = true;
-
-    // Load all data in parallel
-    Promise.all([
-      this.loadStudentProfile(),
-      this.loadRecords(),
-      this.loadCertificates()
-    ]).then(() => {
+    try {
+      await Promise.all([
+        this.loadStudent(),
+        this.loadMarks(),
+        this.loadCertificates(),
+        this.loadCGPA(),
+        this.loadEnrolledCourses()
+      ]);
+    } finally {
       this.loading = false;
-    }).catch(error => {
-      console.error('Error loading student data:', error);
-      this.loading = false;
-      this.snackBar.open('Error loading student data', 'Close', { duration: 3000 });
-    });
-  }
-
-  loadStudentProfile(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!this.rollNumber) {
-        reject('No roll number');
-        return;
-      }
-
-      this.blockchainService.getStudent(this.rollNumber).subscribe({
-        next: (response) => {
-          if (response.success && response.data) {
-            this.student = response.data;
-            console.log('Loaded student:', this.student);
-          }
-          resolve();
-        },
-        error: (error) => {
-          console.error('Error loading student profile:', error);
-          reject(error);
-        }
-      });
-    });
-  }
-
-  loadRecords(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!this.rollNumber) {
-        reject('No roll number');
-        return;
-      }
-
-      this.blockchainService.getStudentRecords(this.rollNumber).subscribe({
-        next: (response) => {
-          if (response.success && response.data) {
-            this.records = response.data;
-            console.log('Loaded academic records:', this.records);
-          }
-          resolve();
-        },
-        error: (error) => {
-          console.error('Error loading records:', error);
-          // Don't reject - student might have no records
-          this.records = [];
-          resolve();
-        }
-      });
-    });
-  }
-
-  loadCertificates(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!this.rollNumber) {
-        reject('No roll number');
-        return;
-      }
-
-      this.blockchainService.getStudentCertificates(this.rollNumber).subscribe({
-        next: (response) => {
-          if (response.success && response.data) {
-            this.certificates = response.data;
-            console.log('Loaded certificates:', this.certificates);
-          }
-          resolve();
-        },
-        error: (error) => {
-          console.error('Error loading certificates:', error);
-          // Don't reject - student might have no certificates
-          this.certificates = [];
-          resolve();
-        }
-      });
-    });
-  }
-
-  getStatusClass(status: string): string {
-    if (!status) return '';
-    const statusUpper = status.toUpperCase();
-    switch (statusUpper) {
-      case 'DRAFT': return 'status-draft';
-      case 'SUBMITTED': return 'status-submitted';
-      case 'APPROVED': return 'status-approved';
-      case 'REJECTED': return 'status-rejected';
-      case 'ACTIVE': return 'status-active';
-      default: return '';
     }
   }
 
-  /**
-   * Returns a 6-step pipeline array for the approval status timeline in the template.
-   * Each step has: label, done (fully completed), active (current in-progress step).
-   */
-  getApprovalSteps(status: string): Array<{ label: string, done: boolean, active: boolean }> {
-    const stages = ['SUBMITTED', 'FACULTY_APPROVED', 'HOD_APPROVED', 'DAC_APPROVED', 'ES_APPROVED', 'APPROVED'];
-    const labels = ['Submitted', 'Faculty', 'HOD', 'DAC', 'Exam Sec.', 'Dean ✓'];
-    const idx = stages.indexOf(status);
-    return stages.map((s, i) => ({
-      label: labels[i],
-      done: i < idx || status === 'APPROVED',
-      active: i === idx && status !== 'APPROVED'
-    }));
+  private loadStudent(): Promise<void> {
+    return new Promise(resolve => {
+      this.blockchainService.getStudent(this.rollNumber!).subscribe({
+        next: (res) => {
+          if (res.success && res.data) {
+            this.student = res.data;
+            this.buildProfileFields();
+          }
+          resolve();
+        },
+        error: () => resolve()
+      });
+    });
   }
 
-  getStatusIcon(status: string): string {
+  private loadMarks(): Promise<void> {
+    return new Promise(resolve => {
+      this.http.get<any>(`${this.apiUrl}/marks/${this.rollNumber}`).subscribe({
+        next: (res) => {
+          if (res.success) {
+            this.marks = res.data || [];
+            this.filteredMarks = this.marks;
+            // Extract unique semesters
+            const semSet = new Set(this.marks.map((m: any) => m.semester));
+            this.semesters = Array.from(semSet).sort((a, b) => a - b);
+          }
+          resolve();
+        },
+        error: () => resolve()
+      });
+    });
+  }
 
-    if (!status) return 'help';
-    const statusUpper = status.toUpperCase();
-    switch (statusUpper) {
-      case 'DRAFT': return 'edit';
-      case 'SUBMITTED': return 'schedule';
-      case 'APPROVED': return 'check_circle';
-      case 'REJECTED': return 'cancel';
-      case 'ACTIVE': return 'check_circle';
-      default: return 'help';
+  private loadCertificates(): Promise<void> {
+    return new Promise(resolve => {
+      const token = localStorage.getItem('access_token');
+      const headers = { 'Authorization': `Bearer ${token}` };
+
+      // Load blockchain certificates
+      this.blockchainService.getStudentCertificates(this.rollNumber!).subscribe({
+        next: (res) => {
+          const blockchainCerts = res.success && Array.isArray(res.data) ? res.data : [];
+
+          // Also load certificate requests to show pending/approved status
+          this.http.get<any>(`${this.apiUrl}/certificates/requests`, { headers }).subscribe({
+            next: (reqRes) => {
+              const requests = reqRes.success && Array.isArray(reqRes.data) ? reqRes.data : [];
+              // Filter only this student's requests
+              const myRequests = requests.filter((r: any) => r.studentId === this.rollNumber);
+              // Convert requests to cert-like objects for display
+              const requestCerts = myRequests.map((r: any) => ({
+                certificateId: r.requestId,
+                certificateType: r.certificateType,
+                status: r.status,
+                requestDate: r.requestDate,
+                purpose: r.purpose,
+                processedBy: r.processedBy,
+                processedDate: r.processedDate,
+                isRequest: true
+              }));
+
+              // Merge: blockchain certs first, then requests not already on blockchain
+              this.certificates = [...blockchainCerts, ...requestCerts];
+              resolve();
+            },
+            error: () => { this.certificates = blockchainCerts; resolve(); }
+          });
+        },
+        error: () => resolve()
+      });
+    });
+  }
+
+  private loadCGPA(): Promise<void> {
+    return new Promise(resolve => {
+      this.http.get<any>(`${this.apiUrl}/marks/${this.rollNumber}/cgpa`).subscribe({
+        next: (res) => {
+          if (res.success) this.cgpaData = res.data;
+          resolve();
+        },
+        error: () => resolve()
+      });
+    });
+  }
+
+  private loadEnrolledCourses(): Promise<void> {
+    return new Promise(resolve => {
+      const dept = this.student?.department || 'CSE';
+      const token = localStorage.getItem('access_token');
+      const headers = { 'Authorization': `Bearer ${token}` };
+      this.http.get<any>(`${this.apiUrl}/courses?department=${dept}`, { headers }).subscribe({
+        next: (res) => {
+          this.enrolledCourses = res.success ? res.data : [];
+          resolve();
+        },
+        error: () => { this.enrolledCourses = []; resolve(); }
+      });
+    });
+  }
+
+  buildProfileFields() {
+    const s = this.student;
+    this.profileFields = [
+      { icon: 'badge', label: 'Roll Number', value: s?.rollNumber || s?.studentId || this.rollNumber, color: 'linear-gradient(135deg,#0f766e,#0891b2)' },
+      { icon: 'person', label: 'Full Name', value: s?.name, color: 'linear-gradient(135deg,#6366f1,#8b5cf6)' },
+      { icon: 'business', label: 'Department', value: s?.department, color: 'linear-gradient(135deg,#059669,#34d399)' },
+      { icon: 'email', label: 'Email', value: s?.email || this.currentUser?.email, color: 'linear-gradient(135deg,#0284c7,#38bdf8)' },
+      { icon: 'calendar_today', label: 'Enrollment Year', value: s?.enrollmentYear, color: 'linear-gradient(135deg,#d97706,#fbbf24)' },
+      { icon: 'category', label: 'Admission Category', value: s?.admissionCategory || 'GENERAL', color: 'linear-gradient(135deg,#e11d48,#fb7185)' },
+    ];
+  }
+
+  selectSemester(sem: number) {
+    this.selectedSemester = sem;
+    if (sem === 0) {
+      this.filteredMarks = this.marks;
+      this.semesterData = null;
+    } else {
+      this.filteredMarks = this.marks.filter(m => m.semester === sem);
+      // Calculate SGPA for selected semester
+      let totalCredits = 0, weighted = 0;
+      for (const m of this.filteredMarks) {
+        if (m.status === 'verified') {
+          totalCredits += m.credits;
+          weighted += m.gradePoint * m.credits;
+        }
+      }
+      this.semesterData = {
+        sgpa: totalCredits > 0 ? (weighted / totalCredits).toFixed(2) : '0.00',
+        totalCredits
+      };
     }
   }
 
-  viewCertificate(cert: Certificate): void {
-    this.snackBar.open(`Certificate: ${cert.certificateId || cert.type}`, 'Close', { duration: 3000 });
+  getMarkCountForSem(sem: number): number {
+    return this.marks.filter(m => m.semester === sem).length;
   }
 
-  downloadCertificate(cert: Certificate): void {
-    if (!cert.isValid || cert.revoked) {
-      this.snackBar.open('Cannot download invalid or revoked certificate', 'Close', { duration: 3000 });
+  getInitials(): string {
+    const name = this.student?.name || this.currentUser?.name || '';
+    return name.split(' ').map((w: string) => w[0] || '').join('').substring(0, 2).toUpperCase();
+  }
+
+  // ── PDF Downloads ─────────────────────────────────────────────
+  downloadGradeSheet(semester: number) {
+    const semMarks = this.marks.filter(m => m.semester === semester && m.status === 'verified');
+    if (!semMarks.length) {
+      this.snackBar.open('No verified marks for this semester', 'Close', { duration: 3000 });
       return;
     }
-    // Try backend Puppeteer PDF first, fall back to jsPDF
-    const token = localStorage.getItem('access_token');
-    const certId = cert.certificateId;
-    const baseUrl = 'http://localhost:3000/api/v1';
-    this.snackBar.open('Generating PDF certificate...', '', { duration: 2000 });
-    this.http.post(`${baseUrl}/pdf/generate/${certId}`, {}, {
-      headers: { Authorization: `Bearer ${token}` },
-      responseType: 'blob',
-      params: { studentId: this.rollNumber || '', recordId: cert.recordId || '' }
-    }).subscribe({
-      next: (blob: Blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `certificate-${certId}.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
-        this.snackBar.open('✅ Certificate downloaded!', 'Close', { duration: 3000 });
-      },
-      error: () => {
-        this.snackBar.open('Backend PDF unavailable — generating locally...', '', { duration: 1500 });
-        this.generateCertificatePDF(cert);
-      }
-    });
-  }
 
-  async generateCertificatePDF(cert: Certificate): Promise<void> {
-    const pdf = new jsPDF('landscape', 'mm', 'a4');
-
-    // Generate QR Code
-    const verifyUrl = getVerificationUrl('certificate', cert.certificateId);
-    const qrCodeDataUrl = await QRCode.toDataURL(verifyUrl, {
-      width: APP_CONFIG.qrCode.size,
-      margin: APP_CONFIG.qrCode.margin,
-      errorCorrectionLevel: APP_CONFIG.qrCode.errorCorrectionLevel
-    });
-
-    // Border
-    pdf.setLineWidth(2);
-    pdf.setDrawColor(63, 81, 181);
-    pdf.rect(10, 10, 277, 190);
-
-    pdf.setLineWidth(0.5);
-    pdf.rect(15, 15, 267, 180);
-
-    // Watermark
-    pdf.setFontSize(60);
-    pdf.setTextColor(63, 81, 181);
-    pdf.setGState(new (pdf as any).GState({ opacity: 0.03 }));
-    pdf.text('NIT WARANGAL', 148.5, 105, { align: 'center', angle: 45 });
-    pdf.setGState(new (pdf as any).GState({ opacity: 1 }));
-    pdf.setTextColor(0, 0, 0);
+    const pdf = new jsPDF();
+    const name = this.student?.name || 'Student';
+    const roll = this.rollNumber || '';
 
     // Header
-    pdf.setTextColor(63, 81, 181);
-    pdf.setFontSize(32);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('🎓', 148.5, 35, { align: 'center' });
-
-    pdf.setFontSize(24);
-    pdf.text(APP_CONFIG.app.instituteName, 148.5, 45, { align: 'center' });
-
-    pdf.setFontSize(12);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(102, 102, 102);
-    pdf.text('An Institute of National Importance', 148.5, 52, { align: 'center' });
-
-    // Certificate Title
-    pdf.setFontSize(28);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(63, 81, 181);
-    pdf.text(`${cert.type} CERTIFICATE`, 148.5, 68, { align: 'center' });
-
-    // Content
-    pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(0, 0, 0);
-    pdf.text('This is to certify that', 148.5, 82, { align: 'center' });
-
-    // Student Name
-    pdf.setFontSize(24);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(this.student?.name || 'N/A', 148.5, 95, { align: 'center' });
-
-    // Details
-    pdf.setFontSize(12);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(`Roll Number: ${this.student?.rollNumber || 'N/A'}`, 148.5, 105, { align: 'center' });
-
-    if (cert.degreeAwarded) {
-      pdf.text(`has been awarded`, 148.5, 112, { align: 'center' });
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(cert.degreeAwarded, 148.5, 119, { align: 'center' });
-      pdf.setFont('helvetica', 'normal');
-    }
-
-    // Certificate Details Box
-    let yPos = 135;
-    pdf.setFillColor(248, 249, 250);
-    pdf.rect(40, yPos - 5, 180, cert.finalCGPA ? 35 : 30, 'F');
-
-    pdf.setFontSize(11);
-    pdf.text(`Certificate ID: ${cert.certificateId}`, 50, yPos);
-    yPos += 6;
-    pdf.text(`Department: ${this.student?.department || 'N/A'}`, 50, yPos);
-    yPos += 6;
-    if (cert.finalCGPA) {
-      pdf.text(`CGPA: ${cert.finalCGPA.toFixed(2)}`, 50, yPos);
-      yPos += 6;
-    }
-    pdf.text(`Issue Date: ${this.formatDate(cert.issueDate)}`, 50, yPos);
-    yPos += 6;
-    if (cert.expiryDate) {
-      pdf.text(`Expiry Date: ${this.formatDate(cert.expiryDate)}`, 50, yPos);
-      yPos += 6;
-    }
-
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(cert.isValid ? 76 : 244, cert.isValid ? 175 : 67, cert.isValid ? 80 : 54);
-    pdf.text(`Status: ${cert.isValid ? 'VALID' : 'INVALID'}`, 50, yPos);
-    pdf.setTextColor(0, 0, 0);
-
-    // Signatures
-    pdf.setFont('helvetica', 'normal');
-    pdf.line(50, 180, 100, 180);
-    pdf.text('Admin', 75, 185, { align: 'center' });
-
-    pdf.line(197, 180, 247, 180);
-    pdf.text('Director', 222, 185, { align: 'center' });
-
-    // QR Code
-    pdf.addImage(qrCodeDataUrl, 'PNG', 230, 130, 35, 35);
-    pdf.setFontSize(8);
-    pdf.setTextColor(102, 102, 102);
-    pdf.text('Scan to verify', 247.5, 168, { align: 'center' });
-
-    // Footer
-    pdf.setFontSize(9);
-    pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 195);
-
-    // Save
-    pdf.save(`Certificate_${cert.certificateId}_${this.student?.rollNumber}.pdf`);
-
-    this.snackBar.open('Certificate downloaded successfully!', 'Close', { duration: 3000 });
-  }
-
-  formatDate(dateValue: any): string {
-    if (!dateValue) return 'N/A';
-
-    try {
-      // Handle ISO date string
-      if (typeof dateValue === 'string') {
-        const date = new Date(dateValue);
-        if (!isNaN(date.getTime())) {
-          return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          });
-        }
-      }
-
-      // Handle timestamp object (Go's time.Time)
-      if (typeof dateValue === 'object' && dateValue.seconds) {
-        const date = new Date(dateValue.seconds * 1000);
-        return date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        });
-      }
-
-      return new Date(dateValue).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return 'N/A';
-    }
-  }
-
-  async downloadRecord(record: any): Promise<void> {
-    const pdf = new jsPDF();
-
-    // Generate QR Code for verification
-    const verifyUrl = getVerificationUrl('record', record.recordId);
-    const qrCodeDataUrl = await QRCode.toDataURL(verifyUrl, {
-      width: 60,
-      margin: APP_CONFIG.qrCode.margin,
-      errorCorrectionLevel: APP_CONFIG.qrCode.errorCorrectionLevel
-    });
-
-    // Title
-    pdf.setFontSize(20);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('ACADEMIC RECORD', 105, 20, { align: 'center' });
-
-    // Header line
-    pdf.setLineWidth(0.5);
-    pdf.line(20, 25, 190, 25);
-
-    // Student Information
-    pdf.setFontSize(12);
-    pdf.setFont('helvetica', 'normal');
-    let yPos = 35;
-
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Student Information:', 20, yPos);
-    yPos += 8;
-
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(`Name: ${this.student?.name || 'N/A'}`, 20, yPos);
-    yPos += 6;
-    pdf.text(`Roll Number: ${this.student?.rollNumber || 'N/A'}`, 20, yPos);
-    yPos += 6;
-    pdf.text(`Department: ${record.department}`, 20, yPos);
-    yPos += 6;
-    pdf.text(`Record ID: ${record.recordId}`, 20, yPos);
-    yPos += 10;
-
-    // Academic Details
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Academic Details:', 20, yPos);
-    yPos += 8;
-
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(`Semester: ${record.semester}`, 20, yPos);
-    yPos += 6;
-    pdf.text(`Year: ${record.year || 'N/A'}`, 20, yPos);
-    yPos += 6;
-    pdf.text(`Status: ${record.status}`, 20, yPos);
-    yPos += 6;
-    pdf.text(`Submitted: ${this.formatDate(record.timestamp)}`, 20, yPos);
-    yPos += 12;
-
-    // Courses Table
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Courses:', 20, yPos);
-    yPos += 8;
-
-    // Table headers
-    pdf.setFillColor(102, 126, 234);
-    pdf.rect(20, yPos - 5, 170, 8, 'F');
+    pdf.setFillColor(15, 118, 110);
+    pdf.rect(0, 0, 210, 40, 'F');
     pdf.setTextColor(255, 255, 255);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Course Code', 25, yPos);
-    pdf.text('Course Name', 65, yPos);
-    pdf.text('Credits', 140, yPos);
-    pdf.text('Grade', 165, yPos);
-    yPos += 8;
+    pdf.setFontSize(18);
+    pdf.text('NIT Warangal — Grade Sheet', 105, 18, { align: 'center' });
+    pdf.setFontSize(12);
+    pdf.text(`Semester ${semester}`, 105, 30, { align: 'center' });
 
-    // Table rows
+    // Student Info
     pdf.setTextColor(0, 0, 0);
-    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(11);
+    pdf.text(`Name: ${name}`, 20, 52);
+    pdf.text(`Roll Number: ${roll}`, 20, 60);
+    pdf.text(`Department: ${this.student?.department || 'CSE'}`, 120, 52);
+    pdf.text(`Enrollment Year: ${this.student?.enrollmentYear || '—'}`, 120, 60);
 
-    record.courses.forEach((course: any, index: number) => {
-      if (yPos > 270) {
-        pdf.addPage();
-        yPos = 20;
-      }
-
-      // Alternate row colors
-      if (index % 2 === 0) {
-        pdf.setFillColor(248, 249, 250);
-        pdf.rect(20, yPos - 5, 170, 7, 'F');
-      }
-
-      pdf.text(course.courseCode, 25, yPos);
-      const courseName = course.courseName.length > 35 ? course.courseName.substring(0, 35) + '...' : course.courseName;
-      pdf.text(courseName, 65, yPos);
-      pdf.text(String(course.credits), 140, yPos);
-      pdf.text(course.grade, 165, yPos);
-      yPos += 7;
-    });
-
-    yPos += 5;
-    pdf.setLineWidth(0.5);
-    pdf.line(20, yPos, 190, yPos);
-    yPos += 8;
-
-    // Summary
+    // Table Header
+    let y = 75;
+    pdf.setFillColor(240, 240, 240);
+    pdf.rect(15, y - 5, 180, 10, 'F');
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(14);
-    pdf.text(`Total Credits: ${record.totalCredits}`, 20, yPos);
-    yPos += 8;
-    pdf.text(`SGPA: ${record.sgpa.toFixed(2)}`, 20, yPos);
-    yPos += 8;
-    pdf.text(`CGPA: ${record.cgpa.toFixed(2)}`, 20, yPos);
+    const cols = ['Course Code', 'Course Name', 'Credits', 'Marks', 'Grade', 'GP'];
+    const colX = [20, 50, 105, 125, 150, 170];
+    cols.forEach((c, i) => pdf.text(c, colX[i], y + 2));
 
-    // Add QR Code
-    pdf.addImage(qrCodeDataUrl, 'PNG', 160, 35, 30, 30);
-    pdf.setFontSize(8);
+    // Table Rows
     pdf.setFont('helvetica', 'normal');
-    pdf.text('Scan to verify', 175, 68, { align: 'center' });
+    let totalCredits = 0, weighted = 0;
+    for (const m of semMarks) {
+      y += 10;
+      pdf.text(m.courseCode, 20, y);
+      pdf.text((m.courseName || '').substring(0, 30), 50, y);
+      pdf.text(String(m.credits), 110, y);
+      pdf.text(`${m.marksObtained}/${m.maxMarks}`, 125, y);
+      pdf.text(m.grade, 155, y);
+      pdf.text(String(m.gradePoint), 175, y);
+      totalCredits += m.credits;
+      weighted += m.gradePoint * m.credits;
+    }
+
+    // SGPA
+    y += 15;
+    pdf.setFont('helvetica', 'bold');
+    const sgpa = (weighted / totalCredits).toFixed(2);
+    pdf.text(`SGPA: ${sgpa}`, 20, y);
+    pdf.text(`Total Credits: ${totalCredits}`, 120, y);
 
     // Footer
-    const pageCount = (pdf as any).internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      pdf.setPage(i);
-      pdf.setFontSize(10);
+    y += 15;
+    pdf.setFont('helvetica', 'italic');
+    pdf.setFontSize(8);
+    pdf.text('This is a system-generated document. Verified on blockchain.', 105, y, { align: 'center' });
+
+    pdf.save(`GradeSheet_Sem${semester}_${roll}.pdf`);
+    this.snackBar.open(`Semester ${semester} grade sheet downloaded`, 'Close', { duration: 2000 });
+  }
+
+  downloadConsolidated() {
+    const verified = this.marks.filter(m => m.status === 'verified');
+    if (!verified.length) {
+      this.snackBar.open('No verified marks available', 'Close', { duration: 3000 });
+      return;
+    }
+
+    const pdf = new jsPDF();
+    const name = this.student?.name || 'Student';
+    const roll = this.rollNumber || '';
+
+    // Header
+    pdf.setFillColor(15, 118, 110);
+    pdf.rect(0, 0, 210, 40, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(18);
+    pdf.text('NIT Warangal — Consolidated Marksheet', 105, 18, { align: 'center' });
+    pdf.setFontSize(11);
+    pdf.text('All Semesters', 105, 30, { align: 'center' });
+
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(11);
+    pdf.text(`Name: ${name}`, 20, 52);
+    pdf.text(`Roll Number: ${roll}`, 20, 60);
+    pdf.text(`Department: ${this.student?.department || 'CSE'}`, 120, 52);
+
+    let y = 75;
+    for (const sem of this.semesters) {
+      const semMarks = verified.filter(m => m.semester === sem);
+      if (!semMarks.length) continue;
+
+      if (y > 250) { pdf.addPage(); y = 20; }
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(12);
+      pdf.setFillColor(8, 145, 178);
+      pdf.setTextColor(255, 255, 255);
+      pdf.rect(15, y - 5, 180, 10, 'F');
+      pdf.text(`Semester ${sem}`, 20, y + 2);
+      pdf.setTextColor(0, 0, 0);
+
+      y += 10;
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Code', 20, y); pdf.text('Course', 45, y);
+      pdf.text('Cr', 115, y); pdf.text('Marks', 130, y);
+      pdf.text('Grade', 155, y); pdf.text('GP', 175, y);
+
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 285);
-      pdf.text(`Page ${i} of ${pageCount}`, 170, 285);
-    }
-
-    // Save PDF
-    pdf.save(`Academic_Record_${record.recordId}_Sem${record.semester}.pdf`);
-  }
-
-  shareRecord(record: any): void {
-    const shareText = `Academic Record - Semester ${record.semester}\nSGPA: ${record.sgpa.toFixed(2)} | CGPA: ${record.cgpa.toFixed(2)}\nTotal Credits: ${record.totalCredits}`;
-
-    if (navigator.share) {
-      // Use Web Share API if available
-      navigator.share({
-        title: `Academic Record - Semester ${record.semester}`,
-        text: shareText,
-        url: window.location.href
-      }).catch(err => console.log('Error sharing:', err));
-    } else {
-      // Fallback: Copy to clipboard
-      navigator.clipboard.writeText(`${shareText}\n${window.location.href}`).then(() => {
-        alert('Record link copied to clipboard!');
-      }).catch(err => {
-        console.error('Failed to copy:', err);
-        alert('Could not share record. Please try again.');
-      });
-    }
-  }
-
-  goBack(): void {
-    if (this.isViewingAsAdmin) {
-      this.router.navigate(['/admin/dashboard']);
-    } else {
-      this.router.navigate(['/']);
-    }
-  }
-
-  requestCertificate(): void {
-    const dialogRef = this.dialog.open(CertificateRequestDialogComponent, {
-      width: '600px',
-      data: { student: this.student }
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        // Request was submitted successfully
-        this.snackBar.open('Certificate request submitted successfully!', 'Close', { duration: 3000 });
-        // Optionally reload certificates
-        this.loadCertificates();
+      let sc = 0, sw = 0;
+      for (const m of semMarks) {
+        y += 7;
+        pdf.text(m.courseCode, 20, y);
+        pdf.text((m.courseName || '').substring(0, 35), 45, y);
+        pdf.text(String(m.credits), 118, y);
+        pdf.text(`${m.marksObtained}`, 133, y);
+        pdf.text(m.grade, 158, y);
+        pdf.text(String(m.gradePoint), 178, y);
+        sc += m.credits; sw += m.gradePoint * m.credits;
       }
+      y += 8;
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`SGPA: ${(sw / sc).toFixed(2)} | Credits: ${sc}`, 20, y);
+      y += 12;
+    }
+
+    // CGPA
+    if (this.cgpaData) {
+      y += 5;
+      pdf.setFontSize(14);
+      pdf.text(`CGPA: ${this.cgpaData.cgpa} | Total Credits: ${this.cgpaData.totalCredits}`, 20, y);
+    }
+
+    pdf.save(`Consolidated_${roll}.pdf`);
+    this.snackBar.open('Consolidated marksheet downloaded', 'Close', { duration: 2000 });
+  }
+
+  downloadCertificate(cert: any) {
+    const pdf = new jsPDF();
+    const w = 210;
+
+    // Dark header
+    pdf.setFillColor(15, 23, 42);
+    pdf.rect(0, 0, w, 55, 'F');
+    pdf.setFillColor(56, 189, 248);
+    pdf.rect(0, 55, w, 3, 'F');
+    pdf.setTextColor(255, 215, 0);
+    pdf.setFontSize(26);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('NIT Warangal', w / 2, 22, { align: 'center' });
+    pdf.setTextColor(226, 232, 240);
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('National Institute of Technology, Warangal', w / 2, 32, { align: 'center' });
+    pdf.setFontSize(16);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(56, 189, 248);
+    pdf.text('ACADEMIC CERTIFICATE', w / 2, 46, { align: 'center' });
+
+    // Certificate details
+    const y0 = 70;
+    pdf.setTextColor(30, 41, 59);
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Certificate ID:', 20, y0);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(String(cert.certificateId || cert.id), 65, y0);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Type:', 20, y0 + 10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(String(cert.certificateType || 'Academic'), 65, y0 + 10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Status:', 20, y0 + 20);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(34, 197, 94);
+    pdf.text(String(cert.status || 'APPROVED'), 65, y0 + 20);
+
+    // Divider
+    pdf.setDrawColor(56, 189, 248);
+    pdf.setLineWidth(0.5);
+    pdf.line(20, y0 + 28, 190, y0 + 28);
+
+    // Student info
+    const y1 = y0 + 40;
+    pdf.setTextColor(15, 23, 42);
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('This is to certify that', w / 2, y1, { align: 'center' });
+    pdf.setFontSize(20);
+    pdf.setTextColor(56, 189, 248);
+    pdf.text(String(this.student?.name || 'Student'), w / 2, y1 + 14, { align: 'center' });
+    pdf.setFontSize(12);
+    pdf.setTextColor(71, 85, 105);
+    pdf.text('Roll Number: ' + this.rollNumber, w / 2, y1 + 26, { align: 'center' });
+    pdf.text('Department: ' + (this.student?.department || 'CSE'), w / 2, y1 + 36, { align: 'center' });
+    let nextY = y1 + 46;
+    if (cert.purpose) {
+      pdf.text('Purpose: ' + cert.purpose, w / 2, nextY, { align: 'center' });
+      nextY += 10;
+    }
+    pdf.setFontSize(10);
+    pdf.setTextColor(100, 116, 139);
+    const dateStr = cert.requestDate || cert.issueDate || cert.createdAt || new Date().toISOString();
+    pdf.text('Date: ' + new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }), w / 2, nextY + 5, { align: 'center' });
+    if (cert.processedBy) {
+      pdf.text('Approved by: ' + cert.processedBy, w / 2, nextY + 13, { align: 'center' });
+    }
+
+    // Blockchain verification box
+    pdf.setFillColor(241, 245, 249);
+    pdf.roundedRect(20, 220, 170, 25, 3, 3, 'F');
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(15, 23, 42);
+    pdf.text('Blockchain Verification', 25, 228);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(71, 85, 105);
+    pdf.text('This certificate is secured on Hyperledger Fabric blockchain.', 25, 236);
+
+    // Footer
+    pdf.setFillColor(15, 23, 42);
+    pdf.rect(0, 280, w, 17, 'F');
+    pdf.setFontSize(8);
+    pdf.setTextColor(148, 163, 184);
+    pdf.text('NIT Warangal Academic Records | Blockchain Verified | Tamper-Proof', w / 2, 290, { align: 'center' });
+
+    // Open PDF in new tab for viewing and saving
+    const pdfDataUri = pdf.output('datauristring');
+    const newWindow = window.open('', '_blank');
+    if (newWindow) {
+      newWindow.document.write(
+        '<html><head><title>Certificate - ' + this.rollNumber + '</title></head>' +
+        '<body style="margin:0;padding:0;">' +
+        '<embed width="100%" height="100%" src="' + pdfDataUri + '" type="application/pdf" />' +
+        '</body></html>'
+      );
+      newWindow.document.close();
+    } else {
+      // Fallback: direct download via link
+      const blob = pdf.output('blob');
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Certificate_' + (cert.certificateType || 'Academic') + '_' + this.rollNumber + '.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }
+    this.snackBar.open('Certificate opened in new tab!', 'Close', { duration: 3000 });
+  }
+
+  requestCertificate() {
+    const dialogRef = this.dialog.open(CertificateRequestDialogComponent, {
+      width: '500px',
+      data: { student: this.student, rollNumber: this.rollNumber }
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) this.loadCertificates();
     });
   }
 
-  logout(): void {
+  logout() {
     this.authService.logout();
+    this.router.navigate(['/login']);
   }
 }

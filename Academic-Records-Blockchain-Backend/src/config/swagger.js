@@ -61,7 +61,7 @@ This API drives the full lifecycle of academic credentials:
                         studentID: { type: 'string' },
                         semester: { type: 'integer' },
                         cgpa: { type: 'number' },
-                        status: { type: 'string', enum: ['DRAFT', 'SUBMITTED', 'FACULTY_APPROVED', 'HOD_APPROVED', 'DAC_APPROVED', 'ES_APPROVED', 'APPROVED'] },
+                        status: { type: 'string', enum: ['DRAFT', 'SUBMITTED', 'FACULTY_APPROVED', 'HOD_APPROVED', 'EXAM_LOCKED', 'DEAN_APPROVED', 'FINALIZED'] },
                         approvalChain: { type: 'array', items: { '$ref': '#/components/schemas/ApprovalStep' } }
                     }
                 },

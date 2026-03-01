@@ -1,3 +1,14 @@
 [
-  
+  {
+    "requestId": "REQ-1772115681316",
+    "studentId": "25CSM2R26",
+    "certificateType": "DEGREE",
+    "purpose": "EMPLOYMENT",
+    "additionalDetails": "",
+    "requestDate": "2026-02-26T14:21:21.316Z",
+    "status": "APPROVED",
+    "userId": "student-1771485330832",
+    "processedDate": "2026-02-26T14:54:09.177Z",
+    "processedBy": "hod_demo"
+  }
 ]

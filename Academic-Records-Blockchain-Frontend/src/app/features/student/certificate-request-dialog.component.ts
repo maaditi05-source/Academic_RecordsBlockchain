@@ -9,7 +9,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
 interface Student {
@@ -48,6 +48,9 @@ interface Student {
             <mat-option value="TRANSCRIPT">Transcript</mat-option>
             <mat-option value="BONAFIDE">Bonafide Certificate</mat-option>
             <mat-option value="PROVISIONAL">Provisional Certificate</mat-option>
+            <mat-option value="TRANSFER">Transfer Certificate (TC)</mat-option>
+            <mat-option value="MIGRATION">Migration Certificate</mat-option>
+            <mat-option value="CONSOLIDATED_MARKSHEET">Consolidated Marksheet</mat-option>
           </mat-select>
         </mat-form-field>
 
@@ -160,7 +163,7 @@ interface Student {
     }
 
     ::ng-deep .mat-mdc-text-field-wrapper {
-      background: rgba(102, 126, 234, 0.03);
+      background: rgba(56, 189, 248, 0.05);
       border-radius: 12px;
     }
 
@@ -184,11 +187,11 @@ interface Student {
 
     /* Info Section */
     .info-section {
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+      background: rgba(56, 189, 248, 0.08);
       padding: 1.25rem;
       border-radius: 16px;
       margin: 1.5rem 0;
-      border: 2px solid rgba(102, 126, 234, 0.2);
+      border: 2px solid rgba(56, 189, 248, 0.2);
     }
 
     .info-header {
@@ -196,7 +199,7 @@ interface Student {
       align-items: center;
       gap: 0.5rem;
       margin-bottom: 1rem;
-      color: #667eea;
+      color: #38bdf8;
       font-size: 1rem;
     }
 
@@ -224,23 +227,23 @@ interface Student {
       font-size: 18px;
       width: 18px;
       height: 18px;
-      color: #667eea;
+      color: #38bdf8;
     }
 
     .info-row span {
       font-size: 0.875rem;
-      color: #1a1a2e;
+      color: #e2e8f0;
     }
 
     .info-row strong {
       font-weight: 600;
       margin-right: 0.5rem;
+      color: #94a3b8;
     }
 
-    /* Note Section */
     .note-section {
-      background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 152, 0, 0.1) 100%);
-      border-left: 4px solid #ffc107;
+      background: rgba(251, 191, 36, 0.08);
+      border-left: 4px solid #fbbf24;
       padding: 1.25rem;
       border-radius: 12px;
       margin: 1.5rem 0;
@@ -251,7 +254,7 @@ interface Student {
       align-items: center;
       gap: 0.5rem;
       margin-bottom: 0.75rem;
-      color: #f57f17;
+      color: #fbbf24;
       font-size: 1rem;
     }
 
@@ -264,7 +267,7 @@ interface Student {
     .note-section p {
       margin: 0;
       font-size: 0.875rem;
-      color: #856404;
+      color: #e2e8f0;
       line-height: 1.6;
     }
 
@@ -272,8 +275,8 @@ interface Student {
     mat-dialog-actions {
       padding: 1.5rem 1.5rem 1rem 1.5rem;
       margin: 0 -24px -24px -24px;
-      border-top: 2px solid rgba(102, 126, 234, 0.1);
-      background: rgba(102, 126, 234, 0.02);
+      border-top: 2px solid rgba(56, 189, 248, 0.15);
+      background: rgba(15, 23, 42, 0.5);
     }
 
     mat-dialog-actions button {
@@ -384,7 +387,12 @@ export class CertificateRequestDialogComponent {
     console.log('API URL:', `${this.apiUrl}/certificates/request`);
     console.log('Token from localStorage:', localStorage.getItem('access_token') ? 'Token exists' : 'No token');
 
-    this.http.post<any>(`${this.apiUrl}/certificates/request`, requestData).subscribe({
+    const token = localStorage.getItem('access_token');
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    this.http.post<any>(`${this.apiUrl}/certificates/request`, requestData, { headers }).subscribe({
       next: (response) => {
         console.log('Certificate request submitted successfully:', response);
         this.submitting = false;
@@ -395,7 +403,7 @@ export class CertificateRequestDialogComponent {
         console.error('Error status:', error.status);
         console.error('Error message:', error.message);
         console.error('Error details:', error.error);
-        
+
         let errorMessage = 'Failed to submit request. Please try again.';
         if (error.status === 401) {
           errorMessage = 'Unauthorized. Please login again.';
@@ -406,7 +414,7 @@ export class CertificateRequestDialogComponent {
         } else if (error.error?.message) {
           errorMessage = error.error.message;
         }
-        
+
         this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
         this.submitting = false;
       }

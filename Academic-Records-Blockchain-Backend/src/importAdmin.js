@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const logger = require('./utils/logger');
 
-async function main() {
+async function importAdmin() {
     try {
         const walletPath = path.join(__dirname, '../wallet');
         const wallet = await Wallets.newFileSystemWallet(walletPath);
@@ -18,8 +18,8 @@ async function main() {
         }
 
         // Path to pre-generated admin credentials
-        const adminCertPath = path.resolve(__dirname,'..','..','Academic_RecordsBlockchain','organizations','peerOrganizations','nitwarangal.nitw.edu','users','Admin@nitwarangal.nitw.edu','msp','signcerts');
-        const adminKeyPath = path.resolve(__dirname,'..','..','Academic_RecordsBlockchain','organizations','peerOrganizations','nitwarangal.nitw.edu','users','Admin@nitwarangal.nitw.edu','msp','keystore');
+        const adminCertPath = path.resolve(__dirname, '..', '..', 'Academic_RecordsBlockchain', 'organizations', 'peerOrganizations', 'nitwarangal.nitw.edu', 'users', 'Admin@nitwarangal.nitw.edu', 'msp', 'signcerts');
+        const adminKeyPath = path.resolve(__dirname, '..', '..', 'Academic_RecordsBlockchain', 'organizations', 'peerOrganizations', 'nitwarangal.nitw.edu', 'users', 'Admin@nitwarangal.nitw.edu', 'msp', 'keystore');
 
         // Read certificate
         const certFiles = fs.readdirSync(adminCertPath);
@@ -59,4 +59,8 @@ async function main() {
     }
 }
 
-main();
+if (require.main === module) {
+    importAdmin();
+}
+
+module.exports = importAdmin;

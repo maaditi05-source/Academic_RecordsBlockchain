@@ -152,7 +152,9 @@ export class AuthService {
     localStorage.setItem(this.REFRESH_TOKEN_KEY, data.refreshToken);
 
     const user: User = {
-      userId: data.user.userId || data.user.id || data.user.username || '',
+      userId: data.user.role === 'student'
+        ? (data.user.username || data.user.userId || data.user.id || '')
+        : (data.user.userId || data.user.id || data.user.username || ''),
       email: data.user.email,
       role: data.user.role,
       name: data.user.name,

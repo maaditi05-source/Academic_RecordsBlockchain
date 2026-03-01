@@ -118,17 +118,17 @@ function emitToUser(io, userId, event, data) {
 const STEP_LABELS = {
     'FACULTY_APPROVED': 'Faculty',
     'HOD_APPROVED': 'HOD',
-    'DAC_APPROVED': 'DAC Committee',
-    'ES_APPROVED': 'Exam Section',
-    'APPROVED': 'Dean Academic'
+    'EXAM_LOCKED': 'Exam Section',
+    'DEAN_APPROVED': 'Dean Academic',
+    'FINALIZED': 'DAC Committee'
 };
 
 const NEXT_STEP = {
     'FACULTY_APPROVED': 'HOD',
-    'HOD_APPROVED': 'DAC Committee',
-    'DAC_APPROVED': 'Exam Section',
-    'ES_APPROVED': 'Dean Academic',
-    'APPROVED': null
+    'HOD_APPROVED': 'Exam Section',
+    'EXAM_LOCKED': 'Dean Academic',
+    'DEAN_APPROVED': 'DAC Committee',
+    'FINALIZED': null
 };
 
 async function notifyApprovalStep(io, { studentId, studentEmail, recordId, newStatus, approvedBy }) {

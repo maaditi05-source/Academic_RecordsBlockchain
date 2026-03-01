@@ -9,8 +9,8 @@ router.post('/request', authenticateToken, requireRole('student'), CertificateCo
 // Get certificate requests (Admin/Faculty to view all, Students to view their own)
 router.get('/requests', authenticateToken, CertificateController.getCertificateRequests);
 
-// Update certificate request status (Admin/Faculty only)
-router.put('/requests/:requestId', authenticateToken, requireRole('admin', 'faculty'), CertificateController.updateCertificateRequestStatus);
+// Update certificate request status (Admin/Faculty/HOD/DAC)
+router.put('/requests/:requestId', authenticateToken, requireRole('admin', 'faculty', 'hod', 'dac_member'), CertificateController.updateCertificateRequestStatus);
 
 // Issue certificate (Admin only)
 router.post('/', authenticateToken, requireRole('admin'), CertificateController.issueCertificate);

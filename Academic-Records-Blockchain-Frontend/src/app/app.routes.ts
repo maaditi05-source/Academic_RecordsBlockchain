@@ -82,7 +82,7 @@ export const routes: Routes = [
   {
     path: 'faculty',
     canActivate: [authGuard],
-    data: { roles: ['faculty', 'admin'] },
+    data: { roles: ['faculty', 'admin', 'hod', 'dac_member', 'exam_section', 'dean_academic'] },
     children: [
       {
         path: 'dashboard',

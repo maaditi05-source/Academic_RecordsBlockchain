@@ -29,7 +29,7 @@ const getDashboardSummary = async (req, res) => {
             generatedAt: new Date().toISOString(),
             students: { total: 0 },
             certificates: { total: 0, byType: {} },
-            approvals: { pending: {}, SUBMITTED: 0, FACULTY_APPROVED: 0, HOD_APPROVED: 0, DAC_APPROVED: 0, ES_APPROVED: 0 },
+            approvals: { pending: {}, SUBMITTED: 0, FACULTY_APPROVED: 0, HOD_APPROVED: 0, EXAM_LOCKED: 0, DEAN_APPROVED: 0 },
             documents: { total: 0, byStatus: {} }
         };
 
@@ -53,7 +53,7 @@ const getDashboardSummary = async (req, res) => {
         }
 
         // Pending approvals per stage
-        for (const status of ['SUBMITTED', 'FACULTY_APPROVED', 'HOD_APPROVED', 'DAC_APPROVED', 'ES_APPROVED']) {
+        for (const status of ['SUBMITTED', 'FACULTY_APPROVED', 'HOD_APPROVED', 'EXAM_LOCKED', 'DEAN_APPROVED']) {
             const records = await fetchStat('QueryRecordsByStatus', status, '', '100');
             const count = Array.isArray(records) ? records.length : (records?.records?.length || records?.count || 0);
             summary.approvals[status] = count;
@@ -166,7 +166,7 @@ const blockchainExplorer = async (req, res) => {
 
         let data = [];
         if (type === 'records') {
-            const statuses = ['APPROVED', 'ES_APPROVED', 'DAC_APPROVED', 'HOD_APPROVED', 'FACULTY_APPROVED', 'SUBMITTED', 'DRAFT'];
+            const statuses = ['FINALIZED', 'DEAN_APPROVED', 'EXAM_LOCKED', 'HOD_APPROVED', 'FACULTY_APPROVED', 'SUBMITTED', 'DRAFT'];
             for (const s of statuses) {
                 try {
                     const result = JSON.parse((await gateway.evaluateTransaction('QueryRecordsByStatus', s, department || '', String(limit))).toString());

@@ -5,7 +5,7 @@ class CertificateController {
     // Issue certificate
     static async issueCertificate(req, res) {
         const gateway = new FabricGateway();
-        
+
         try {
             const { certificateID, studentID, certType, pdfBase64, ipfsHash } = req.body;
             const userId = req.user.userId;
@@ -51,7 +51,7 @@ class CertificateController {
     // Get certificate
     static async getCertificate(req, res) {
         const gateway = new FabricGateway();
-        
+
         try {
             const { certificateID } = req.params;
             // Use admin for anonymous access, or authenticated user if available
@@ -79,7 +79,7 @@ class CertificateController {
     // Verify certificate
     static async verifyCertificate(req, res) {
         const gateway = new FabricGateway();
-        
+
         try {
             const { certificateID, pdfHash } = req.body;
             // Use admin for anonymous verification, or authenticated user if available
@@ -111,7 +111,7 @@ class CertificateController {
     // Get student certificates
     static async getStudentCertificates(req, res) {
         const gateway = new FabricGateway();
-        
+
         try {
             const { studentID } = req.params;
             const userId = req.user.userId;
@@ -127,7 +127,7 @@ class CertificateController {
             });
         } catch (error) {
             logger.error(`Error getting student certificates: ${error.message}`);
-            
+
             // If no certificates found, return empty array instead of error
             if (error.message.includes('does not exist') || error.message.includes('not found')) {
                 return res.status(200).json({
@@ -135,7 +135,7 @@ class CertificateController {
                     data: []
                 });
             }
-            
+
             res.status(500).json({
                 success: false,
                 message: error.message
@@ -148,7 +148,7 @@ class CertificateController {
     // Revoke certificate
     static async revokeCertificate(req, res) {
         const gateway = new FabricGateway();
-        
+
         try {
             const { certificateID } = req.params;
             const { reason } = req.body;
@@ -295,11 +295,11 @@ class CertificateController {
             const { status, processedDate, processedBy, certificateId } = req.body;
             const role = req.user.role;
 
-            // Only admin and faculty can update request status
-            if (role !== 'admin' && role !== 'faculty') {
+            // Only admin, faculty, hod, and dac_member can update request status
+            if (!['admin', 'faculty', 'hod', 'dac_member'].includes(role)) {
                 return res.status(403).json({
                     success: false,
-                    message: 'Only admin and faculty can update certificate requests'
+                    message: 'Only admin, faculty, HOD, and DAC members can update certificate requests'
                 });
             }
 
@@ -326,7 +326,7 @@ class CertificateController {
             requests[requestIndex].status = status;
             requests[requestIndex].processedDate = processedDate || new Date().toISOString();
             requests[requestIndex].processedBy = processedBy || req.user.username;
-            
+
             // Store the blockchain certificate ID if provided (when approved)
             if (certificateId) {
                 requests[requestIndex].certificateId = certificateId;

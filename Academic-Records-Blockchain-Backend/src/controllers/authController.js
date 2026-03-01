@@ -500,11 +500,49 @@ const changePasswordEndpoint = async (req, res) => {
     }
 };
 
+// Get all users (admin only)
+// GET /api/auth/users
+const getAllUsers = async (req, res) => {
+    try {
+        const role = req.user.role;
+        if (role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Admin access required' });
+        }
+
+        const fs = require('fs');
+        const path = require('path');
+        const usersFile = path.join(__dirname, '../../data/users.json');
+
+        let users = [];
+        if (fs.existsSync(usersFile)) {
+            const data = fs.readFileSync(usersFile, 'utf8');
+            users = JSON.parse(data);
+        }
+
+        // Strip passwords before returning
+        const safeUsers = users.map(u => ({
+            username: u.username,
+            name: u.name || u.username,
+            email: u.email,
+            role: u.role,
+            department: u.department || '',
+            isActive: u.isActive !== false,
+            createdAt: u.createdAt || null
+        }));
+
+        res.json({ success: true, data: safeUsers });
+    } catch (err) {
+        logger.error(`Error getting users: ${err.message}`);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 module.exports = {
     login,
     register,
     refresh,
     logout,
     getProfile,
-    changePasswordEndpoint
+    changePasswordEndpoint,
+    getAllUsers
 };

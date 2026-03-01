@@ -8,7 +8,7 @@ class StatsController {
      */
     static async getDashboardStats(req, res) {
         const gateway = new FabricGateway();
-        
+
         try {
             const userId = req.user.userId;
             await gateway.connect(userId);
@@ -23,7 +23,7 @@ class StatsController {
             try {
                 const allStudentsResult = await gateway.evaluateTransaction('GetAllStudents');
                 const students = allStudentsResult || [];
-                
+
                 totalStudents = students.length;
                 activeStudents = students.filter(s => s.status === 'ACTIVE').length;
 
@@ -45,15 +45,16 @@ class StatsController {
                 // Continue with 0 counts if students fetch fails
             }
 
-            // Get pending records (DRAFT + SUBMITTED status)
-            try {
-                const pendingResult = await gateway.evaluateTransaction('QueryPendingRecords', '', '100');
-                const pendingData = pendingResult || {};
-                const pendingRecords = pendingData.records || [];
-                pendingRecordsCount = pendingRecords.length;
-            } catch (error) {
-                logger.warn(`Error fetching pending records: ${error.message}`);
-                // Continue with 0 if pending records fetch fails
+            // Get pending records
+            for (const status of ['DRAFT', 'SUBMITTED', 'FACULTY_APPROVED', 'HOD_APPROVED', 'EXAM_LOCKED', 'DEAN_APPROVED']) {
+                try {
+                    const pendingResult = await gateway.evaluateTransaction('QueryPendingRecords', status, '100');
+                    const pendingData = pendingResult || {};
+                    const pendingRecords = pendingData.records || [];
+                    pendingRecordsCount += pendingRecords.length;
+                } catch (error) {
+                    logger.warn(`Error fetching pending records for ${status}: ${error.message}`);
+                }
             }
 
             const stats = {

@@ -59,7 +59,7 @@ createIdentities() {
     docker-compose -f docker/docker-compose-net.yaml up -d ca_orderer ca_nitwarangal ca_departments ca_verifiers
     infoln "Waiting for Fabric CAs to initialize..."
     sleep 10 # Wait for CAs to start and generate their certificates
-    sudo chown -R $(whoami):$(whoami) organizations 2>/dev/null || true
+    docker run --rm -v "${PWD}:/data" alpine chown -R $(id -u):$(id -g) /data/organizations 2>/dev/null || true
 
     # Make the enrollment script executable
     chmod +x scripts/registerEnroll.sh
@@ -72,6 +72,8 @@ createIdentities() {
     chmod +x generate-connection-profiles.sh
     ./generate-connection-profiles.sh
 
+    # Fix permissions on ALL crypto material so the backend Node.js process can read them
+    docker run --rm -v "${PWD}:/data" alpine chown -R $(id -u):$(id -g) /data/organizations 2>/dev/null || true
     successln "✓ Identities and connection profiles generated successfully"
 }
 

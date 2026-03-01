@@ -95,11 +95,23 @@ import { LoginCredentials } from '../../core/models/user.model';
                     <mat-icon class="role-icon admin-icon">admin_panel_settings</mat-icon>
                     <div class="credential-info">
                       <span class="role-label">Admin</span>
-                      <span class="credential-value">admin / admin123</span>
+                      <span class="credential-value">admin / password123</span>
                     </div>
                   </div>
-                  
-        
+                  <div class="credential-item">
+                    <mat-icon class="role-icon student-icon">school</mat-icon>
+                    <div class="credential-info">
+                      <span class="role-label">Student</span>
+                      <span class="credential-value">25CSM2R26 / password123</span>
+                    </div>
+                  </div>
+                  <div class="credential-item">
+                    <mat-icon class="role-icon dept-icon">domain</mat-icon>
+                    <div class="credential-info">
+                      <span class="role-label">HOD</span>
+                      <span class="credential-value">hod_demo / password123</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -147,7 +159,7 @@ import { LoginCredentials } from '../../core/models/user.model';
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
       padding: 20px;
       position: relative;
       overflow: hidden;
@@ -239,9 +251,9 @@ import { LoginCredentials } from '../../core/models/user.model';
     .login-card {
       padding: 40px 32px;
       border-radius: 24px;
-      background: rgba(255, 255, 255, 0.98);
+      background: rgba(15, 23, 42, 0.85);
       backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.3);
+      border: 1px solid rgba(148, 163, 184, 0.1);
     }
 
     .card-header {
@@ -253,7 +265,7 @@ import { LoginCredentials } from '../../core/models/user.model';
       width: 80px;
       height: 80px;
       margin: 0 auto 20px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
       border-radius: 20px;
       display: flex;
       align-items: center;
@@ -276,7 +288,7 @@ import { LoginCredentials } from '../../core/models/user.model';
 
     .title {
       margin: 0 0 8px 0;
-      color: #1a1a1a;
+      color: #ffffff;
       font-size: 28px;
       font-weight: 700;
       letter-spacing: -0.5px;
@@ -284,7 +296,7 @@ import { LoginCredentials } from '../../core/models/user.model';
 
     .subtitle {
       margin: 0;
-      color: #666;
+      color: #94a3b8;
       font-size: 15px;
       font-weight: 400;
     }
@@ -294,12 +306,12 @@ import { LoginCredentials } from '../../core/models/user.model';
     }
 
     .modern-field ::ng-deep .mat-mdc-text-field-wrapper {
-      background: #f8f9fa;
+      background: rgba(15, 23, 42, 0.95);
     }
 
     .input-icon {
-      color: #667eea;
-      opacity: 0.8;
+      color: #60a5fa;
+      opacity: 0.9;
     }
 
     .toggle-password {
@@ -308,11 +320,11 @@ import { LoginCredentials } from '../../core/models/user.model';
 
     /* Demo Credentials */
     .demo-credentials {
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      background: rgba(15, 23, 42, 0.8);
       border-radius: 16px;
       padding: 20px;
       margin: 24px 0;
-      border: 1px solid #dee2e6;
+      border: 1px solid rgba(148, 163, 184, 0.1);
     }
 
     .demo-header {
@@ -323,7 +335,7 @@ import { LoginCredentials } from '../../core/models/user.model';
     }
 
     .demo-icon {
-      color: #667eea;
+      color: #2dd4bf;
       font-size: 20px;
       width: 20px;
       height: 20px;
@@ -332,7 +344,7 @@ import { LoginCredentials } from '../../core/models/user.model';
     .demo-title {
       font-weight: 600;
       font-size: 14px;
-      color: #1a1a1a;
+      color: #e2e8f0;
     }
 
     .credentials-grid {
@@ -346,7 +358,7 @@ import { LoginCredentials } from '../../core/models/user.model';
       align-items: center;
       gap: 12px;
       padding: 12px;
-      background: white;
+      background: rgba(2, 6, 23, 0.6);
       border-radius: 12px;
       transition: all 0.3s ease;
     }
@@ -376,16 +388,16 @@ import { LoginCredentials } from '../../core/models/user.model';
     .role-label {
       font-size: 12px;
       font-weight: 600;
-      color: #666;
+      color: #94a3b8;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
     .credential-value {
       font-size: 13px;
-      color: #1a1a1a;
-      font-weight: 500;
-      font-family: 'Courier New', monospace;
+      color: #ffffff;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
     }
 
     .login-button {
@@ -397,7 +409,8 @@ import { LoginCredentials } from '../../core/models/user.model';
       margin-top: 8px;
       text-transform: none;
       letter-spacing: 0.5px;
-      box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+      background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+      box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
     }
 
     .login-button:hover:not(:disabled) {
@@ -431,14 +444,14 @@ import { LoginCredentials } from '../../core/models/user.model';
       left: 0;
       right: 0;
       height: 1px;
-      background: #dee2e6;
+      background: rgba(148, 163, 184, 0.2);
     }
 
     .divider span {
       position: relative;
-      background: white;
+      background: rgba(15, 23, 42, 0.85);
       padding: 0 16px;
-      color: #999;
+      color: #64748b;
       font-size: 13px;
       font-weight: 500;
     }
@@ -449,7 +462,7 @@ import { LoginCredentials } from '../../core/models/user.model';
 
     .register-text {
       margin: 0 0 12px 0;
-      color: #666;
+      color: #94a3b8;
       font-size: 14px;
     }
 
@@ -457,21 +470,21 @@ import { LoginCredentials } from '../../core/models/user.model';
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      color: #667eea;
+      color: #60a5fa;
       text-decoration: none;
       font-weight: 600;
       font-size: 15px;
       padding: 10px 24px;
       border-radius: 10px;
-      border: 2px solid #667eea;
+      border: 2px solid rgba(96, 165, 250, 0.4);
       transition: all 0.3s ease;
     }
 
     .register-link:hover {
-      background: #667eea;
-      color: white;
+      background: rgba(96, 165, 250, 0.15);
+      color: #93c5fd;
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      box-shadow: 0 4px 12px rgba(96, 165, 250, 0.2);
     }
 
     .register-link mat-icon {

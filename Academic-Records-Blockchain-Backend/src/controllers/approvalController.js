@@ -115,33 +115,7 @@ const hodApprove = async (req, res) => {
 };
 
 /**
- * DAC member approves a record (HOD_APPROVED → DAC_APPROVED)
- * POST /api/approval/dac/:recordId
- */
-const dacApprove = async (req, res) => {
-    const gateway = new FabricGateway();
-    try {
-        const { recordId } = req.params;
-        const { comment = '', memberRole = 'dac_member' } = req.body;
-
-        await gateway.connect(req.user);
-        await gateway.submitTransaction('DACApprove', recordId, memberRole, comment);
-
-        res.json({
-            success: true,
-            message: 'DAC approval recorded',
-            data: { recordId, status: 'DAC_APPROVED', approvedBy: req.user.username }
-        });
-    } catch (error) {
-        logger.error(`dacApprove error: ${error.message}`);
-        res.status(500).json({ success: false, message: error.message });
-    } finally {
-        await gateway.disconnect();
-    }
-};
-
-/**
- * Exam Section approves a record (DAC_APPROVED → ES_APPROVED)
+ * Exam Section approves a record (HOD_APPROVED → ES_LOCKED)
  * POST /api/approval/examsection/:recordId
  */
 const examSectionApprove = async (req, res) => {
@@ -155,8 +129,8 @@ const examSectionApprove = async (req, res) => {
 
         res.json({
             success: true,
-            message: 'Exam Section approval recorded',
-            data: { recordId, status: 'ES_APPROVED', approvedBy: req.user.username }
+            message: 'Exam Section locked the record. Ready for Dean approval.',
+            data: { recordId, status: 'EXAM_LOCKED', approvedBy: req.user.username }
         });
     } catch (error) {
         logger.error(`examSectionApprove error: ${error.message}`);
@@ -167,7 +141,7 @@ const examSectionApprove = async (req, res) => {
 };
 
 /**
- * Dean Academic gives final approval (ES_APPROVED → APPROVED + auto-calculates CGPA)
+ * Dean Academic gives approval (ES_LOCKED → DEAN_APPROVED)
  * POST /api/approval/dean/:recordId
  */
 const deanApprove = async (req, res) => {
@@ -177,32 +151,59 @@ const deanApprove = async (req, res) => {
         const { comment = '' } = req.body;
 
         await gateway.connect(req.user);
+        await gateway.submitTransaction('DeanAcademicApprove', recordId, comment);
+
+        res.json({
+            success: true,
+            message: 'Dean Academic approval recorded. Ready for DAC finalization.',
+            data: { recordId, status: 'DEAN_APPROVED', approvedBy: req.user.username }
+        });
+    } catch (error) {
+        logger.error(`deanApprove error: ${error.message}`);
+        res.status(500).json({ success: false, message: error.message });
+    } finally {
+        await gateway.disconnect();
+    }
+};
+
+/**
+ * DAC member gives FINAL approval (DEAN_APPROVED → FINALIZED + auto-calculates CGPA)
+ * POST /api/approval/dac/:recordId
+ */
+const dacApprove = async (req, res) => {
+    const gateway = new FabricGateway();
+    try {
+        const { recordId } = req.params;
+        const { comment = '', memberRole = 'dac_member' } = req.body;
+
+        await gateway.connect(req.user);
+
         let studentId = req.body.studentId;
         if (!studentId) {
             try {
                 const rec = JSON.parse((await gateway.evaluateTransaction('GetAcademicRecord', recordId)).toString());
-                studentId = rec.studentID;
+                studentId = rec.studentID || rec.studentId;
             } catch (_) { }
         }
 
-        await gateway.submitTransaction('DeanAcademicApprove', recordId, comment);
+        await gateway.submitTransaction('DACApprove', recordId, memberRole, comment);
 
         // Notify student of final approval
         if (studentId) {
             const { email } = await getStudentEmail(gateway, studentId);
             notifyApprovalStep(req.app.get('io'), {
                 studentId, studentEmail: email, recordId,
-                newStatus: 'APPROVED', approvedBy: req.user.username
+                newStatus: 'FINALIZED', approvedBy: req.user.username
             }).catch(() => { });
         }
 
         res.json({
             success: true,
-            message: 'Dean Academic approval recorded — record is now APPROVED and CGPA updated',
-            data: { recordId, status: 'APPROVED', approvedBy: req.user.username }
+            message: 'DAC approval recorded — record is now FINALIZED and CGPA updated',
+            data: { recordId, status: 'FINALIZED', approvedBy: req.user.username }
         });
     } catch (error) {
-        logger.error(`deanApprove error: ${error.message}`);
+        logger.error(`dacApprove error: ${error.message}`);
         res.status(500).json({ success: false, message: error.message });
     } finally {
         await gateway.disconnect();

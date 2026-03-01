@@ -1,692 +1,308 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { MatTabsModule } from '@angular/material/tabs';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatTabsModule } from '@angular/material/tabs';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatBadgeModule } from '@angular/material/badge';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
 import { BlockchainService } from '../../core/services/blockchain.service';
-import { Student, AcademicRecord, Course } from '../../core/models/blockchain.model';
-import { ConfirmDialogComponent } from '../admin/confirm-dialog/confirm-dialog.component';
+import { APP_CONFIG } from '../../core/config/app.config';
 
 @Component({
   selector: 'app-department-dashboard',
   standalone: true,
   imports: [
-    CommonModule,
-    FormsModule,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatTableModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatTabsModule,
-    MatChipsModule,
-    MatDialogModule
+    CommonModule, MatTabsModule, MatCardModule, MatButtonModule, MatIconModule,
+    MatTableModule, MatChipsModule, MatProgressSpinnerModule, MatSnackBarModule,
+    MatTooltipModule, MatBadgeModule, MatDialogModule, HttpClientModule
   ],
   template: `
     <div class="dashboard-container">
-      <!-- Animated Background -->
-      <div class="bg-shapes">
-        <div class="shape shape-1"></div>
-        <div class="shape shape-2"></div>
-        <div class="shape shape-3"></div>
-      </div>
-
-      <!-- Header -->
-      <div class="dashboard-header">
+      <header class="dash-header">
         <div class="header-content">
-          <div class="logo-wrapper">
-            <mat-icon class="dashboard-icon">domain</mat-icon>
+          <div class="header-left">
+            <div class="avatar-ring">
+              <div class="avatar"><mat-icon>domain</mat-icon></div>
+            </div>
+            <div class="header-info">
+              <h1>{{ currentUser?.name || 'HOD Dashboard' }}</h1>
+              <p class="subtitle">
+                <span class="dept-badge">{{ dept }}</span>
+                <span class="role-badge">Head of Department</span>
+              </p>
+            </div>
           </div>
-          <div class="header-text">
-            <h1>{{currentUser?.department}} Department</h1>
-            <p class="welcome-text">
-              <mat-icon class="welcome-icon">waving_hand</mat-icon>
-              Welcome back, <span class="user-name">{{currentUser?.name}}</span>
-            </p>
+          <div class="header-right">
+            <div class="header-stat">
+              <span class="stat-number">{{ faculty.length }}</span>
+              <span class="stat-text">Faculty</span>
+            </div>
+            <div class="header-stat">
+              <span class="stat-number">{{ students.length }}</span>
+              <span class="stat-text">Students</span>
+            </div>
+            <button mat-raised-button color="warn" (click)="logout()">
+              <mat-icon>logout</mat-icon> Logout
+            </button>
           </div>
         </div>
-        <button mat-raised-button class="logout-btn" (click)="logout()">
-          <mat-icon>logout</mat-icon>
-          Logout
-        </button>
+      </header>
+
+      <div *ngIf="loading" class="loading-state">
+        <mat-spinner diameter="48"></mat-spinner>
+        <p>Loading department data...</p>
       </div>
 
-      <!-- Main Content -->
-      <mat-card class="content-card modern-card">
-        <mat-tab-group>
-          <!-- Department Students Tab -->
-          <mat-tab label="Department Students">
-            <div class="tab-content">
-              <div class="tab-header">
-                <h2>Students in {{currentUser?.department}}</h2>
-                <button mat-raised-button color="primary" (click)="refreshStudents()">
-                  <mat-icon>refresh</mat-icon>
-                  Refresh
-                </button>
+      <mat-tab-group *ngIf="!loading" animationDuration="300ms" class="main-tabs">
+        <!-- TAB 1: OVERVIEW -->
+        <mat-tab>
+          <ng-template mat-tab-label><mat-icon class="tab-icon">dashboard</mat-icon><span>Overview</span></ng-template>
+          <div class="tab-content">
+            <div class="stats-grid">
+              <div class="stat-card">
+                <mat-icon class="stat-icon" style="color:var(--accent-teal)">people</mat-icon>
+                <div class="stat-value">{{ students.length }}</div>
+                <div class="stat-label">Total Students</div>
               </div>
-
-              <div class="table-container" *ngIf="students.length > 0; else noStudents">
-                <table mat-table [dataSource]="students" class="students-table">
-                  <ng-container matColumnDef="rollNumber">
-                    <th mat-header-cell *matHeaderCellDef>Roll Number</th>
-                    <td mat-cell *matCellDef="let student">{{student.rollNumber}}</td>
-                  </ng-container>
-
-                  <ng-container matColumnDef="name">
-                    <th mat-header-cell *matHeaderCellDef>Name</th>
-                    <td mat-cell *matCellDef="let student">{{student.name}}</td>
-                  </ng-container>
-
-                  <ng-container matColumnDef="year">
-                    <th mat-header-cell *matHeaderCellDef>Year</th>
-                    <td mat-cell *matCellDef="let student">{{student.enrollmentYear}}</td>
-                  </ng-container>
-
-                  <ng-container matColumnDef="cgpa">
-                    <th mat-header-cell *matHeaderCellDef>CGPA</th>
-                    <td mat-cell *matCellDef="let student">{{student.currentCGPA}}</td>
-                  </ng-container>
-
-                  <ng-container matColumnDef="status">
-                    <th mat-header-cell *matHeaderCellDef>Status</th>
-                    <td mat-cell *matCellDef="let student">
-                      <mat-chip [class.active]="student.status === 'ACTIVE'">
-                        {{student.status}}
-                      </mat-chip>
-                    </td>
-                  </ng-container>
-
-                  <ng-container matColumnDef="actions">
-                    <th mat-header-cell *matHeaderCellDef>Actions</th>
-                    <td mat-cell *matCellDef="let student">
-                      <button mat-button color="primary" (click)="viewStudent(student)">
-                        <mat-icon>visibility</mat-icon>
-                        View
-                      </button>
-                    </td>
-                  </ng-container>
-
-                  <tr mat-header-row *matHeaderRowDef="studentColumns"></tr>
-                  <tr mat-row *matRowDef="let row; columns: studentColumns;"></tr>
-                </table>
+              <div class="stat-card">
+                <mat-icon class="stat-icon" style="color:var(--accent-violet)">school</mat-icon>
+                <div class="stat-value">{{ faculty.length }}</div>
+                <div class="stat-label">Faculty Members</div>
               </div>
+              <div class="stat-card">
+                <mat-icon class="stat-icon" style="color:var(--accent-cyan)">menu_book</mat-icon>
+                <div class="stat-value">{{ courses.length }}</div>
+                <div class="stat-label">Courses</div>
+              </div>
+              <div class="stat-card">
+                <mat-icon class="stat-icon" style="color:var(--accent-amber)">pending_actions</mat-icon>
+                <div class="stat-value">{{ pendingApprovals.length }}</div>
+                <div class="stat-label">Pending Approvals</div>
+              </div>
+            </div>
+          </div>
+        </mat-tab>
 
-              <ng-template #noStudents>
-                <div class="empty-state">
-                  <mat-icon>people_outline</mat-icon>
-                  <h3>No Students Found</h3>
-                  <p>No students in this department</p>
+        <!-- TAB 2: FACULTY -->
+        <mat-tab>
+          <ng-template mat-tab-label><mat-icon class="tab-icon">school</mat-icon><span>Faculty</span></ng-template>
+          <div class="tab-content">
+            <div class="faculty-grid">
+              <div class="faculty-card glass-card" *ngFor="let f of faculty">
+                <div class="fc-avatar">{{ getInitials(f.name) }}</div>
+                <h4>{{ f.name }}</h4>
+                <p class="text-muted">{{ f.designation || 'Faculty' }}</p>
+                <p class="text-muted"><mat-icon style="font-size:14px;width:14px;height:14px">email</mat-icon> {{ f.email }}</p>
+                <div class="fc-courses" *ngIf="f.courses?.length">
+                  <span class="course-tag" *ngFor="let c of f.courses">{{ c }}</span>
                 </div>
-              </ng-template>
-            </div>
-          </mat-tab>
-
-          <!-- Create Record Tab -->
-          <mat-tab label="Create Academic Record">
-            <div class="tab-content">
-              <div class="form-container">
-                <h2>Create New Academic Record</h2>
-                
-                <form #recordForm="ngForm" (ngSubmit)="createRecord()">
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Student Roll Number</mat-label>
-                    <input matInput [(ngModel)]="newRecord.studentId" name="studentId" required>
-                    <mat-hint>Enter the student's roll number</mat-hint>
-                  </mat-form-field>
-
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Semester</mat-label>
-                    <mat-select [(ngModel)]="newRecord.semester" name="semester" required>
-                      <mat-option *ngFor="let sem of [1,2,3,4,5,6,7,8]" [value]="sem">
-                        Semester {{sem}}
-                      </mat-option>
-                    </mat-select>
-                  </mat-form-field>
-
-                  <h3>Courses</h3>
-                  <div *ngIf="availableCourses.length === 0" class="info-message">
-                    <mat-icon>info</mat-icon>
-                    <p>No courses available. Please create courses first in the Admin Dashboard.</p>
-                  </div>
-                  
-                  <div *ngFor="let course of newRecord.courses; let i = index" class="course-row-extended">
-                    <mat-form-field appearance="outline" class="course-select">
-                      <mat-label>Select Course</mat-label>
-                      <mat-select [(ngModel)]="course.offeringId" [name]="'offering-'+i" required (selectionChange)="onCourseSelect(i, $event.value)">
-                        <mat-option *ngFor="let offering of availableCourses" [value]="offering.offeringId">
-                          {{offering.courseCode}} - {{offering.courseName}} ({{offering.credits}} credits)
-                        </mat-option>
-                      </mat-select>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="outline">
-                      <mat-label>Course Code</mat-label>
-                      <input matInput [(ngModel)]="course.courseCode" [name]="'code-'+i" required readonly>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="outline">
-                      <mat-label>Credits</mat-label>
-                      <input matInput type="number" [(ngModel)]="course.credits" [name]="'credits-'+i" required readonly>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="outline">
-                      <mat-label>Grade</mat-label>
-                      <mat-select [(ngModel)]="course.grade" [name]="'grade-'+i" required>
-                        <mat-option value="S">S (Outstanding)</mat-option>
-                        <mat-option value="A">A (Excellent)</mat-option>
-                        <mat-option value="B">B (Very Good)</mat-option>
-                        <mat-option value="C">C (Good)</mat-option>
-                        <mat-option value="D">D (Satisfactory)</mat-option>
-                        <mat-option value="P">P (Pass)</mat-option>
-                        <mat-option value="U">U (Fail)</mat-option>
-                        <mat-option value="R">R (Repeat)</mat-option>
-                      </mat-select>
-                    </mat-form-field>
-
-                    <button mat-icon-button color="warn" type="button" (click)="removeCourse(i)">
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                  </div>
-
-                  <button mat-button color="accent" type="button" (click)="addCourse()" class="add-course-btn" [disabled]="availableCourses.length === 0">
-                    <mat-icon>add</mat-icon>
-                    Add Course
-                  </button>
-
-                  <div class="form-actions">
-                    <button mat-raised-button color="primary" type="submit" [disabled]="!recordForm.valid">
-                      <mat-icon>save</mat-icon>
-                      Create Record
-                    </button>
-                    <button mat-button type="button" (click)="resetForm()">
-                      Clear Form
-                    </button>
-                  </div>
-                </form>
               </div>
             </div>
-          </mat-tab>
+            <div *ngIf="faculty.length === 0" class="empty-state">
+              <mat-icon>person_off</mat-icon><p>No faculty registered in {{ dept }}</p>
+            </div>
+          </div>
+        </mat-tab>
 
-          <!-- Department Records Tab -->
-          <mat-tab label="Department Records">
-            <div class="tab-content">
-              <div class="tab-header">
-                <h2>All Records</h2>
-                <button mat-raised-button color="primary" (click)="refreshRecords()">
-                  <mat-icon>refresh</mat-icon>
-                  Refresh
-                </button>
-              </div>
-
-              <div *ngIf="records.length === 0" class="empty-state">
-                <mat-icon>assignment</mat-icon>
-                <p>No academic records found</p>
-              </div>
-
-              <table mat-table [dataSource]="records" class="records-table" *ngIf="records.length > 0">
-                <!-- Record ID Column -->
-                <ng-container matColumnDef="recordId">
-                  <th mat-header-cell *matHeaderCellDef>Record ID</th>
-                  <td mat-cell *matCellDef="let record">{{ record.recordId }}</td>
-                </ng-container>
-
-                <!-- Roll Number Column -->
-                <ng-container matColumnDef="rollNumber">
-                  <th mat-header-cell *matHeaderCellDef>Student Roll No</th>
-                  <td mat-cell *matCellDef="let record">{{ record.studentId }}</td>
-                </ng-container>
-
-                <!-- Semester Column -->
-                <ng-container matColumnDef="semester">
-                  <th mat-header-cell *matHeaderCellDef>Semester</th>
-                  <td mat-cell *matCellDef="let record">{{ record.semester }}</td>
-                </ng-container>
-
-                <!-- Year Column -->
-                <ng-container matColumnDef="year">
-                  <th mat-header-cell *matHeaderCellDef>Year</th>
-                  <td mat-cell *matCellDef="let record">{{ record.year }}</td>
-                </ng-container>
-
-                <!-- Total Credits Column -->
-                <ng-container matColumnDef="totalCredits">
-                  <th mat-header-cell *matHeaderCellDef>Total Credits</th>
-                  <td mat-cell *matCellDef="let record">{{ record.totalCredits }}</td>
-                </ng-container>
-
-                <!-- CGPA Column -->
-                <ng-container matColumnDef="cgpa">
-                  <th mat-header-cell *matHeaderCellDef>CGPA</th>
-                  <td mat-cell *matCellDef="let record">{{ record.cgpa || 'N/A' }}</td>
-                </ng-container>
-
-                <!-- Status Column -->
-                <ng-container matColumnDef="status">
-                  <th mat-header-cell *matHeaderCellDef>Status</th>
-                  <td mat-cell *matCellDef="let record">
-                    <span class="status-badge" [class.approved]="record.status === 'APPROVED'" [class.pending]="record.status === 'SUBMITTED'">
-                      {{ record.status === 'APPROVED' ? 'Approved' : record.status === 'SUBMITTED' ? 'Pending' : record.status }}
-                    </span>
-                  </td>
-                </ng-container>
-
-                <tr mat-header-row *matHeaderRowDef="recordColumns"></tr>
-                <tr mat-row *matRowDef="let row; columns: recordColumns;"></tr>
+        <!-- TAB 3: STUDENTS -->
+        <mat-tab>
+          <ng-template mat-tab-label><mat-icon class="tab-icon">people</mat-icon><span>Students</span></ng-template>
+          <div class="tab-content">
+            <div class="marks-table-wrapper" *ngIf="students.length > 0">
+              <table class="modern-table">
+                <thead><tr><th>Roll Number</th><th>Name</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let s of students">
+                    <td><span class="course-code">{{ s.rollNumber || s.studentId || s.username }}</span></td>
+                    <td>{{ s.name }}</td>
+                    <td>{{ s.email }}</td>
+                    <td><span class="status-badge" [class]="(s.status || 'active').toLowerCase()">{{ s.status || 'ACTIVE' }}</span></td>
+                    <td><button mat-stroked-button (click)="viewStudent(s)" class="view-btn"><mat-icon>visibility</mat-icon></button></td>
+                  </tr>
+                </tbody>
               </table>
             </div>
-          </mat-tab>
-        </mat-tab-group>
-      </mat-card>
+            <div *ngIf="students.length === 0" class="empty-state">
+              <mat-icon>people_outline</mat-icon><p>No students in {{ dept }}</p>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- TAB 4: APPROVALS -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">approval</mat-icon><span>Approvals</span>
+            <span class="pending-count" *ngIf="pendingApprovals.length > 0">{{ pendingApprovals.length }}</span>
+          </ng-template>
+          <div class="tab-content">
+            <div *ngIf="pendingApprovals.length > 0" class="approval-grid">
+              <div class="approval-card glass-card" *ngFor="let r of pendingApprovals">
+                <div class="approval-header"><mat-icon>description</mat-icon><h4>{{ r.recordId || r.id }}</h4></div>
+                <p class="text-muted">Student: {{ r.studentId }}</p>
+                <span class="status-badge pending">{{ r.status }}</span>
+                <div class="approval-actions mt-2">
+                  <button mat-raised-button color="primary" (click)="approveRecord(r)"><mat-icon>check</mat-icon> Approve</button>
+                  <button mat-stroked-button color="warn" (click)="rejectRecord(r)"><mat-icon>close</mat-icon> Reject</button>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="pendingApprovals.length === 0" class="empty-state">
+              <mat-icon>thumb_up</mat-icon><p>No pending approvals</p>
+            </div>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
     </div>
   `,
   styles: [`
-    /* Container & Background */
-    .dashboard-container {
-      min-height: 100vh;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 30px 20px;
-      position: relative;
-      overflow-x: hidden;
+    .dashboard-container { max-width:1200px; margin:0 auto; padding:24px; min-height:100vh; }
+    .dash-header {
+      background:linear-gradient(135deg,#059669 0%,#0d9488 50%,#0891b2 100%);
+      border-radius:20px; padding:32px; margin-bottom:24px; position:relative; overflow:hidden;
+      &::before { content:''; position:absolute; inset:0; background:radial-gradient(circle at 85% 25%,rgba(255,255,255,0.1) 0%,transparent 50%); }
     }
+    .header-content { display:flex; justify-content:space-between; align-items:center; position:relative; z-index:1; flex-wrap:wrap; gap:16px; }
+    .header-left { display:flex; align-items:center; gap:20px; }
+    .avatar-ring { width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#34d399,#2dd4bf);padding:3px; }
+    .avatar { width:100%;height:100%;border-radius:50%;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center; mat-icon{color:#fff;font-size:28px;width:28px;height:28px;} }
+    .header-info h1 { color:#fff;font-size:1.5rem;font-weight:700;margin:0; }
+    .subtitle { display:flex;gap:8px;margin-top:8px; }
+    .dept-badge { padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(255,255,255,0.2);color:#fff; }
+    .role-badge { padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(52,211,153,0.3);color:#34d399; }
+    .header-right { display:flex;align-items:center;gap:24px; }
+    .header-stat { text-align:center; .stat-number{display:block;font-size:1.5rem;font-weight:700;color:#fff;} .stat-text{font-size:0.7rem;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:1px;} }
+    .loading-state { display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;gap:16px; p{color:var(--text-secondary);} }
+    .main-tabs ::ng-deep .mat-mdc-tab-header { background:rgba(15,23,42,0.7)!important; border-radius:16px 16px 0 0; border:1px solid rgba(148,163,184,0.1); border-bottom:none; }
+    .tab-icon { margin-right:8px;font-size:20px; }
+    .tab-content { padding:24px;animation:fadeIn 0.4s ease-out; }
 
-    /* Animated Background */
-    .bg-shapes {
-      position: fixed;
-      width: 100%;
-      height: 100%;
-      top: 0;
-      left: 0;
-      overflow: hidden;
-      z-index: 0;
-      pointer-events: none;
+    .stats-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px; }
+
+    .faculty-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px; }
+    .faculty-card { padding:24px;border-radius:14px;background:rgba(15,23,42,0.6);border:1px solid rgba(148,163,184,0.08);text-align:center;transition:all 0.3s ease; &:hover{border-color:rgba(52,211,153,0.3);transform:translateY(-2px);} }
+    .fc-avatar { width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#059669,#0d9488);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-weight:700;font-size:1.2rem;color:#fff; }
+    .faculty-card h4 { margin:0 0 4px;font-weight:600; }
+    .fc-courses { margin-top:12px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap; }
+    .course-tag { font-size:11px;padding:3px 8px;border-radius:8px;background:rgba(45,212,191,0.15);color:var(--accent-teal);font-weight:600; }
+
+    .marks-table-wrapper { overflow-x:auto;border-radius:12px; }
+    .modern-table {
+      width:100%;border-collapse:collapse;background:rgba(15,23,42,0.5);border-radius:12px;overflow:hidden;
+      thead tr { background:linear-gradient(135deg,rgba(5,150,105,0.4),rgba(8,145,178,0.4)); th{padding:14px 16px;color:#e2e8f0;font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;text-align:left;} }
+      tbody tr { border-bottom:1px solid rgba(148,163,184,0.06);transition:background 0.2s; &:hover{background:rgba(52,211,153,0.04);} &:nth-child(even){background:rgba(17,24,39,0.3);} td{padding:12px 16px;color:var(--text-primary);font-size:14px;} }
     }
-
-    .shape {
-      position: absolute;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.08);
-      animation: float 25s infinite ease-in-out;
-    }
-
-    .shape-1 {
-      width: 400px;
-      height: 400px;
-      top: -150px;
-      left: 10%;
-      animation-delay: 0s;
-    }
-
-    .shape-2 {
-      width: 250px;
-      height: 250px;
-      bottom: -100px;
-      right: 15%;
-      animation-delay: 8s;
-    }
-
-    .shape-3 {
-      width: 180px;
-      height: 180px;
-      top: 50%;
-      right: 8%;
-      animation-delay: 16s;
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translate(0, 0) rotate(0deg); }
-      33% { transform: translate(40px, -40px) rotate(120deg); }
-      66% { transform: translate(-30px, 30px) rotate(240deg); }
-    }
-
-    /* Header */
-    .dashboard-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 40px;
-      position: relative;
-      z-index: 1;
-      flex-wrap: wrap;
-      gap: 20px;
-    }
-
-    .header-content {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-
-    .logo-wrapper {
-      width: 80px;
-      height: 80px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      backdrop-filter: blur(10px);
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 255, 255, 0.3); }
-      50% { transform: scale(1.05); box-shadow: 0 0 30px rgba(255, 255, 255, 0.5); }
-    }
-
-    .dashboard-icon {
-      font-size: 3rem !important;
-      width: 3rem !important;
-      height: 3rem !important;
-      color: white;
-    }
-
-    .header-text h1 {
-      margin: 0;
-      font-size: 2.5rem;
-      color: white;
-      font-weight: 800;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
-      letter-spacing: -0.5px;
-    }
-
-    .welcome-text {
-      margin: 8px 0 0 0;
-      color: white;
-      font-size: 1.1rem;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      opacity: 0.95;
-    }
-
-    .welcome-icon {
-      font-size: 1.3rem !important;
-      width: 1.3rem !important;
-      height: 1.3rem !important;
-    }
-
-    .user-name {
-      font-weight: 600;
-      color: #fff;
-    }
-
-    .logout-btn {
-      background: rgba(244, 67, 54, 0.9) !important;
-      color: white !important;
-      border-radius: 12px !important;
-      padding: 0 24px !important;
-      height: 48px !important;
-      font-weight: 600 !important;
-      box-shadow: 0 4px 16px rgba(244, 67, 54, 0.3) !important;
-      transition: all 0.3s ease !important;
-    }
-
-    .logout-btn:hover {
-      background: rgba(211, 47, 47, 1) !important;
-      box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4) !important;
-      transform: translateY(-2px);
-    }
-
-    /* Content Card */
-    .content-card {\n      margin-bottom: 30px;\n      border-radius: 24px !important;\n      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;\n      overflow: hidden;\n      position: relative;\n      z-index: 1;\n      background: white !important;\n    }\n\n    /* Tab Styles */\n    ::ng-deep .mat-mdc-tab-group {\n      background: transparent !important;\n    }\n\n    ::ng-deep .mat-mdc-tab-header {\n      background: linear-gradient(to bottom, #f8f9fa, white) !important;\n      border-bottom: 2px solid #e0e0e0;\n    }\n\n    ::ng-deep .mat-mdc-tab .mdc-tab__text-label {\n      font-weight: 600 !important;\n      font-size: 1rem !important;\n    }\n\n    ::ng-deep .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {\n      color: #667eea !important;\n    }\n\n    ::ng-deep .mat-mdc-tab-body-content {\n      overflow-x: hidden;\n    }\n\n    .tab-content {\n      padding: 32px;\n    }\n\n    .tab-header {\n      display: flex;\n      justify-content: space-between;\n      align-items: center;\n      margin-bottom: 28px;\n      flex-wrap: wrap;\n      gap: 16px;\n    }\n\n    .tab-header h2 {\n      margin: 0;\n      font-size: 1.8rem;\n      font-weight: 700;\n      color: #1a1a1a;\n    }\n\n    /* Tables */\n    .table-container {\n      overflow-x: auto;\n      border-radius: 16px;\n      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);\n      background: white;\n      margin-top: 20px;\n    }\n\n    .students-table, .records-table {\n      width: 100%;\n    }\n\n    ::ng-deep .mat-mdc-table {\n      background: white !important;\n    }\n\n    ::ng-deep .mat-mdc-header-row {\n      background: linear-gradient(to right, #f8f9fa, #f0f0f0) !important;\n    }\n\n    ::ng-deep .mat-mdc-header-cell {\n      font-weight: 700 !important;\n      font-size: 0.9rem !important;\n      color: #1a1a1a !important;\n      text-transform: uppercase;\n      letter-spacing: 0.5px;\n    }\n\n    ::ng-deep .mat-mdc-cell {\n      font-size: 0.95rem;\n      color: #333;\n    }\n\n    ::ng-deep .mat-mdc-row:hover {\n      background: #f8f9fa !important;\n    }\n\n    /* Chips */\n    mat-chip {\n      font-size: 0.8rem !important;\n      font-weight: 600 !important;\n      border-radius: 12px !important;\n    }\n\n    mat-chip.active {\n      background-color: #C8E6C9 !important;\n      color: #2E7D32 !important;\n    }\n\n    .status-badge {\n      display: inline-block;\n      padding: 6px 16px;\n      border-radius: 12px;\n      font-size: 0.8rem;\n      font-weight: 600;\n    }\n\n    .status-badge.approved {\n      background: #C8E6C9;\n      color: #2E7D32;\n    }\n\n    .status-badge.pending {\n      background: #FFF3E0;\n      color: #F57C00;\n    }\n\n    /* Forms */\n    .form-container {\n      max-width: 900px;\n      margin: 0 auto;\n    }\n\n    .form-container h2 {\n      margin: 0 0 24px 0;\n      font-size: 1.8rem;\n      font-weight: 700;\n      color: #1a1a1a;\n    }\n\n    .form-container h3 {\n      margin: 32px 0 20px 0;\n      font-size: 1.3rem;\n      font-weight: 600;\n      color: #1a1a1a;\n      display: flex;\n      align-items: center;\n      gap: 12px;\n    }\n\n    .full-width {\n      width: 100%;\n      margin-bottom: 20px;\n    }\n\n    .course-row, .course-row-extended {\n      display: grid;\n      gap: 12px;\n      margin-bottom: 16px;\n      padding: 20px;\n      background: #f8f9fa;\n      border-radius: 12px;\n      align-items: start;\n      border: 2px solid #e0e0e0;\n      transition: all 0.3s ease;\n    }\n\n    .course-row:hover, .course-row-extended:hover {\n      border-color: #667eea;\n      background: #f5f7ff;\n    }\n\n    .course-row {\n      grid-template-columns: 1fr 2fr 1fr 1fr auto;\n    }\n\n    .course-row-extended {\n      grid-template-columns: 2fr 1fr 1fr 1fr auto;\n    }\n\n    .course-select {\n      min-width: 250px;\n    }\n\n    .info-message {\n      display: flex;\n      align-items: center;\n      gap: 12px;\n      padding: 20px;\n      background: linear-gradient(135deg, #E3F2FD, #BBDEFB);\n      border-radius: 12px;\n      margin: 16px 0;\n      border-left: 4px solid #1976D2;\n    }\n\n    .info-message mat-icon {\n      color: #1976D2;\n      font-size: 1.5rem !important;\n      width: 1.5rem !important;\n      height: 1.5rem !important;\n    }\n\n    .info-message p {\n      margin: 0;\n      color: #0D47A1;\n      font-weight: 500;\n    }\n\n    .add-course-btn {\n      margin: 16px 0 24px 0;\n      border-radius: 12px !important;\n      font-weight: 600 !important;\n    }\n\n    .form-actions {\n      display: flex;\n      gap: 12px;\n      margin-top: 32px;\n      padding-top: 24px;\n      border-top: 2px solid #e0e0e0;\n    }\n\n    .form-actions button {\n      height: 48px !important;\n      font-weight: 600 !important;\n      border-radius: 12px !important;\n    }\n\n    .form-actions button[color=\"primary\"] {\n      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;\n    }\n\n    .form-actions button[color=\"primary\"]:hover:not(:disabled) {\n      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4) !important;\n      transform: translateY(-2px);\n    }\n\n    /* Empty State */\n    .empty-state {\n      text-align: center;\n      padding: 80px 20px;\n      background: linear-gradient(135deg, #f8f9fa, #f0f0f0);\n      border-radius: 16px;\n      margin: 20px 0;\n    }\n\n    .empty-state mat-icon {\n      font-size: 5rem !important;\n      width: 5rem !important;\n      height: 5rem !important;\n      color: #ccc;\n      margin-bottom: 20px;\n    }\n\n    .empty-state h3 {\n      margin: 0 0 12px 0;\n      color: #666;\n      font-size: 1.5rem;\n      font-weight: 600;\n    }\n\n    .empty-state p {\n      color: #999;\n      font-size: 1rem;\n      margin: 0;\n    }\n\n    /* Responsive */\n    @media (max-width: 768px) {\n      .dashboard-container {\n        padding: 16px;\n      }\n\n      .header-text h1 {\n        font-size: 1.8rem;\n      }\n\n      .tab-content {\n        padding: 20px;\n      }\n\n      .course-row, .course-row-extended {\n        grid-template-columns: 1fr;\n      }\n\n      .form-container {\n        max-width: 100%;\n      }\n    }\n  `]
+    .course-code { font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--accent-cyan);font-size:13px; }
+    .view-btn { border-radius:10px!important;min-width:40px!important;padding:6px!important; }
+    .pending-count { background:var(--accent-rose);color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;margin-left:6px; }
+    .empty-state { text-align:center;padding:48px;color:var(--text-muted); mat-icon{font-size:48px;width:48px;height:48px;opacity:0.4;margin-bottom:12px;} p{font-size:16px;} }
+    .approval-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px; }
+    .approval-card { padding:20px;border-radius:14px;background:rgba(15,23,42,0.6);border:1px solid rgba(148,163,184,0.08); }
+    .approval-header { display:flex;align-items:center;gap:8px;margin-bottom:8px; mat-icon{color:var(--accent-amber);} h4{margin:0;font-weight:600;} }
+    .approval-actions { display:flex;gap:8px; button{border-radius:10px!important;} }
+    @media(max-width:768px) { .header-content{flex-direction:column;text-align:center;} .header-left{flex-direction:column;} }
+  `]
 })
 export class DepartmentDashboardComponent implements OnInit {
-  students: Student[] = [];
-  records: any[] = [];
-  availableCourses: any[] = []; // Loaded from blockchain
-  studentColumns = ['rollNumber', 'name', 'year', 'cgpa', 'status', 'actions'];
-  recordColumns = ['recordId', 'rollNumber', 'semester', 'year', 'totalCredits', 'cgpa', 'status'];
-  currentUser = this.authService.currentUser;
-  
-  newRecord: any = {
-    recordId: '',
-    studentId: '',
-    semester: 1,
-    department: this.currentUser?.department || 'CSE',
-    courses: []
-  };
+  currentUser: any;
+  loading = true;
+  dept = 'CSE';
+  students: any[] = [];
+  faculty: any[] = [];
+  courses: any[] = [];
+  pendingApprovals: any[] = [];
+  private apiUrl = APP_CONFIG.api.baseUrl;
 
   constructor(
     private authService: AuthService,
     private blockchainService: BlockchainService,
+    private http: HttpClient,
+    private snackBar: MatSnackBar,
     private router: Router,
     private dialog: MatDialog
-  ) {}
-
-  ngOnInit(): void {
-    this.loadStudents();
-    this.loadAvailableCourses();
-    this.loadRecords();
-    this.addCourse(); // Add first course by default
+  ) {
+    const stored = localStorage.getItem('user');
+    this.currentUser = stored ? JSON.parse(stored) : this.authService.currentUser;
+    this.dept = this.currentUser?.department || 'CSE';
   }
 
-  loadStudents(): void {
-    const dept = this.currentUser?.department || 'CSE';
-    this.blockchainService.getStudentsByDepartment(dept).subscribe({
-      next: (response) => {
-        if (response.success && response.data) {
-          this.students = response.data;
-        }
-      },
-      error: (error) => {
-        console.error('Error loading students:', error);
-        this.students = [];
-      }
+  ngOnInit() { this.loadAll(); }
+
+  async loadAll() {
+    this.loading = true;
+    await Promise.all([this.loadStudents(), this.loadFaculty(), this.loadCourses(), this.loadApprovals()]);
+    this.loading = false;
+  }
+
+  private loadStudents(): Promise<void> {
+    return new Promise(resolve => {
+      this.blockchainService.getStudentsByDepartment(this.dept).subscribe({
+        next: (res) => { this.students = res.success && Array.isArray(res.data) ? res.data : []; resolve(); },
+        error: () => resolve()
+      });
     });
   }
 
-  loadAvailableCourses(): void {
-    const dept = this.currentUser?.department || 'CSE';
-    this.blockchainService.getDepartmentCourses(dept).subscribe({
-      next: (response) => {
-        if (response.success && response.data) {
-          this.availableCourses = response.data;
-        }
-      },
-      error: (error) => {
-        console.error('Error loading courses:', error);
-        this.availableCourses = [];
-      }
-    });
-  }
-
-  refreshStudents(): void {
-    this.loadStudents();
-  }
-
-  refreshRecords(): void {
-    this.loadRecords();
-  }
-
-  loadRecords(): void {
-    const department = this.currentUser?.department;
-    console.log('Loading records for department:', department);
-    if (!department) return;
-
-    this.blockchainService.getDepartmentRecords(department).subscribe({
-      next: (response) => {
-        console.log('Records API response:', response);
-        if (response.success && response.data) {
-          // Show all records
-          this.records = response.data;
-          console.log('Loaded records:', this.records);
-        } else {
-          console.log('No records in response');
-          this.records = [];
-        }
-      },
-      error: (error) => {
-        console.error('Error loading records:', error);
-        this.records = [];
-      }
-    });
-  }
-
-  addCourse(): void {
-    this.newRecord.courses.push({
-      offeringId: '',
-      courseCode: '',
-      courseName: '',
-      credits: 4,
-      grade: 'A',
-      department: this.currentUser?.department
-    });
-  }
-
-  onCourseSelect(index: number, offeringId: string): void {
-    const selectedCourse = this.availableCourses.find(c => c.offeringId === offeringId);
-    if (selectedCourse) {
-      this.newRecord.courses[index].courseCode = selectedCourse.courseCode;
-      this.newRecord.courses[index].courseName = selectedCourse.courseName;
-      this.newRecord.courses[index].credits = selectedCourse.credits;
-      this.newRecord.courses[index].department = selectedCourse.departmentId;
-    }
-  }
-
-  removeCourse(index: number): void {
-    this.newRecord.courses.splice(index, 1);
-  }
-
-  createRecord(): void {
-    // Validate form
-    if (!this.newRecord.studentId || this.newRecord.courses.length === 0) {
-      this.dialog.open(ConfirmDialogComponent, {
-        width: '450px',
-        data: {
-          type: 'warning',
-          title: 'Validation Error',
-          message: 'Please fill in all required fields and add at least one course',
-          confirmText: 'OK',
-          confirmIcon: 'check',
-          confirmColor: 'primary'
+  private loadFaculty(): Promise<void> {
+    return new Promise(resolve => {
+      // Load faculty from users.json via a simple endpoint (or from local data)
+      this.http.get<any>(`${this.apiUrl}/auth/users?role=faculty&department=${this.dept}`).subscribe({
+        next: (res) => { this.faculty = res.success ? (res.data || []) : []; resolve(); },
+        error: () => {
+          // Fallback: try loading from the stored users list
+          this.faculty = [];
+          resolve();
         }
       });
-      return;
-    }
-
-    // Validate all courses have required fields
-    for (let i = 0; i < this.newRecord.courses.length; i++) {
-      const course = this.newRecord.courses[i];
-      if (!course.courseCode || !course.courseName || !course.grade) {
-        this.dialog.open(ConfirmDialogComponent, {
-          width: '450px',
-          data: {
-            type: 'warning',
-            title: 'Incomplete Course',
-            message: `Course ${i + 1} is incomplete. Please select a course and enter a grade.`,
-            confirmText: 'OK',
-            confirmIcon: 'check',
-            confirmColor: 'primary'
-          }
-        });
-        return;
-      }
-    }
-
-    // Calculate total credits
-    const totalCredits = this.newRecord.courses.reduce((sum: number, course: any) => sum + (course.credits || 0), 0);
-    
-    // Validate credits range (16-30 per semester as per chaincode validation)
-    if (totalCredits < 16 || totalCredits > 30) {
-      this.dialog.open(ConfirmDialogComponent, {
-        width: '450px',
-        data: {
-          type: 'warning',
-          title: 'Invalid Credits',
-          message: `Total credits must be between 16 and 30 per semester. Current total: ${totalCredits} credits. Please add more courses or adjust credit values.`,
-          confirmText: 'OK',
-          confirmIcon: 'check',
-          confirmColor: 'primary'
-        }
-      });
-      return;
-    }
-
-    // Auto-generate recordID: DEPT-ROLLNUMBER-SEMESTER-YEAR
-    const year = new Date().getFullYear();
-    const recordId = `${this.currentUser?.department}-${this.newRecord.studentId}-SEM${this.newRecord.semester}-${year}`;
-    
-    const recordData = {
-      recordID: recordId,
-      rollNumber: this.newRecord.studentId,
-      semester: this.newRecord.semester,
-      year: year.toString(),
-      department: this.currentUser?.department || 'CSE',
-      courses: this.newRecord.courses
-    };
-
-    console.log('Sending record data:', recordData);
-
-    this.blockchainService.createDepartmentRecord(recordData).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.dialog.open(ConfirmDialogComponent, {
-            width: '500px',
-            data: {
-              type: 'success',
-              title: 'Record Created Successfully!',
-              message: 'The academic record has been successfully created on the blockchain.',
-              details: [
-                { icon: 'badge', label: 'Record ID', value: recordId },
-                { icon: 'person', label: 'Student', value: this.newRecord.studentId },
-                { icon: 'book', label: 'Semester', value: this.newRecord.semester },
-                { icon: 'school', label: 'Courses', value: this.newRecord.courses.length },
-                { icon: 'grade', label: 'Total Credits', value: totalCredits }
-              ],
-              confirmText: 'Done',
-              confirmIcon: 'check_circle',
-              confirmColor: 'primary'
-            }
-          });
-          this.resetForm();
-        }
-      },
-      error: (error) => {
-        console.error('Error creating record:', error);
-        this.dialog.open(ConfirmDialogComponent, {
-          width: '500px',
-          data: {
-            type: 'error',
-            title: 'Error Creating Record',
-            message: error.error?.message || error.message || 'Failed to create academic record',
-            confirmText: 'OK',
-            confirmIcon: 'close',
-            confirmColor: 'warn'
-          }
-        });
-      }
     });
   }
 
-  resetForm(): void {
-    this.newRecord = {
-      studentId: '',
-      semester: 1,
-      department: this.currentUser?.department || 'CSE',
-      courses: []
-    };
-    this.addCourse();
+  private loadCourses(): Promise<void> {
+    return new Promise(resolve => {
+      this.http.get<any>(`${this.apiUrl}/courses?department=${this.dept}`).subscribe({
+        next: (res) => { this.courses = res.success ? res.data : []; resolve(); },
+        error: () => resolve()
+      });
+    });
   }
 
-  viewStudent(student: Student): void {
-    // Navigate to student detail page (department route)
-    this.router.navigate(['/department/students', student.rollNumber]);
+  private loadApprovals(): Promise<void> {
+    return new Promise(resolve => {
+      this.blockchainService.getPendingRecords().subscribe({
+        next: (res) => { this.pendingApprovals = res.success && Array.isArray(res.data) ? res.data : []; resolve(); },
+        error: () => resolve()
+      });
+    });
   }
 
-  logout(): void {
-    this.authService.logout();
+  getInitials(name: string): string {
+    return (name || '').split(' ').map(w => w[0] || '').join('').substring(0, 2).toUpperCase();
   }
+
+  viewStudent(student: any) {
+    const roll = student.rollNumber || student.studentId || student.username;
+    this.router.navigate(['/student', roll]);
+  }
+
+  approveRecord(record: any) {
+    this.blockchainService.approveAcademicRecord(record.recordId || record.id).subscribe({
+      next: () => { this.snackBar.open('Approved', 'Close', { duration: 2000 }); this.pendingApprovals = this.pendingApprovals.filter(r => r !== record); },
+      error: (err: any) => this.snackBar.open(`Failed: ${err.message}`, 'Close', { duration: 3000 })
+    });
+  }
+
+  rejectRecord(record: any) {
+    this.snackBar.open('Rejected', 'Close', { duration: 2000 });
+    this.pendingApprovals = this.pendingApprovals.filter(r => r !== record);
+  }
+
+  logout() { this.authService.logout(); this.router.navigate(['/login']); }
 }

@@ -30,7 +30,7 @@ class FabricCAClient {
      */
     static getCAClientForRole(role) {
         const walletPath = path.join(__dirname, '../wallet');
-        const baseOrgs = process.env.FABRIC_ORG_PATH || '/home/aditi/workspace (copy)/Academic_RecordsBlockchain/organizations';
+        const baseOrgs = process.env.FABRIC_ORG_PATH || '/home/aditi/workspace/Academic_RecordsBlockchain/organizations';
 
         switch (role) {
             case 'department':

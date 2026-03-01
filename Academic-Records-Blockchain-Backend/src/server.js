@@ -43,6 +43,8 @@ const semesterRoutes = require('./routes/semesterRoutes');
 const pdfRoutes = require('./routes/pdfRoutes');
 const consentRoutes = require('./routes/consentRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const marksRoutes = require('./routes/marksRoutes');
+const coursesRoutes = require('./routes/coursesRoutes');
 const setupSwagger = require('./config/swagger');
 
 const app = express();
@@ -138,6 +140,8 @@ app.use(`${APP_CONFIG.server.apiPrefix}/semester`, semesterRoutes);
 app.use(`${APP_CONFIG.server.apiPrefix}/pdf`, pdfRoutes);
 app.use(`${APP_CONFIG.server.apiPrefix}/consent`, consentRoutes);
 app.use(`${APP_CONFIG.server.apiPrefix}/reports`, reportRoutes);
+app.use(`${APP_CONFIG.server.apiPrefix}/marks`, marksRoutes);
+app.use(`${APP_CONFIG.server.apiPrefix}/courses`, coursesRoutes);
 
 
 // Serve uploaded files and generated certificates
@@ -261,20 +265,147 @@ async function initializeEventListener() {
     }
 }
 
-// Start server
-httpServer.listen(APP_CONFIG.server.port, APP_CONFIG.server.host, async () => {
-    logger.info(`🚀 Academic Records Backend Server running on ${APP_CONFIG.server.host}:${APP_CONFIG.server.port}`);
-    logger.info(`📡 Environment: ${APP_CONFIG.server.nodeEnv}`);
-    logger.info(`📋 Health check: http://localhost:${APP_CONFIG.server.port}/health`);
-    logger.info(`🔗 API Base URL: http://localhost:${APP_CONFIG.server.port}${APP_CONFIG.server.apiPrefix}`);
-    logger.info(`📚 Swagger Docs: http://localhost:${APP_CONFIG.server.port}/api-docs`);
-    logger.info(`🔗 Channel: ${APP_CONFIG.fabric.channelName}`);
-    logger.info(`📦 Chaincode: ${APP_CONFIG.fabric.chaincodeName}`);
-    logger.info(`🔔 Socket.io: real-time notifications enabled`);
+const syncWalletOnStartup = require('./utils/walletSync');
 
-    // Initialize event listener
-    await initializeEventListener();
-});
+// Auto-seed: re-populate missing student records AND departments on the blockchain after network restart
+async function autoSeedBlockchain() {
+    try {
+        const path = require('path');
+        const fs = require('fs');
+
+        const FabricGateway = require('./fabricGateway');
+        const gateway = new FabricGateway();
+        const adminUser = { userId: 'admin', role: 'admin', username: 'admin' };
+
+        try {
+            await gateway.connect(adminUser);
+        } catch (err) {
+            logger.warn(`Auto-seed skipped (cannot connect to Fabric): ${err.message}`);
+            return;
+        }
+
+        // ── Seed Students ──────────────────────────────────────
+        const USERS_FILE = path.join(__dirname, '../data/users.json');
+        const raw = fs.readFileSync(USERS_FILE, 'utf8');
+        const users = JSON.parse(raw);
+        const students = users.filter(u => u.role === 'student' && u.isActive);
+
+        let created = 0, skipped = 0;
+        for (const s of students) {
+            const roll = s.username;
+            try {
+                await gateway.evaluateTransaction('GetStudent', roll);
+                skipped++;
+            } catch (_) {
+                try {
+                    const transientData = {
+                        aadhaarHash: Buffer.from(`HASH-${roll}`),
+                        phone: Buffer.from(s.phone || '0000000000'),
+                        personalEmail: Buffer.from(s.email || `${roll}@student.nitw.ac.in`),
+                    };
+                    await gateway.submitTransactionWithTransient(
+                        'CreateStudent', transientData,
+                        roll, s.name || roll, s.department || 'CSE',
+                        (s.enrollmentYear || new Date().getFullYear()).toString(),
+                        s.email || `${roll}@student.nitw.ac.in`,
+                        s.admissionCategory || 'GENERAL'
+                    );
+                    created++;
+                } catch (e) {
+                    logger.warn(`Auto-seed: could not create student ${roll}: ${e.message}`);
+                }
+            }
+        }
+        if (created > 0) logger.info(`🌱 Auto-seed: created ${created} student(s) on blockchain (${skipped} already existed)`);
+        else logger.info(`🌱 Auto-seed: all ${skipped} student(s) already on blockchain`);
+
+        // ── Seed Departments ───────────────────────────────────
+        const DEPT_FILE = path.join(__dirname, '../data/departments.json');
+        if (fs.existsSync(DEPT_FILE)) {
+            const depts = JSON.parse(fs.readFileSync(DEPT_FILE, 'utf8'));
+            let dCreated = 0, dSkipped = 0;
+            for (const d of depts) {
+                try {
+                    await gateway.evaluateTransaction('GetDepartment', d.departmentId);
+                    dSkipped++;
+                } catch (_) {
+                    try {
+                        await gateway.submitTransaction(
+                            'CreateDepartment',
+                            d.departmentId,
+                            d.name,
+                            d.hodId || '',
+                            d.email || `${d.departmentId.toLowerCase()}@nitw.ac.in`,
+                            d.phone || ''
+                        );
+                        dCreated++;
+                    } catch (e) {
+                        logger.warn(`Auto-seed: could not create department ${d.departmentId}: ${e.message}`);
+                    }
+                }
+            }
+            if (dCreated > 0) logger.info(`🏢 Auto-seed: created ${dCreated} department(s) on blockchain (${dSkipped} already existed)`);
+            else if (dSkipped > 0) logger.info(`🏢 Auto-seed: all ${dSkipped} department(s) already on blockchain`);
+        }
+
+        // ── Seed Courses ───────────────────────────────────────
+        const COURSES_FILE = path.join(__dirname, '../data/courses.json');
+        if (fs.existsSync(COURSES_FILE)) {
+            const courses = JSON.parse(fs.readFileSync(COURSES_FILE, 'utf8'));
+            let cCreated = 0, cSkipped = 0;
+            for (const c of courses) {
+                try {
+                    await gateway.evaluateTransaction('GetCourseOffering', c.code);
+                    cSkipped++;
+                } catch (_) {
+                    try {
+                        await gateway.submitTransaction(
+                            'CreateCourseOffering',
+                            c.code,
+                            c.name,
+                            c.department || 'CSE',
+                            String(c.semester || 1),
+                            String(c.credits || 3),
+                            c.faculty || '',
+                            c.type || 'core'
+                        );
+                        cCreated++;
+                    } catch (e) {
+                        logger.warn(`Auto-seed: could not create course ${c.code}: ${e.message}`);
+                    }
+                }
+            }
+            if (cCreated > 0) logger.info(`📚 Auto-seed: created ${cCreated} course(s) on blockchain (${cSkipped} already existed)`);
+            else if (cSkipped > 0) logger.info(`📚 Auto-seed: all ${cSkipped} course(s) already on blockchain`);
+        }
+
+        await gateway.disconnect();
+    } catch (err) {
+        logger.warn(`Auto-seed skipped: ${err.message}`);
+    }
+}
+
+// Start server
+async function startServer() {
+    await syncWalletOnStartup();
+    await autoSeedBlockchain();
+
+    httpServer.listen(APP_CONFIG.server.port, APP_CONFIG.server.host, async () => {
+        logger.info(`🚀 Academic Records Backend Server running on ${APP_CONFIG.server.host}:${APP_CONFIG.server.port}`);
+        logger.info(`📡 Environment: ${APP_CONFIG.server.nodeEnv}`);
+        logger.info(`📋 Health check: http://localhost:${APP_CONFIG.server.port}/health`);
+        logger.info(`🔗 API Base URL: http://localhost:${APP_CONFIG.server.port}${APP_CONFIG.server.apiPrefix}`);
+        logger.info(`📚 Swagger Docs: http://localhost:${APP_CONFIG.server.port}/api-docs`);
+        logger.info(`🔗 Channel: ${APP_CONFIG.fabric.channelName}`);
+        logger.info(`📦 Chaincode: ${APP_CONFIG.fabric.chaincodeName}`);
+        logger.info(`🔔 Socket.io: real-time notifications enabled`);
+
+        // Initialize event listener
+        await initializeEventListener();
+    });
+}
+
+startServer();
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
