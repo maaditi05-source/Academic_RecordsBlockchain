@@ -196,11 +196,11 @@ import { AddCourseDialogComponent } from './add-course-dialog/add-course-dialog.
                 <thead><tr><th>Course Code</th><th>Course Name</th><th>Credits</th><th>Department</th><th>Type</th></tr></thead>
                 <tbody>
                   <tr *ngFor="let c of allCourses">
-                    <td><span class="course-code">{{ c.courseCode }}</span></td>
-                    <td>{{ c.courseName }}</td>
+                    <td><span class="course-code">{{ c.code }}</span></td>
+                    <td>{{ c.name }}</td>
                     <td>{{ c.credits }}</td>
                     <td>{{ c.department }}</td>
-                    <td>{{ c.courseType || 'Core' }}</td>
+                    <td>{{ c.type || 'Core' }}</td>
                   </tr>
                 </tbody>
               </table>
