@@ -295,11 +295,11 @@ class CertificateController {
             const { status, processedDate, processedBy, certificateId } = req.body;
             const role = req.user.role;
 
-            // Only admin, faculty, hod, and dac_member can update request status
-            if (!['admin', 'faculty', 'hod', 'dac_member'].includes(role)) {
+            // Only admin, HOD, department, and dac_member can update request status
+            if (!['admin', 'hod', 'department', 'dac_member'].includes(role)) {
                 return res.status(403).json({
                     success: false,
-                    message: 'Only admin, faculty, HOD, and DAC members can update certificate requests'
+                    message: 'Only HOD, admin, and DAC members can approve/reject certificate requests'
                 });
             }
 

@@ -253,5 +253,22 @@
     "uploadedAt": "2026-02-20T10:00:00Z",
     "verifiedBy": "hod_demo",
     "verifiedAt": "2026-02-26T15:43:17.336Z"
+  },
+  {
+    "id": "mark-1772364548418-jnhm8",
+    "studentId": "25CSM2R26",
+    "courseCode": "MA201",
+    "semester": 3,
+    "year": 2026,
+    "marksObtained": 98,
+    "maxMarks": 100,
+    "grade": "A+",
+    "gradePoint": 10,
+    "credits": 3,
+    "status": "pending",
+    "uploadedBy": "exam_section_demo",
+    "verifiedBy": null,
+    "uploadedAt": "2026-03-01T11:29:08.418Z",
+    "verifiedAt": null
   }
 ]

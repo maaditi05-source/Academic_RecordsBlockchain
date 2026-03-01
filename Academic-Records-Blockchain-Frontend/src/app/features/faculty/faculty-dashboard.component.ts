@@ -169,41 +169,7 @@ import { APP_CONFIG } from '../../core/config/app.config';
           </div>
         </mat-tab>
 
-        <!-- TAB 3: CERTIFICATE REQUESTS -->
-        <mat-tab>
-          <ng-template mat-tab-label>
-            <mat-icon class="tab-icon">approval</mat-icon>
-            <span>Cert Requests</span>
-            <span class="pending-count" *ngIf="pendingApprovals.length > 0">{{ pendingApprovals.length }}</span>
-          </ng-template>
-          <div class="tab-content">
-            <div *ngIf="pendingApprovals.length > 0" class="approval-grid">
-              <div class="approval-card glass-card" *ngFor="let r of pendingApprovals">
-                <div class="approval-header">
-                  <mat-icon>description</mat-icon>
-                  <h4>{{ r.requestId }}</h4>
-                </div>
-                <p class="text-muted">Student: <strong>{{ r.studentId }}</strong></p>
-                <p class="text-muted">Type: {{ r.certificateType }}</p>
-                <p class="text-muted">Purpose: {{ r.purpose }}</p>
-                <p class="text-muted">Requested: {{ r.requestDate | date:'medium' }}</p>
-                <span class="status-badge pending">{{ r.status }}</span>
-                <div class="approval-actions mt-2">
-                  <button mat-raised-button color="primary" (click)="approveRecord(r)" [disabled]="r.processing">
-                    <mat-icon>check</mat-icon> Approve
-                  </button>
-                  <button mat-stroked-button color="warn" (click)="rejectRecord(r)" [disabled]="r.processing">
-                    <mat-icon>close</mat-icon> Reject
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div *ngIf="pendingApprovals.length === 0" class="empty-state">
-              <mat-icon>thumb_up</mat-icon>
-              <p>No pending certificate requests</p>
-            </div>
-          </div>
-        </mat-tab>
+
 
         <!-- TAB 4: UPLOAD MARKS (exam_section / admin only) -->
         <mat-tab *ngIf="canUploadMarks">
@@ -364,7 +330,6 @@ export class FacultyDashboardComponent implements OnInit {
   selectedCourse: any = null;
   courseStudentMarks: any[] = [];
   pendingMarks: any[] = [];
-  pendingApprovals: any[] = [];
   allCourses: any[] = [];
   canUploadMarks = false;
   uploadingMarks = false;
@@ -404,7 +369,7 @@ export class FacultyDashboardComponent implements OnInit {
   async loadAll() {
     this.loading = true;
     try {
-      await Promise.all([this.loadCourses(), this.loadPendingMarks(), this.loadApprovals(), this.loadAllCourses()]);
+      await Promise.all([this.loadCourses(), this.loadPendingMarks(), this.loadAllCourses()]);
     } finally { this.loading = false; }
   }
 
@@ -442,21 +407,6 @@ export class FacultyDashboardComponent implements OnInit {
     });
   }
 
-  private loadApprovals(): Promise<void> {
-    return new Promise(resolve => {
-      const token = localStorage.getItem('access_token');
-      const headers = { 'Authorization': `Bearer ${token}` };
-      this.http.get<any>(`${this.apiUrl}/certificates/requests`, { headers }).subscribe({
-        next: (res) => {
-          const all = res.success ? (Array.isArray(res.data) ? res.data : []) : [];
-          this.pendingApprovals = all.filter((r: any) => r.status === 'PENDING');
-          resolve();
-        },
-        error: () => { this.pendingApprovals = []; resolve(); }
-      });
-    });
-  }
-
   selectCourse(course: any) {
     this.selectedCourse = course;
     const token = localStorage.getItem('access_token');
@@ -480,46 +430,6 @@ export class FacultyDashboardComponent implements OnInit {
         mark.verifying = false;
       },
       error: () => { mark.verifying = false; this.snackBar.open('Verification failed', 'Close', { duration: 2000 }); }
-    });
-  }
-
-  approveRecord(record: any) {
-    record.processing = true;
-    const token = localStorage.getItem('access_token');
-    const headers = { 'Authorization': `Bearer ${token}` };
-    this.http.put<any>(`${this.apiUrl}/certificates/requests/${record.requestId}`, { status: 'APPROVED' }, { headers }).subscribe({
-      next: (res) => {
-        record.processing = false;
-        if (res.success) {
-          this.snackBar.open('Certificate request approved!', 'Close', { duration: 2000 });
-          this.pendingApprovals = this.pendingApprovals.filter(r => r !== record);
-        } else {
-          this.snackBar.open(res.message || 'Approval failed', 'Close', { duration: 3000 });
-        }
-      },
-      error: (err: any) => {
-        record.processing = false;
-        this.snackBar.open(`Approval failed: ${err.error?.message || err.message}`, 'Close', { duration: 3000 });
-      }
-    });
-  }
-
-  rejectRecord(record: any) {
-    record.processing = true;
-    const token = localStorage.getItem('access_token');
-    const headers = { 'Authorization': `Bearer ${token}` };
-    this.http.put<any>(`${this.apiUrl}/certificates/requests/${record.requestId}`, { status: 'REJECTED' }, { headers }).subscribe({
-      next: (res) => {
-        record.processing = false;
-        if (res.success) {
-          this.snackBar.open('Certificate request rejected', 'Close', { duration: 2000 });
-          this.pendingApprovals = this.pendingApprovals.filter(r => r !== record);
-        }
-      },
-      error: (err: any) => {
-        record.processing = false;
-        this.snackBar.open(`Rejection failed: ${err.error?.message || err.message}`, 'Close', { duration: 3000 });
-      }
     });
   }
 

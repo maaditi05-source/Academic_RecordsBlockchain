@@ -192,22 +192,33 @@ class MarksController {
     }
 
     // ── GET /marks/pending ─────────────────────────────────────────
-    // Faculty gets pending (unverified) marks for their courses
+    // Faculty/HOD gets pending (unverified) marks
     static async getPendingMarks(req, res) {
         try {
             const user = req.user;
             const marks = loadJSON(MARKS_FILE).filter(m => m.status === 'pending');
             const users = loadJSON(USERS_FILE);
-
-            // Faculty: only show marks for their courses
-            let filtered = marks;
-            if (user.role === 'faculty') {
-                const faculty = users.find(u => u.username === (user.username || user.userId));
-                const myCourses = faculty?.courses || [];
-                filtered = marks.filter(m => myCourses.includes(m.courseCode));
-            }
-
             const courses = loadJSON(COURSES_FILE);
+
+            let filtered = marks;
+
+            if (user.role === 'faculty') {
+                // Union courses from users.json AND courses.json faculty assignment
+                const faculty = users.find(u => u.username === (user.username || user.userId));
+                const userCourses = faculty?.courses || [];
+                const assignedCourses = courses
+                    .filter(c => c.faculty === (user.username || user.userId))
+                    .map(c => c.code);
+                const allMyCourses = [...new Set([...userCourses, ...assignedCourses])];
+                filtered = marks.filter(m => allMyCourses.includes(m.courseCode));
+            } else if (user.role === 'hod' || user.role === 'department') {
+                // HOD/Department see all pending marks for their department
+                const dept = user.department || '';
+                const deptCourses = courses.filter(c => c.department === dept).map(c => c.code);
+                filtered = marks.filter(m => deptCourses.includes(m.courseCode));
+            }
+            // admin sees all
+
             const enriched = filtered.map(m => {
                 const course = courses.find(c => c.code === m.courseCode) || {};
                 return { ...m, courseName: course.name || m.courseCode };

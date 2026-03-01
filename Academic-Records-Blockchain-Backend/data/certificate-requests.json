@@ -10,5 +10,17 @@
     "userId": "student-1771485330832",
     "processedDate": "2026-02-26T14:54:09.177Z",
     "processedBy": "hod_demo"
+  },
+  {
+    "requestId": "REQ-1772364233505",
+    "studentId": "25CSM2R26",
+    "certificateType": "DEGREE",
+    "purpose": "HIGHER_STUDIES",
+    "additionalDetails": "",
+    "requestDate": "2026-03-01T11:23:53.505Z",
+    "status": "APPROVED",
+    "userId": "student-1771485330832",
+    "processedDate": "2026-03-01T11:24:46.014Z",
+    "processedBy": "faculty_demo"
   }
 ]

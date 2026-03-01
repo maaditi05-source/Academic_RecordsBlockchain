@@ -137,26 +137,33 @@ import { APP_CONFIG } from '../../core/config/app.config';
           </div>
         </mat-tab>
 
-        <!-- TAB 4: APPROVALS -->
+        <!-- TAB 4: CERTIFICATE APPROVALS -->
         <mat-tab>
           <ng-template mat-tab-label>
-            <mat-icon class="tab-icon">approval</mat-icon><span>Approvals</span>
+            <mat-icon class="tab-icon">approval</mat-icon><span>Cert Approvals</span>
             <span class="pending-count" *ngIf="pendingApprovals.length > 0">{{ pendingApprovals.length }}</span>
           </ng-template>
           <div class="tab-content">
             <div *ngIf="pendingApprovals.length > 0" class="approval-grid">
               <div class="approval-card glass-card" *ngFor="let r of pendingApprovals">
-                <div class="approval-header"><mat-icon>description</mat-icon><h4>{{ r.recordId || r.id }}</h4></div>
-                <p class="text-muted">Student: {{ r.studentId }}</p>
+                <div class="approval-header"><mat-icon>description</mat-icon><h4>{{ r.requestId }}</h4></div>
+                <p class="text-muted">Student: <strong>{{ r.studentId }}</strong></p>
+                <p class="text-muted">Type: {{ r.certificateType }}</p>
+                <p class="text-muted">Purpose: {{ r.purpose }}</p>
+                <p class="text-muted">Requested: {{ r.requestDate | date:'medium' }}</p>
                 <span class="status-badge pending">{{ r.status }}</span>
                 <div class="approval-actions mt-2">
-                  <button mat-raised-button color="primary" (click)="approveRecord(r)"><mat-icon>check</mat-icon> Approve</button>
-                  <button mat-stroked-button color="warn" (click)="rejectRecord(r)"><mat-icon>close</mat-icon> Reject</button>
+                  <button mat-raised-button color="primary" (click)="approveRequest(r)" [disabled]="r.processing">
+                    <mat-icon>check</mat-icon> Approve
+                  </button>
+                  <button mat-stroked-button color="warn" (click)="rejectRequest(r)" [disabled]="r.processing">
+                    <mat-icon>close</mat-icon> Reject
+                  </button>
                 </div>
               </div>
             </div>
             <div *ngIf="pendingApprovals.length === 0" class="empty-state">
-              <mat-icon>thumb_up</mat-icon><p>No pending approvals</p>
+              <mat-icon>thumb_up</mat-icon><p>No pending certificate approvals</p>
             </div>
           </div>
         </mat-tab>
@@ -276,9 +283,15 @@ export class DepartmentDashboardComponent implements OnInit {
 
   private loadApprovals(): Promise<void> {
     return new Promise(resolve => {
-      this.blockchainService.getPendingRecords().subscribe({
-        next: (res) => { this.pendingApprovals = res.success && Array.isArray(res.data) ? res.data : []; resolve(); },
-        error: () => resolve()
+      const token = localStorage.getItem('access_token');
+      const headers = { 'Authorization': `Bearer ${token}` };
+      this.http.get<any>(`${this.apiUrl}/certificates/requests`, { headers }).subscribe({
+        next: (res) => {
+          const all = res.success ? (Array.isArray(res.data) ? res.data : []) : [];
+          this.pendingApprovals = all.filter((r: any) => r.status === 'PENDING');
+          resolve();
+        },
+        error: () => { this.pendingApprovals = []; resolve(); }
       });
     });
   }
@@ -292,16 +305,44 @@ export class DepartmentDashboardComponent implements OnInit {
     this.router.navigate(['/student', roll]);
   }
 
-  approveRecord(record: any) {
-    this.blockchainService.approveAcademicRecord(record.recordId || record.id).subscribe({
-      next: () => { this.snackBar.open('Approved', 'Close', { duration: 2000 }); this.pendingApprovals = this.pendingApprovals.filter(r => r !== record); },
-      error: (err: any) => this.snackBar.open(`Failed: ${err.message}`, 'Close', { duration: 3000 })
+  approveRequest(record: any) {
+    record.processing = true;
+    const token = localStorage.getItem('access_token');
+    const headers = { 'Authorization': `Bearer ${token}` };
+    this.http.put<any>(`${this.apiUrl}/certificates/requests/${record.requestId}`, { status: 'APPROVED' }, { headers }).subscribe({
+      next: (res) => {
+        record.processing = false;
+        if (res.success) {
+          this.snackBar.open('Certificate request approved!', 'Close', { duration: 2000 });
+          this.pendingApprovals = this.pendingApprovals.filter(r => r !== record);
+        } else {
+          this.snackBar.open(res.message || 'Approval failed', 'Close', { duration: 3000 });
+        }
+      },
+      error: (err: any) => {
+        record.processing = false;
+        this.snackBar.open(`Approval failed: ${err.error?.message || err.message}`, 'Close', { duration: 3000 });
+      }
     });
   }
 
-  rejectRecord(record: any) {
-    this.snackBar.open('Rejected', 'Close', { duration: 2000 });
-    this.pendingApprovals = this.pendingApprovals.filter(r => r !== record);
+  rejectRequest(record: any) {
+    record.processing = true;
+    const token = localStorage.getItem('access_token');
+    const headers = { 'Authorization': `Bearer ${token}` };
+    this.http.put<any>(`${this.apiUrl}/certificates/requests/${record.requestId}`, { status: 'REJECTED' }, { headers }).subscribe({
+      next: (res) => {
+        record.processing = false;
+        if (res.success) {
+          this.snackBar.open('Certificate request rejected', 'Close', { duration: 2000 });
+          this.pendingApprovals = this.pendingApprovals.filter(r => r !== record);
+        }
+      },
+      error: (err: any) => {
+        record.processing = false;
+        this.snackBar.open(`Rejection failed: ${err.error?.message || err.message}`, 'Close', { duration: 3000 });
+      }
+    });
   }
 
   logout() { this.authService.logout(); this.router.navigate(['/login']); }

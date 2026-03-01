@@ -210,33 +210,84 @@ import jsPDF from 'jspdf';
             <span>Grade Sheets</span>
           </ng-template>
           <div class="tab-content">
-            <div class="gradesheet-grid">
-              <!-- Semester-wise downloads -->
-              <div class="gs-card glass-card" *ngFor="let sem of semesters">
-                <div class="gs-header">
-                  <mat-icon>assignment</mat-icon>
-                  <h4>Semester {{ sem }}</h4>
+            <!-- Semester-wise gradesheet sections -->
+            <div *ngFor="let sem of semesters" class="gs-section">
+              <div class="gs-section-header" (click)="toggleGradeSheetSem(sem)">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <mat-icon>{{ expandedGsSem === sem ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  <mat-icon style="color:var(--accent-teal)">assignment</mat-icon>
+                  <h4 style="margin:0;font-weight:600;">Semester {{ sem }}</h4>
+                  <span class="gs-course-count">{{ getMarkCountForSem(sem) }} courses</span>
                 </div>
-                <p class="gs-info text-muted">{{ getMarkCountForSem(sem) }} courses</p>
-                <button mat-raised-button class="gs-download" (click)="downloadGradeSheet(sem)">
-                  <mat-icon>download</mat-icon> Download Grade Sheet
+                <button mat-raised-button class="gs-download" (click)="downloadGradeSheet(sem); $event.stopPropagation()">
+                  <mat-icon>download</mat-icon> Download PDF
                 </button>
               </div>
 
-              <!-- Consolidated Marksheet -->
-              <div class="gs-card glass-card consolidated" *ngIf="semesters.length > 0">
-                <div class="gs-header">
-                  <mat-icon>library_books</mat-icon>
-                  <h4>Consolidated Marksheet</h4>
+              <!-- Expanded marks list -->
+              <div *ngIf="expandedGsSem === sem" class="gs-marks-body">
+                <table class="modern-table" *ngIf="getSemMarks(sem).length > 0">
+                  <thead>
+                    <tr>
+                      <th>Course Code</th>
+                      <th>Course Name</th>
+                      <th>Credits</th>
+                      <th>Marks</th>
+                      <th>Grade</th>
+                      <th>GP</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let m of getSemMarks(sem)">
+                      <td><span class="course-code">{{ m.courseCode }}</span></td>
+                      <td>{{ m.courseName }}</td>
+                      <td>{{ m.credits }}</td>
+                      <td><strong>{{ m.marksObtained }}</strong>/{{ m.maxMarks }}</td>
+                      <td><span class="grade-chip" [attr.data-grade]="m.grade">{{ m.grade }}</span></td>
+                      <td>{{ m.gradePoint }}</td>
+                      <td><span class="status-badge" [class]="m.status">{{ m.status }}</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+                <!-- SGPA for this semester -->
+                <div class="sgpa-bar" *ngIf="getSemSGPA(sem) as sgpa">
+                  <div class="sgpa-item">
+                    <span class="sgpa-label">SGPA</span>
+                    <span class="sgpa-value">{{ sgpa.sgpa }}</span>
+                  </div>
+                  <div class="sgpa-item">
+                    <span class="sgpa-label">Credits</span>
+                    <span class="sgpa-value">{{ sgpa.credits }}</span>
+                  </div>
                 </div>
-                <p class="gs-info text-muted">All {{ semesters.length }} semesters combined</p>
+                <div *ngIf="getSemMarks(sem).length === 0" class="empty-state" style="padding:16px;">
+                  <p>No marks recorded for this semester</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Consolidated Marksheet -->
+            <div class="gs-section" *ngIf="semesters.length > 0">
+              <div class="gs-section-header consolidated-header">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <mat-icon style="color:var(--accent-violet)">library_books</mat-icon>
+                  <h4 style="margin:0;font-weight:600;">Consolidated Marksheet</h4>
+                  <span class="gs-course-count">All {{ semesters.length }} semesters</span>
+                </div>
                 <button mat-raised-button color="primary" class="gs-download" (click)="downloadConsolidated()">
                   <mat-icon>download</mat-icon> Download Consolidated
                 </button>
               </div>
             </div>
+
+            <div *ngIf="semesters.length === 0" class="empty-state">
+              <mat-icon>description</mat-icon>
+              <p>No grade sheets available yet</p>
+            </div>
           </div>
         </mat-tab>
+
 
         <!-- ═══ TAB 4: CERTIFICATES ═══ -->
         <mat-tab>
@@ -456,27 +507,30 @@ import jsPDF from 'jspdf';
       p { font-size: 16px; }
     }
 
-    /* ── Grade Sheet Grid ──────────────────────────────────── */
-    .gradesheet-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;
-    }
-    .gs-card {
-      padding: 24px; border-radius: 14px;
+    .gs-section {
+      margin-bottom: 12px; border-radius: 14px; overflow: hidden;
       background: rgba(15,23,42,0.6); border: 1px solid rgba(148,163,184,0.08);
       transition: all 0.3s ease;
-      &:hover { border-color: rgba(56,189,248,0.2); transform: translateY(-2px); }
-      &.consolidated {
-        border-color: rgba(45,212,191,0.3);
-        background: linear-gradient(135deg, rgba(15,118,110,0.1), rgba(8,145,178,0.1));
+      &:hover { border-color: rgba(56,189,248,0.2); }
+    }
+    .gs-section-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 20px; cursor: pointer; transition: background 0.2s;
+      &:hover { background: rgba(56,189,248,0.04); }
+      &.consolidated-header {
+        cursor: default;
+        background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.08));
+        border-top: 1px solid rgba(167,139,250,0.2);
       }
     }
-    .gs-header {
-      display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
-      mat-icon { color: var(--accent-teal); }
-      h4 { font-weight: 600; margin: 0; }
+    .gs-course-count {
+      font-size: 12px; color: var(--text-muted); padding: 2px 10px;
+      background: rgba(148,163,184,0.1); border-radius: 10px;
     }
-    .gs-info { margin-bottom: 16px; }
-    .gs-download { width: 100%; border-radius: 10px !important; }
+    .gs-marks-body {
+      padding: 0 20px 20px; animation: fadeIn 0.3s ease-out;
+    }
+    .gs-download { border-radius: 10px !important; }
 
     /* ── Certificates ──────────────────────────────────────── */
     .cert-actions { margin-bottom: 20px; }
@@ -556,6 +610,7 @@ export class StudentProfileComponent implements OnInit {
   semesterData: any = null;
   profileFields: any[] = [];
   isViewingAsAdmin = false;
+  expandedGsSem: number | null = null;
   private apiUrl = APP_CONFIG.api.baseUrl;
 
   constructor(
@@ -735,6 +790,25 @@ export class StudentProfileComponent implements OnInit {
 
   getMarkCountForSem(sem: number): number {
     return this.marks.filter(m => m.semester === sem).length;
+  }
+
+  getSemMarks(sem: number): any[] {
+    return this.marks.filter(m => m.semester === sem);
+  }
+
+  getSemSGPA(sem: number): any {
+    const semMarks = this.marks.filter(m => m.semester === sem && m.status === 'verified');
+    let totalCredits = 0, weighted = 0;
+    for (const m of semMarks) {
+      totalCredits += m.credits;
+      weighted += m.gradePoint * m.credits;
+    }
+    if (totalCredits === 0) return null;
+    return { sgpa: (weighted / totalCredits).toFixed(2), credits: totalCredits };
+  }
+
+  toggleGradeSheetSem(sem: number) {
+    this.expandedGsSem = this.expandedGsSem === sem ? null : sem;
   }
 
   getInitials(): string {
