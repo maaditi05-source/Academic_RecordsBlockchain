@@ -1,0 +1,349 @@
+# Academic Records Blockchain — Complete Project Documentation
+
+## 1. Project Overview
+
+A **Hyperledger Fabric** blockchain-based system for managing academic records at **NIT Warangal**. It provides tamper-proof storage of student records, certificates, and academic transcripts with role-based access control across university departments.
+
+---
+
+## 2. Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Blockchain** | Hyperledger Fabric 2.5 (permissioned blockchain) |
+| **Smart Contract** | Go (`fabric-contract-api-go`) — [chaincode.go](file:///home/aditi/workspace/Academic_RecordsBlockchain/chaincode-go/chaincode.go) (3769 lines) |
+| **Ordering** | EtcdRaft (crash fault tolerant consensus) |
+| **State DB** | CouchDB 3.3 (rich queries on world state) |
+| **Backend API** | Node.js + Express.js with `fabric-network` SDK |
+| **Frontend** | Angular 17 + Angular Material (standalone components) |
+| **Auth** | JWT tokens (bcrypt password hashing) |
+| **Certificates** | Fabric CA (Certificate Authority) per org |
+| **Containerization** | Docker Compose |
+| **PDF Generation** | jsPDF (client-side grade sheets & certificates) |
+
+---
+
+## 3. Network Architecture
+
+```mermaid
+graph TB
+    subgraph "Docker Network: fabric_nitw"
+        subgraph "Orderer"
+            O["orderer.nitw.edu:7050<br/>EtcdRaft<br/>OrdererMSP"]
+        end
+
+        subgraph "Org 1: NIT Warangal (Admin)"
+            CA1["ca-nitwarangal:8054"]
+            P1["peer0.nitwarangal:7051<br/>NITWarangalMSP"]
+            DB1["couchdb0:5984"]
+            P1 --> DB1
+        end
+
+        subgraph "Org 2: Departments"
+            CA2["ca-departments:9054"]
+            P2["peer0.departments:9051<br/>DepartmentsMSP"]
+            DB2["couchdb1:6984"]
+            P2 --> DB2
+        end
+
+        subgraph "Org 3: Verifiers"
+            CA3["ca-verifiers:11054"]
+            P3["peer0.verifiers:11051<br/>VerifiersMSP"]
+            DB3["couchdb2:7984"]
+            P3 --> DB3
+        end
+
+        O --> P1
+        O --> P2
+        O --> P3
+    end
+
+    subgraph "Application Layer"
+        BE["Node.js Backend :3000"]
+        FE["Angular Frontend :4200"]
+        FE --> BE
+        BE --> P1
+    end
+```
+
+### Three Organizations (Peers)
+
+| Org | MSP ID | Role | Peers | CA Port |
+|---|---|---|---|---|
+| **NIT Warangal** | `NITWarangalMSP` | Central admin, registrar, student records | 2 peers (7051) | 8054 |
+| **Departments** | `DepartmentsMSP` | HODs, dept-level access control | 2 peers (9051) | 9054 |
+| **Verifiers** | `VerifiersMSP` | External verification (employers, other universities) | 1 peer (11051) | 11054 |
+
+### Channel
+- **Name:** `academic-records-channel`
+- **Chaincode:** `academic-records`
+- All 3 orgs are members of this channel
+
+### Consensus
+- **EtcdRaft** — single orderer node (`orderer.nitw.edu:7050`)
+- Batch timeout: 2s, max 10 messages per block
+
+---
+
+## 4. Smart Contract (Chaincode)
+
+Written in **Go** — [chaincode.go](file:///home/aditi/workspace/Academic_RecordsBlockchain/chaincode-go/chaincode.go)
+
+### Data Models (stored on blockchain ledger)
+
+| Model | Key Fields | Stored In |
+|---|---|---|
+| **Student** | rollNumber, name, department, enrollmentYear, email, status, CGPA | World State (public) |
+| **StudentPrivateDetails** | phone, personalEmail, aadhaarHash | Private Data Collection |
+| **Department** | departmentId, departmentName, HOD, email | World State |
+| **AcademicRecord** | recordId, studentId, semester, courses[], SGPA, CGPA, status | World State |
+| **Certificate** | certificateId, studentId, type, pdfHash, ipfsHash, verified, revoked | World State |
+| **CourseOffering** | offeringId, courseCode, credits, semester, academicYear | World State |
+
+### Key Chaincode Functions
+
+| Function | Who Can Call | What It Does |
+|---|---|---|
+| [CreateStudent](file:///home/aditi/workspace/Academic_RecordsBlockchain/chaincode-go/chaincode.go#320-498) | NITWarangalMSP | Creates student with public + private data |
+| [GetStudent](file:///home/aditi/workspace/Academic_RecordsBlockchain/chaincode-go/chaincode.go#524-542) | Any org | Reads public student record |
+| [GetStudentPrivateDetails](file:///home/aditi/workspace/Academic_RecordsBlockchain/chaincode-go/chaincode.go#499-523) | NITWarangalMSP only | Reads Aadhaar hash, phone, personal email |
+| [UpdateStudentStatus](file:///home/aditi/workspace/Academic_RecordsBlockchain/chaincode-go/chaincode.go#543-633) | NITWarangalMSP | Change status (ACTIVE→GRADUATED etc.) |
+| [CreateDepartment](file:///home/aditi/workspace/Academic_RecordsBlockchain/chaincode-go/chaincode.go#2179-2245) | NITWarangalMSP | Register a department |
+| `SubmitAcademicRecord` | NITWarangalMSP, DepartmentsMSP | Submit semester grades for a student |
+| [ApproveAcademicRecord](file:///home/aditi/workspace/Academic_RecordsBlockchain/chaincode-go/chaincode.go#1033-1157) | NITWarangalMSP | Admin approves submitted grades |
+| [IssueCertificate](file:///home/aditi/workspace/Academic_RecordsBlockchain/chaincode-go/chaincode.go#1158-1284) | NITWarangalMSP | Issue degree/transcript/bonafide certificate |
+| [VerifyCertificate](file:///home/aditi/workspace/Academic_RecordsBlockchain/chaincode-go/chaincode.go#1321-1364) | Any org (including VerifiersMSP) | Verify a certificate's authenticity |
+| [RevokeCertificate](file:///home/aditi/workspace/Academic_RecordsBlockchain/chaincode-go/chaincode.go#1365-1445) | NITWarangalMSP | Revoke a previously issued certificate |
+| [GetStudentHistory](file:///home/aditi/workspace/Academic_RecordsBlockchain/chaincode-go/chaincode.go#1504-1552) | Any org | Full audit trail of a student record |
+
+### Access Control (RBAC via MSP)
+
+```
+NITWarangalMSP  → Full access (create, update, delete, approve)
+DepartmentsMSP  → Department-scoped access (submit records, view dept students)
+VerifiersMSP    → Read-only verification access
+```
+
+### Private Data
+- Sensitive student info (Aadhaar hash, personal phone/email) stored in **private data collection** (`studentPrivateCollection`)
+- Only `NITWarangalMSP` can read private data
+- Passed via **transient data** (never written to blockchain transaction log)
+
+### Grading System (10-point scale)
+
+| Grade | Points | Meaning |
+|---|---|---|
+| S | 10 | Outstanding |
+| A | 9 | Excellent |
+| B | 8 | Very Good |
+| C | 7 | Good |
+| D | 6 | Satisfactory |
+| P | 5 | Pass |
+| U | 0 | Fail |
+| R | 0 | Repeat (attendance shortage) |
+
+---
+
+## 5. Backend Architecture
+
+**Entry point:** [server.js](file:///home/aditi/workspace/Academic-Records-Blockchain-Backend/src/server.js) running on **port 3000**
+
+### Hybrid Data Storage
+
+| Data | Storage | Why |
+|---|---|---|
+| Students, Departments, Certificates | **Blockchain ledger** (via chaincode) | Immutable, tamper-proof, auditable |
+| Marks, Courses, Users, Cert Requests | **JSON files** (`data/` directory) | Fast reads, flexible schema, off-chain workflow |
+| Wallet identities | **Filesystem** (`wallet/` directory) | Fabric SDK identity management |
+
+### Backend Data Files
+
+| File | Purpose |
+|---|---|
+| [users.json](file:///home/aditi/workspace/Academic-Records-Blockchain-Backend/data/users.json) | 12 user accounts across 8 roles (bcrypt hashed passwords) |
+| [marks.json](file:///home/aditi/workspace/Academic-Records-Blockchain-Backend/data/marks.json) | Student marks with grades, status (pending/verified) |
+| [courses.json](file:///home/aditi/workspace/Academic-Records-Blockchain-Backend/data/courses.json) | 8 CSE courses with faculty assignments |
+| [certificate-requests.json](file:///home/aditi/workspace/Academic-Records-Blockchain-Backend/data/certificate-requests.json) | Pending/approved certificate requests |
+
+### Key Backend Modules
+
+| Module | File | Purpose |
+|---|---|---|
+| Fabric Gateway | [fabricGateway.js](file:///home/aditi/workspace/Academic-Records-Blockchain-Backend/src/fabricGateway.js) | Connects to Fabric network, submits/evaluates transactions |
+| Fabric CA Client | [fabricCAClient.js](file:///home/aditi/workspace/Academic-Records-Blockchain-Backend/src/fabricCAClient.js) | Enrolls admin, registers users with Fabric CA |
+| Auth Middleware | [middleware/auth.js](file:///home/aditi/workspace/Academic-Records-Blockchain-Backend/src/middleware/auth.js) | JWT token verification on all protected routes |
+| Wallet Sync | [utils/walletSync.js](file:///home/aditi/workspace/Academic-Records-Blockchain-Backend/src/utils/walletSync.js) | Syncs wallet identities on startup, purges stale certs |
+| Event Listener | [eventListener.js](file:///home/aditi/workspace/Academic-Records-Blockchain-Backend/src/eventListener.js) | Listens for blockchain events (StudentCreated, CertificateIssued, etc.) |
+
+### API Routes
+
+| Route | Controller | Operations |
+|---|---|---|
+| `/api/auth/*` | Auth | Login, register, token refresh |
+| `/api/students/*` | Students | CRUD via blockchain chaincode |
+| `/api/marks/*` | Marks | Upload (faculty), verify (exam_section), query |
+| `/api/courses/*` | Courses | List, create, assign faculty |
+| `/api/certificates/*` | Certificates | Issue (blockchain), request, approve/reject |
+| `/api/departments/*` | Departments | CRUD via blockchain chaincode |
+| `/api/users/*` | Users | List, manage roles |
+| `/api/blockchain/*` | Blockchain | Direct chaincode queries |
+
+### Auto-Seeding on Startup
+The server auto-seeds student and department data to the blockchain on startup using [evaluateTransaction](file:///home/aditi/workspace/Academic-Records-Blockchain-Backend/src/fabricGateway.js#120-147) (read) to check existence, then [submitTransaction](file:///home/aditi/workspace/Academic-Records-Blockchain-Backend/src/fabricGateway.js#96-119) (write) if missing.
+
+---
+
+## 6. Frontend Architecture
+
+**Angular 17** with standalone components and Angular Material
+
+### Feature Modules
+
+| Module | Route | Who Uses It |
+|---|---|---|
+| Login | `/login` | Everyone |
+| Admin Dashboard | `/admin` | `admin` role — manages students, departments, courses, users, cert approvals |
+| Faculty Dashboard | `/faculty` | [faculty](file:///home/aditi/workspace/Academic-Records-Blockchain-Frontend/src/app/core/services/blockchain.service.ts#158-161), `exam_section`, [hod](file:///home/aditi/workspace%20%28copy%29/Academic-Records-Blockchain-Backend/src/controllers/approvalController.js#91-116), `dac_member`, `dean_academic` |
+| Department Dashboard | `/department/:id` | [department](file:///home/aditi/workspace/Academic_RecordsBlockchain/chaincode-go/chaincode.go#2358-2369) role (HOD login) — students, courses, cert approvals |
+| Student Profile | `/student/:roll` | `student` role — view marks, certificates, grade sheets |
+| Verify Certificate | `/verify` | Public — verify certificate authenticity via blockchain |
+
+### Key Pages
+
+- **Student Profile** — 4 tabs: My Info, Courses & Marks, Grade Sheets (expandable per-semester with SGPA + PDF download), Certificates
+- **Faculty Dashboard** — 3 tabs: My Courses, Verify Marks (exam_section only), Upload Marks (all faculty)
+- **Department Dashboard** — 4 tabs: Overview stats, Students, Courses, Cert Approvals
+- **Admin Dashboard** — 6 tabs: Overview, Students, Cert Approvals, Departments, Courses, Users
+
+---
+
+## 7. User Roles & Permissions
+
+| Role | Users | What They Can Do |
+|---|---|---|
+| **admin** | `admin` | Full access — create students/departments (blockchain), manage users, approve certs, view all data |
+| **student** | `25CSM2R26`, `CS21B001`, etc. | View own profile, marks, certificates, request certificates, download grade sheets |
+| **faculty** | `faculty_demo`, `faculty_demo_2` | View assigned courses, **upload marks** for students, view course student list |
+| **hod** | `hod_demo` | All faculty permissions + view department scope |
+| **department** | `CSE`, `MECH` | Department dashboard, view dept students/courses, **approve/reject certificate requests** |
+| **exam_section** | `exam_section_demo` | **Verify marks** uploaded by faculty, view all pending marks |
+| **dac_member** | `dac_member_1`, `dac_member_2` | DAC committee member — approve certificates |
+| **dean_academic** | `dean_academic_demo` | Dean oversight |
+
+---
+
+## 8. Core Workflows
+
+### Marks Workflow
+```mermaid
+sequenceDiagram
+    participant F as Faculty
+    participant BE as Backend
+    participant ES as Exam Section
+    participant S as Student
+
+    F->>BE: Upload marks (POST /api/marks/upload)
+    Note over BE: Validates: no duplicates, course exists<br/>Auto-assigns semester from course data<br/>Status = "pending"
+    BE-->>F: Marks uploaded ✅
+
+    ES->>BE: View pending marks (GET /api/marks/pending)
+    BE-->>ES: All pending marks across all courses
+
+    ES->>BE: Verify marks (PATCH /api/marks/:id/verify)
+    Note over BE: Status → "verified"
+    BE-->>ES: Verified ✅
+
+    S->>BE: View marks (GET /api/marks/:studentId)
+    BE-->>S: All marks (verified ones shown in grade sheet)
+```
+
+### Certificate Workflow
+```mermaid
+sequenceDiagram
+    participant S as Student
+    participant BE as Backend
+    participant HOD as HOD/Department
+    participant BC as Blockchain
+
+    S->>BE: Request certificate (POST /api/certificates/request)
+    Note over BE: Status = "PENDING"<br/>Stored in certificate-requests.json
+
+    HOD->>BE: View pending requests
+    HOD->>BE: Approve (PUT /api/certificates/requests/:id)
+    Note over BE: Status → "APPROVED"
+
+    BE->>BC: IssueCertificate (submitTransaction)
+    Note over BC: Certificate stored on-chain<br/>with PDF hash, IPFS hash
+
+    S->>BE: Download certificate PDF
+    Note over S: Generated client-side via jsPDF
+```
+
+### Certificate Verification (Public)
+```mermaid
+sequenceDiagram
+    participant V as Verifier (Employer/University)
+    participant BE as Backend
+    participant BC as Blockchain
+
+    V->>BE: Verify certificate (GET /api/certificates/verify/:id)
+    BE->>BC: VerifyCertificate (evaluateTransaction)
+    BC-->>BE: Certificate data + validity
+    BE-->>V: ✅ Valid / ❌ Revoked / ❌ Not Found
+```
+
+---
+
+## 9. Security
+
+| Feature | Implementation |
+|---|---|
+| **Authentication** | JWT tokens with 24h expiry, bcrypt password hashing |
+| **Blockchain RBAC** | MSP-based access control in chaincode (NITWarangalMSP, DepartmentsMSP, VerifiersMSP) |
+| **TLS** | All Fabric communication is TLS-encrypted |
+| **Private Data** | Student PII (Aadhaar, phone) in private collection, passed via transient map |
+| **Immutability** | All student records and certificates on blockchain — cannot be tampered |
+| **Audit Trail** | [GetStudentHistory](file:///home/aditi/workspace/Academic_RecordsBlockchain/chaincode-go/chaincode.go#1504-1552) returns full version history from blockchain |
+| **Events** | Chaincode emits events (StudentCreated, CertificateIssued, etc.) — backend listens for real-time updates |
+
+---
+
+## 10. How to Run
+
+```bash
+# 1. Start the Fabric network (Docker containers)
+cd ~/workspace/Academic_RecordsBlockchain
+./start_network.sh     # or ./network.sh up
+
+# 2. Start the backend
+cd ~/workspace/Academic-Records-Blockchain-Backend
+npm start              # Runs on port 3000
+
+# 3. Start the frontend
+cd ~/workspace/Academic-Records-Blockchain-Frontend
+npm run dev            # Runs on port 4200
+
+# Login credentials (all passwords: admin123)
+# admin / faculty_demo / exam_section_demo / 25CSM2R26 / CSE
+```
+
+---
+
+## 11. Docker Containers (13 total)
+
+| Container | Image | Port | Purpose |
+|---|---|---|---|
+| `orderer.nitw.edu` | `fabric-orderer` | 7050 | Ordering service (EtcdRaft) |
+| `peer0.nitwarangal.nitw.edu` | `fabric-peer` | 7051 | NIT Warangal peer |
+| `peer0.departments.nitw.edu` | `fabric-peer` | 9051 | Departments peer |
+| `peer0.verifiers.nitw.edu` | `fabric-peer` | 11051 | Verifiers peer |
+| `ca_orderer` | `fabric-ca` | 7054 | Orderer CA |
+| `ca_nitwarangal` | `fabric-ca` | 8054 | NIT Warangal CA |
+| `ca_departments` | `fabric-ca` | 9054 | Departments CA |
+| `ca_verifiers` | `fabric-ca` | 11054 | Verifiers CA |
+| `couchdb0` | `couchdb:3.3` | 5984 | NIT Warangal state DB |
+| `couchdb1` | `couchdb:3.3` | 6984 | Departments state DB |
+| `couchdb2` | `couchdb:3.3` | 7984 | Verifiers state DB |
+| `cli` | `fabric-tools` | — | Admin CLI for channel/chaincode ops |
+| Backend | Node.js | 3000 | REST API server |
+| Frontend | Angular | 4200 | Web UI |
