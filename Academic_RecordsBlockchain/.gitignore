@@ -58,3 +58,7 @@ NEXT_STEPS.md
 *-test.sh
 deploy-*.sh
 test-*.sh
+
+# Exceptions — Multi-Host Deployment (tracked)
+!deploy-multihost.sh
+!dist-crypto/
