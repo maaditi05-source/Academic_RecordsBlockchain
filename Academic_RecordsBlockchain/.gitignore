@@ -54,10 +54,10 @@ Thumbs.db
 QUICK_REFERENCE.txt
 NEXT_STEPS.md
 
-# Temporary Scripts
+# Temporary test scripts only — deployment scripts ARE tracked
 *-test.sh
-deploy-*.sh
 test-*.sh
+# NOTE: deploy-*.sh, network-*.sh, distribute-*.sh are intentionally tracked
 
 # Exceptions — Multi-Host Deployment (tracked)
 !deploy-multihost.sh

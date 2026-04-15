@@ -1,7 +1,10 @@
 /**
  * Approval Controller
  * Handles the multi-party academic record approval workflow:
- * DRAFT → SUBMITTED → FACULTY_APPROVED → HOD_APPROVED → DAC_APPROVED → ES_APPROVED → APPROVED
+ * DRAFT → SUBMITTED → FACULTY_APPROVED → HOD_APPROVED → DAC_APPROVED
+ *        → EXAM_LOCKED → DEAN_APPROVED → ADMIN_FINALIZED
+ *
+ * Final authority: Admin (NITWarangalMSP) via adminFinalApprove()
  */
 
 const FabricGateway = require('../fabricGateway');
@@ -155,7 +158,7 @@ const deanApprove = async (req, res) => {
 
         res.json({
             success: true,
-            message: 'Dean Academic approval recorded. Ready for DAC finalization.',
+            message: 'Dean Academic approval recorded. Ready for Admin Final Approval.',
             data: { recordId, status: 'DEAN_APPROVED', approvedBy: req.user.username }
         });
     } catch (error) {
@@ -167,7 +170,8 @@ const deanApprove = async (req, res) => {
 };
 
 /**
- * DAC member gives FINAL approval (DEAN_APPROVED → FINALIZED + auto-calculates CGPA)
+ * DAC member approval (HOD_APPROVED → DAC_APPROVED)
+ * STEP 3: DAC reviews academic compliance. No longer the final step.
  * POST /api/approval/dac/:recordId
  */
 const dacApprove = async (req, res) => {
@@ -177,7 +181,36 @@ const dacApprove = async (req, res) => {
         const { comment = '', memberRole = 'dac_member' } = req.body;
 
         await gateway.connect(req.user);
+        await gateway.submitTransaction('DACApprove', recordId, memberRole, comment);
 
+        res.json({
+            success: true,
+            message: 'DAC approval recorded. Record is now DAC_APPROVED — awaiting Exam Section review.',
+            data: { recordId, status: 'DAC_APPROVED', approvedBy: req.user.username }
+        });
+    } catch (error) {
+        logger.error(`dacApprove error: ${error.message}`);
+        res.status(500).json({ success: false, message: error.message });
+    } finally {
+        await gateway.disconnect();
+    }
+};
+
+/**
+ * Admin FINAL Approval — last step in the chain (DEAN_APPROVED → ADMIN_FINALIZED)
+ * Only NITWarangalMSP admin role can call this.
+ * Calculates CGPA, updates student profile, emits RecordFinalized.
+ * POST /api/approval/admin-final/:recordId
+ */
+const adminFinalApprove = async (req, res) => {
+    const gateway = new FabricGateway();
+    try {
+        const { recordId } = req.params;
+        const { comment = '' } = req.body;
+
+        await gateway.connect(req.user);
+
+        // Fetch student ID for notification
         let studentId = req.body.studentId;
         if (!studentId) {
             try {
@@ -186,24 +219,24 @@ const dacApprove = async (req, res) => {
             } catch (_) { }
         }
 
-        await gateway.submitTransaction('DACApprove', recordId, memberRole, comment);
+        await gateway.submitTransaction('AdminFinalApprove', recordId, comment);
 
-        // Notify student of final approval
+        // Notify student that record is fully finalized
         if (studentId) {
             const { email } = await getStudentEmail(gateway, studentId);
             notifyApprovalStep(req.app.get('io'), {
                 studentId, studentEmail: email, recordId,
-                newStatus: 'FINALIZED', approvedBy: req.user.username
+                newStatus: 'ADMIN_FINALIZED', approvedBy: req.user.username
             }).catch(() => { });
         }
 
         res.json({
             success: true,
-            message: 'DAC approval recorded — record is now FINALIZED and CGPA updated',
-            data: { recordId, status: 'FINALIZED', approvedBy: req.user.username }
+            message: 'Admin Final Approval granted — record is ADMIN_FINALIZED. CGPA updated.',
+            data: { recordId, status: 'ADMIN_FINALIZED', approvedBy: req.user.username }
         });
     } catch (error) {
-        logger.error(`dacApprove error: ${error.message}`);
+        logger.error(`adminFinalApprove error: ${error.message}`);
         res.status(500).json({ success: false, message: error.message });
     } finally {
         await gateway.disconnect();
@@ -295,7 +328,16 @@ const getApprovalQueue = async (req, res) => {
     const gateway = new FabricGateway();
     try {
         const { status } = req.params;
-        const validStatuses = ['SUBMITTED', 'FACULTY_APPROVED', 'HOD_APPROVED', 'DAC_APPROVED', 'ES_APPROVED'];
+        // All valid workflow statuses (in order)
+        const validStatuses = [
+            'SUBMITTED',
+            'FACULTY_APPROVED',
+            'HOD_APPROVED',
+            'DAC_APPROVED',
+            'EXAM_LOCKED',
+            'DEAN_APPROVED',
+            'ADMIN_FINALIZED'
+        ];
 
         if (!validStatuses.includes(status)) {
             return res.status(400).json({
@@ -327,6 +369,7 @@ module.exports = {
     dacApprove,
     examSectionApprove,
     deanApprove,
+    adminFinalApprove,  // NEW — final step, NITWarangalMSP only
     rejectRecord,
     getApprovalStatus,
     getApprovalQueue

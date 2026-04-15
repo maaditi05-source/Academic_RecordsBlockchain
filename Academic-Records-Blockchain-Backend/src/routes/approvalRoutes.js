@@ -18,8 +18,12 @@ router.post('/examsection/:recordId', authenticateToken, requireRole('admin', 'e
 // Dean Academic approval
 router.post('/dean/:recordId', authenticateToken, requireRole('admin', 'dean_academic'), ApprovalController.deanApprove);
 
-// DAC approval (final)
+// DAC approval (step 3: HOD_APPROVED → DAC_APPROVED)
 router.post('/dac/:recordId', authenticateToken, requireRole('department', 'dac_member', 'admin'), ApprovalController.dacApprove);
+
+// Admin FINAL approval (last step — DEAN_APPROVED → ADMIN_FINALIZED)
+// Only admin role on NITWarangalMSP machine should call this
+router.post('/admin-final/:recordId', authenticateToken, requireRole('admin'), ApprovalController.adminFinalApprove);
 
 // Reject and send back to DRAFT
 router.post('/reject/:recordId', authenticateToken, ApprovalController.rejectRecord);
@@ -27,7 +31,7 @@ router.post('/reject/:recordId', authenticateToken, ApprovalController.rejectRec
 // Get approval chain status for a record
 router.get('/status/:recordId', authenticateToken, ApprovalController.getApprovalStatus);
 
-// Get records at a specific approval stage (queue)
+// Get records at a specific approval stage (queue) — all 7 stages supported
 router.get('/queue/:status', authenticateToken, requireRole('admin', 'faculty', 'department', 'hod', 'dac_member', 'exam_section', 'dean_academic'), ApprovalController.getApprovalQueue);
 
 module.exports = router;

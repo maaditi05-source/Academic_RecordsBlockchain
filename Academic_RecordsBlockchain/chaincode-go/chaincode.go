@@ -2621,12 +2621,15 @@ func (s *SmartContract) GetStudentsByDepartment(ctx contractapi.TransactionConte
 // ============================================================
 
 // Extended approval status constants (added to existing DRAFT/SUBMITTED/APPROVED)
+// Correct approval order: Faculty → HOD → DAC → ExamSection → Dean → AdminFinal
 const (
 	RecordFacultyApproved  = "FACULTY_APPROVED"
 	RecordHODApproved      = "HOD_APPROVED"
+	RecordDACApproved      = "DAC_APPROVED"       // NEW: DAC advances to here (no longer finalizes)
 	RecordESLocked         = "EXAM_LOCKED"
 	RecordDeanApproved     = "DEAN_APPROVED"
-	RecordFinalized        = "FINALIZED"
+	RecordAdminFinalized   = "ADMIN_FINALIZED"    // NEW: Admin (NITWarangalMSP) is the final approver
+	RecordFinalized        = "FINALIZED"          // Kept for backward-compat; same as ADMIN_FINALIZED
 	RecordRejected         = "REJECTED"
 
 	// Role identifiers used in approval chain
@@ -2635,13 +2638,13 @@ const (
 	RoleDAC          = "dac_member"
 	RoleExamSection  = "exam_section"
 	RoleDeanAcademic = "dean_academic"
-	RoleAdmin        = "admin"
+	RoleAdmin        = "admin"  // NITWarangalMSP — final approver
 
 	// Composite key prefixes for new entities
-	ApprovalKey          = "approval~record"
-	DocumentKey          = "document~student"
-	DocumentHashKey      = "document~hash"
-	SemesterRegKey       = "semreg~student"
+	ApprovalKey     = "approval~record"
+	DocumentKey     = "document~student"
+	DocumentHashKey = "document~hash"
+	SemesterRegKey  = "semreg~student"
 )
 
 // ApprovalStep represents a single approval in the multi-party chain
@@ -2957,7 +2960,10 @@ func (s *SmartContract) HODApprove(ctx contractapi.TransactionContextInterface, 
 	return nil
 }
 
-// DACApprove is the final approval step — validates compliance, signs off, and finalizes record
+// DACApprove records the DAC (Departmental Academic Committee) approval.
+// STEP 3 in the chain: Faculty → HOD → DAC → ExamSection → Dean → AdminFinal
+// DAC reviews academic compliance and advances to DAC_APPROVED.
+// NOTE: DAC no longer finalizes — Admin (NITWarangalMSP) is the final step.
 func (s *SmartContract) DACApprove(ctx contractapi.TransactionContextInterface, recordID, memberRole, comment string) error {
 	recJSON, err := ctx.GetStub().GetState(recordID)
 	if err != nil || recJSON == nil {
@@ -2968,31 +2974,22 @@ func (s *SmartContract) DACApprove(ctx contractapi.TransactionContextInterface, 
 		return err
 	}
 
-	if rec.Status != RecordDeanApproved {
-		return fmt.Errorf("record must be DEAN_APPROVED before DAC finalization, current: %s", rec.Status)
+	// DAC comes after HOD approval (step 3)
+	if rec.Status != RecordHODApproved {
+		return fmt.Errorf("record must be HOD_APPROVED before DAC approval, current: %s", rec.Status)
+	}
+
+	// Access Control: Only DepartmentsMSP (DAC is a department-level committee)
+	if err := checkMSPAccess(ctx, DepartmentsMSP); err != nil {
+		return err
 	}
 
 	clientID, _ := ctx.GetClientIdentity().GetID()
 	txTimestamp, _ := ctx.GetStub().GetTxTimestamp()
 	now := time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos))
 
-	// Calculate and update CGPA since this is the final step
-	newCGPA, totalCredits, err := s.calculateCGPAIncludingCurrent(ctx, rec.StudentID, rec.Semester, rec.SGPA, rec.TotalCredits)
-	if err != nil {
-		return fmt.Errorf("failed to calculate CGPA: %w", err)
-	}
-	rec.CGPA = newCGPA
-
-	// Update student overall profile
-	student, err := s.GetStudent(ctx, rec.StudentID)
-	if err == nil {
-		student.CurrentCGPA = newCGPA
-		student.TotalCreditsEarned = totalCredits
-		studentJSON, _ := json.Marshal(student)
-		ctx.GetStub().PutState(student.RollNumber, studentJSON)
-	}
-
-	if err := s.updateRecordStatus(ctx, recordID, RecordFinalized); err != nil {
+	// Advance status to DAC_APPROVED — no CGPA calc here (that belongs to Admin final step)
+	if err := s.updateRecordStatus(ctx, recordID, RecordDACApproved); err != nil {
 		return err
 	}
 
@@ -3000,7 +2997,7 @@ func (s *SmartContract) DACApprove(ctx contractapi.TransactionContextInterface, 
 	if err != nil {
 		return err
 	}
-	ar.CurrentStatus = RecordFinalized
+	ar.CurrentStatus = RecordDACApproved
 	ar.UpdatedAt = now
 	ar.ApprovalChain = append(ar.ApprovalChain, ApprovalStep{
 		Role:       RoleDAC,
@@ -3014,30 +3011,22 @@ func (s *SmartContract) DACApprove(ctx contractapi.TransactionContextInterface, 
 		return err
 	}
 
-	// Make the record FINALIZED / APPROVED structurally
-	rec.Status = RecordFinalized
-	rec.ApprovedBy = clientID
-	rec.Timestamp = now
-	updatedJSON, _ := json.Marshal(rec)
-	ctx.GetStub().PutState(recordID, updatedJSON)
-
-	// Emit Finalized event
 	eventPayload := map[string]interface{}{
 		"recordId":   recordID,
-		"studentId":  rec.StudentID,
-		"semester":   rec.Semester,
-		"sgpa":       rec.SGPA,
-		"cgpa":       newCGPA,
+		"role":       RoleDAC,
+		"memberRole": memberRole,
 		"approvedBy": clientID,
 		"timestamp":  now.Format("2006-01-02T15:04:05Z07:00"),
 	}
 	eventJSON, _ := json.Marshal(eventPayload)
-	ctx.GetStub().SetEvent("RecordFinalized", eventJSON)
+	ctx.GetStub().SetEvent("RecordDACApproved", eventJSON)
 
 	return nil
 }
 
-// ExamSectionApprove records Exam Section approval
+// ExamSectionApprove records Exam Section approval.
+// STEP 4 in the chain: Faculty → HOD → DAC → ExamSection → Dean → AdminFinal
+// Exam Section (NITWarangalMSP) reviews after DAC has cleared it.
 func (s *SmartContract) ExamSectionApprove(ctx contractapi.TransactionContextInterface, recordID, comment string) error {
 	recJSON, err := ctx.GetStub().GetState(recordID)
 	if err != nil || recJSON == nil {
@@ -3048,8 +3037,9 @@ func (s *SmartContract) ExamSectionApprove(ctx contractapi.TransactionContextInt
 		return err
 	}
 
-	if rec.Status != RecordHODApproved {
-		return fmt.Errorf("record must be HOD_APPROVED before Exam Section locking, current: %s", rec.Status)
+	// ExamSection comes after DAC approval (step 4)
+	if rec.Status != RecordDACApproved {
+		return fmt.Errorf("record must be DAC_APPROVED before Exam Section locking, current: %s", rec.Status)
 	}
 
 	// Access Control: Only NITWarangalMSP (admin/exam section)
@@ -3146,6 +3136,97 @@ func (s *SmartContract) DeanAcademicApprove(ctx contractapi.TransactionContextIn
 	}
 	eventJSON, _ := json.Marshal(eventPayload)
 	ctx.GetStub().SetEvent("RecordDeanApproved", eventJSON)
+
+	return nil
+}
+
+// AdminFinalApprove is the FINAL step in the approval chain.
+// STEP 6: Faculty → HOD → DAC → ExamSection → Dean → AdminFinal → ADMIN_FINALIZED
+// Only NITWarangalMSP (admin role) can call this.
+// This step calculates final CGPA, updates student profile, and finalizes the record.
+func (s *SmartContract) AdminFinalApprove(ctx contractapi.TransactionContextInterface, recordID, comment string) error {
+	// Access Control: ONLY NITWarangalMSP admin can finalize
+	if err := checkMSPAccess(ctx, NITWarangalMSP); err != nil {
+		return err
+	}
+
+	recJSON, err := ctx.GetStub().GetState(recordID)
+	if err != nil || recJSON == nil {
+		return fmt.Errorf("record %s not found", recordID)
+	}
+	var rec AcademicRecord
+	if err := json.Unmarshal(recJSON, &rec); err != nil {
+		return err
+	}
+
+	// Must be DEAN_APPROVED to proceed to admin final
+	if rec.Status != RecordDeanApproved {
+		return fmt.Errorf("record must be DEAN_APPROVED before Admin Final Approval, current: %s", rec.Status)
+	}
+
+	clientID, _ := ctx.GetClientIdentity().GetID()
+	txTimestamp, _ := ctx.GetStub().GetTxTimestamp()
+	now := time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos))
+
+	// Calculate CGPA — this is the authoritative final calculation
+	newCGPA, totalCredits, err := s.calculateCGPAIncludingCurrent(ctx, rec.StudentID, rec.Semester, rec.SGPA, rec.TotalCredits)
+	if err != nil {
+		return fmt.Errorf("failed to calculate CGPA: %w", err)
+	}
+	rec.CGPA = newCGPA
+
+	// Update student overall profile with finalized CGPA
+	student, err := s.GetStudent(ctx, rec.StudentID)
+	if err == nil {
+		student.CurrentCGPA = newCGPA
+		student.TotalCreditsEarned = totalCredits
+		studentJSON, _ := json.Marshal(student)
+		ctx.GetStub().PutState(student.RollNumber, studentJSON)
+	}
+
+	// Advance to ADMIN_FINALIZED
+	if err := s.updateRecordStatus(ctx, recordID, RecordAdminFinalized); err != nil {
+		return err
+	}
+
+	ar, err := s.getOrCreateApprovalRecord(ctx, recordID)
+	if err != nil {
+		return err
+	}
+	ar.CurrentStatus = RecordAdminFinalized
+	ar.UpdatedAt = now
+	ar.ApprovalChain = append(ar.ApprovalChain, ApprovalStep{
+		Role:       RoleAdmin,
+		ApprovedBy: clientID,
+		Timestamp:  now,
+		Comment:    comment,
+		TxID:       ctx.GetStub().GetTxID(),
+	})
+	if err := s.saveApprovalRecord(ctx, ar); err != nil {
+		return err
+	}
+
+	// Stamp the academic record itself
+	rec.Status = RecordAdminFinalized
+	rec.ApprovedBy = clientID
+	rec.Timestamp = now
+	updatedJSON, _ := json.Marshal(rec)
+	ctx.GetStub().PutState(recordID, updatedJSON)
+
+	// Emit RecordFinalized event (admin is final authority)
+	eventPayload := map[string]interface{}{
+		"recordId":      recordID,
+		"studentId":     rec.StudentID,
+		"semester":      rec.Semester,
+		"sgpa":          rec.SGPA,
+		"cgpa":          newCGPA,
+		"totalCredits":  totalCredits,
+		"finalizedBy":   clientID,
+		"finalizedRole": RoleAdmin,
+		"timestamp":     now.Format("2006-01-02T15:04:05Z07:00"),
+	}
+	eventJSON, _ := json.Marshal(eventPayload)
+	ctx.GetStub().SetEvent("RecordFinalized", eventJSON)
 
 	return nil
 }

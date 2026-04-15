@@ -1,0 +1,81 @@
+version: '3.7'
+
+# Node 05 — NITWarangal Peer 1
+# Roles: Student-facing portal backend
+# Machine IP: ${NITW_PEER1_HOST}
+
+networks:
+  fabric_net:
+    driver: bridge
+
+volumes:
+  peer1.nitwarangal.nitw.edu:
+  couchdb.nitw.peer1:
+
+
+services:
+
+  couchdb.nitw.peer1:
+    container_name: couchdb.nitw.peer1
+    image: couchdb:3.3
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - "${NITW_COUCHDB1_PORT:-5985}:5984"
+    networks:
+      - fabric_net
+
+  peer1.nitwarangal.nitw.edu:
+    container_name: peer1.nitwarangal.nitw.edu
+    image: hyperledger/fabric-peer:2.5
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_net
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_PROFILE_ENABLED=false
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_PEER_ID=peer1.nitwarangal.nitw.edu
+      - CORE_PEER_ADDRESS=peer1.nitwarangal.nitw.edu:${NITW_PEER1_PORT:-7151}
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:${NITW_PEER1_PORT:-7151}
+      - CORE_PEER_CHAINCODEADDRESS=peer1.nitwarangal.nitw.edu:7152
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7152
+      # Gossip bootstrap from anchor peer (peer0)
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.nitwarangal.nitw.edu:${NITW_PEER0_PORT:-7051}
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=${NITW_PEER1_HOST:-localhost}:${NITW_PEER1_PORT:-7151}
+      - CORE_PEER_LOCALMSPID=NITWarangalMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_OPERATIONS_LISTENADDRESS=peer1.nitwarangal.nitw.edu:17151
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.nitw.peer1:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ../organizations/peerOrganizations/nitwarangal.nitw.edu/peers/peer1.nitwarangal.nitw.edu/msp:/etc/hyperledger/fabric/msp
+      - ../organizations/peerOrganizations/nitwarangal.nitw.edu/peers/peer1.nitwarangal.nitw.edu/tls:/etc/hyperledger/fabric/tls
+      - peer1.nitwarangal.nitw.edu:/var/hyperledger/production
+    working_dir: /root
+    command: peer node start
+    ports:
+      - "${NITW_PEER1_PORT:-7151}:${NITW_PEER1_PORT:-7151}"
+    depends_on:
+      - couchdb.nitw.peer1
+    networks:
+      - fabric_net
+    extra_hosts:
+      - "orderer1.nitw.edu:${ORDERER1_HOST:-host-gateway}"
+      - "orderer2.nitw.edu:${ORDERER2_HOST:-host-gateway}"
+      - "orderer3.nitw.edu:${ORDERER3_HOST:-host-gateway}"
+      - "peer0.nitwarangal.nitw.edu:${NITW_PEER0_HOST:-host-gateway}"
+      - "peer0.cse.departments.nitw.edu:${DEPT_CSE_HOST:-host-gateway}"
+      - "peer0.ece.departments.nitw.edu:${DEPT_ECE_HOST:-host-gateway}"
+      - "peer0.me.departments.nitw.edu:${DEPT_ME_HOST:-host-gateway}"
+      - "peer0.dac.departments.nitw.edu:${DEPT_DAC_HOST:-host-gateway}"
+      - "peer0.verifiers.nitw.edu:${VERI_PEER0_HOST:-host-gateway}"
+      - "peer1.verifiers.nitw.edu:${VERI_PEER1_HOST:-host-gateway}"

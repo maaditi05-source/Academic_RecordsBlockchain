@@ -1,0 +1,78 @@
+version: '3.7'
+
+# Node 11 — Verifiers Peer 1 (Secondary verifier)
+# Roles: Secondary verifier node for redundancy
+# Machine IP: ${VERI_PEER1_HOST}
+
+networks:
+  fabric_net:
+    driver: bridge
+
+volumes:
+  peer1.verifiers.nitw.edu:
+  couchdb.veri1:
+
+
+services:
+
+  couchdb.veri1:
+    container_name: couchdb.veri1
+    image: couchdb:3.3
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - "${VERI_COUCHDB1_PORT:-5991}:5984"
+    networks:
+      - fabric_net
+
+  peer1.verifiers.nitw.edu:
+    container_name: peer1.verifiers.nitw.edu
+    image: hyperledger/fabric-peer:2.5
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_net
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_PEER_ID=peer1.verifiers.nitw.edu
+      - CORE_PEER_ADDRESS=peer1.verifiers.nitw.edu:${VERI_PEER1_PORT:-11151}
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:${VERI_PEER1_PORT:-11151}
+      - CORE_PEER_CHAINCODEADDRESS=peer1.verifiers.nitw.edu:11152
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:11152
+      # Gossip bootstraps from verifier anchor (peer0)
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.verifiers.nitw.edu:${VERI_PEER0_PORT:-11051}
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=${VERI_PEER1_HOST:-localhost}:${VERI_PEER1_PORT:-11151}
+      - CORE_PEER_LOCALMSPID=VerifiersMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_OPERATIONS_LISTENADDRESS=peer1.verifiers.nitw.edu:17057
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.veri1:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ../organizations/peerOrganizations/verifiers.nitw.edu/peers/peer1.verifiers.nitw.edu/msp:/etc/hyperledger/fabric/msp
+      - ../organizations/peerOrganizations/verifiers.nitw.edu/peers/peer1.verifiers.nitw.edu/tls:/etc/hyperledger/fabric/tls
+      - peer1.verifiers.nitw.edu:/var/hyperledger/production
+    working_dir: /root
+    command: peer node start
+    ports:
+      - "${VERI_PEER1_PORT:-11151}:${VERI_PEER1_PORT:-11151}"
+    depends_on:
+      - couchdb.veri1
+    networks:
+      - fabric_net
+    extra_hosts:
+      - "orderer1.nitw.edu:${ORDERER1_HOST:-host-gateway}"
+      - "orderer2.nitw.edu:${ORDERER2_HOST:-host-gateway}"
+      - "orderer3.nitw.edu:${ORDERER3_HOST:-host-gateway}"
+      - "peer0.nitwarangal.nitw.edu:${NITW_PEER0_HOST:-host-gateway}"
+      - "peer0.cse.departments.nitw.edu:${DEPT_CSE_HOST:-host-gateway}"
+      - "peer0.ece.departments.nitw.edu:${DEPT_ECE_HOST:-host-gateway}"
+      - "peer0.dac.departments.nitw.edu:${DEPT_DAC_HOST:-host-gateway}"
+      - "peer0.verifiers.nitw.edu:${VERI_PEER0_HOST:-host-gateway}"
