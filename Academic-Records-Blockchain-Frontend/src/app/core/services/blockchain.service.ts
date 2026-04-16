@@ -175,6 +175,13 @@ export class BlockchainService {
     return this.http.post<ApiResponse<any>>(`${this.apiUrl}/approval/dean/${recordId}`, { comment });
   }
 
+  /** Admin Final Approval — last step (DEAN_APPROVED → ADMIN_FINALIZED).
+   *  Only callable by admin role on NITWarangalMSP machine (Node 04).
+   *  Finalizes CGPA and emits RecordFinalized event. */
+  adminFinalApprove(recordId: string, comment: string = ''): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<any>>(`${this.apiUrl}/approval/admin-final/${recordId}`, { comment });
+  }
+
   rejectRecord(recordId: string, reason: string): Observable<ApiResponse<any>> {
     return this.http.post<ApiResponse<any>>(`${this.apiUrl}/approval/reject/${recordId}`, { reason });
   }

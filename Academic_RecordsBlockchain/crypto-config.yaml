@@ -1,36 +1,49 @@
-# Copyright NIT Warangal Academic Records Blockchain Network
-
-# Crypto configuration for generating certificates and keys
-# for all organizations in the NIT Warangal network
+# NIT Warangal Academic Records Blockchain — Crypto Configuration
+# 12-System Distributed Architecture
+#
+# ORDERER CLUSTER: 3-node Raft HA
+#   orderer1.nitw.edu → Node 01
+#   orderer2.nitw.edu → Node 02
+#   orderer3.nitw.edu → Node 03
+#
+# PEER ORGS:
+#   NITWarangal: peer0 (admin), peer1 (student portal) → Nodes 04-05
+#   Departments: peer0.cse, peer0.ece, peer0.me, peer0.dac → Nodes 06-09
+#   Verifiers:   peer0 (primary), peer1 (secondary)       → Nodes 10-11
 
 OrdererOrgs:
   - Name: Orderer
     Domain: nitw.edu
     EnableNodeOUs: true
     Specs:
-      - Hostname: orderer
+      - Hostname: orderer1   # Node 01 — Primary Raft leader
+      - Hostname: orderer2   # Node 02 — Raft follower
+      - Hostname: orderer3   # Node 03 — Raft follower
 
 PeerOrgs:
   - Name: NITWarangal
     Domain: nitwarangal.nitw.edu
     EnableNodeOUs: true
     Template:
-      Count: 2
+      Count: 2              # peer0 (admin/Node04) + peer1 (student/Node05)
     Users:
-      Count: 3
+      Count: 5              # admin, exam_section, dean, student, default
 
   - Name: Departments
     Domain: departments.nitw.edu
     EnableNodeOUs: true
-    Template:
-      Count: 2
+    Specs:
+      - Hostname: peer0.cse  # Node 06 — CSE anchor peer
+      - Hostname: peer0.ece  # Node 07 — ECE peer
+      - Hostname: peer0.me   # Node 08 — ME peer
+      - Hostname: peer0.dac  # Node 09 — DAC committee peer
     Users:
-      Count: 5
+      Count: 6              # admin, faculty(cse), hod(cse), faculty(ece), hod(ece), dac_member
 
   - Name: Verifiers
     Domain: verifiers.nitw.edu
     EnableNodeOUs: true
     Template:
-      Count: 1
+      Count: 2              # peer0 (anchor/Node10) + peer1 (secondary/Node11)
     Users:
-      Count: 2
+      Count: 3              # admin, verifier, default

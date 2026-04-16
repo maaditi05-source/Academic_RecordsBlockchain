@@ -1,11 +1,13 @@
-# Copyright NIT Warangal Academic Records Blockchain Network
-# Configuration for channel and genesis block creation
+# NIT Warangal Academic Records Blockchain — ConfigTx
+# 12-System Distributed Architecture
+# Orderer: 3-node Raft HA (orderer1, orderer2, orderer3)
+# Peers: 8 peers across 3 organizations
 
 Organizations:
   - &OrdererOrg
       Name: OrdererOrg
       ID: OrdererMSP
-      MSPDir: /opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/ordererOrganizations/nitw.edu/msp
+      MSPDir: ../organizations/ordererOrganizations/nitw.edu/msp
       Policies:
         Readers:
           Type: Signature
@@ -17,12 +19,14 @@ Organizations:
           Type: Signature
           Rule: "OR('OrdererMSP.admin')"
       OrdererEndpoints:
-        - orderer.nitw.edu:7050
+        - orderer1.nitw.edu:7050
+        - orderer2.nitw.edu:8050
+        - orderer3.nitw.edu:9050
 
   - &NITWarangal
       Name: NITWarangalMSP
       ID: NITWarangalMSP
-      MSPDir: /opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/nitwarangal.nitw.edu/msp
+      MSPDir: ../organizations/peerOrganizations/nitwarangal.nitw.edu/msp
       Policies:
         Readers:
           Type: Signature
@@ -37,13 +41,14 @@ Organizations:
           Type: Signature
           Rule: "OR('NITWarangalMSP.peer')"
       AnchorPeers:
+        # Anchor peer: peer0 on Node 04
         - Host: peer0.nitwarangal.nitw.edu
           Port: 7051
 
   - &Departments
       Name: DepartmentsMSP
       ID: DepartmentsMSP
-      MSPDir: /opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/departments.nitw.edu/msp
+      MSPDir: ../organizations/peerOrganizations/departments.nitw.edu/msp
       Policies:
         Readers:
           Type: Signature
@@ -58,13 +63,14 @@ Organizations:
           Type: Signature
           Rule: "OR('DepartmentsMSP.peer')"
       AnchorPeers:
-        - Host: peer0.departments.nitw.edu
+        # Anchor peer: CSE peer on Node 06
+        - Host: peer0.cse.departments.nitw.edu
           Port: 9051
 
   - &Verifiers
       Name: VerifiersMSP
       ID: VerifiersMSP
-      MSPDir: /opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/verifiers.nitw.edu/msp
+      MSPDir: ../organizations/peerOrganizations/verifiers.nitw.edu/msp
       Policies:
         Readers:
           Type: Signature
@@ -79,6 +85,7 @@ Organizations:
           Type: Signature
           Rule: "OR('VerifiersMSP.peer')"
       AnchorPeers:
+        # Anchor peer: peer0 on Node 10
         - Host: peer0.verifiers.nitw.edu
           Port: 11051
 
@@ -113,14 +120,32 @@ Application: &ApplicationDefaults
 
 Orderer: &OrdererDefaults
   OrdererType: etcdraft
+  # All 3 orderers listed — SDK and peers use this to find the ordering service
   Addresses:
-    - orderer.nitw.edu:7050
+    - orderer1.nitw.edu:7050
+    - orderer2.nitw.edu:8050
+    - orderer3.nitw.edu:9050
   EtcdRaft:
+    # 3 consenters = Raft quorum of 2 — tolerates 1 orderer failure
     Consenters:
-      - Host: orderer.nitw.edu
+      - Host: orderer1.nitw.edu
         Port: 7050
-        ClientTLSCert: /opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/ordererOrganizations/nitw.edu/orderers/orderer.nitw.edu/tls/server.crt
-        ServerTLSCert: /opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/ordererOrganizations/nitw.edu/orderers/orderer.nitw.edu/tls/server.crt
+        ClientTLSCert: ../organizations/ordererOrganizations/nitw.edu/orderers/orderer1.nitw.edu/tls/server.crt
+        ServerTLSCert: ../organizations/ordererOrganizations/nitw.edu/orderers/orderer1.nitw.edu/tls/server.crt
+      - Host: orderer2.nitw.edu
+        Port: 8050
+        ClientTLSCert: ../organizations/ordererOrganizations/nitw.edu/orderers/orderer2.nitw.edu/tls/server.crt
+        ServerTLSCert: ../organizations/ordererOrganizations/nitw.edu/orderers/orderer2.nitw.edu/tls/server.crt
+      - Host: orderer3.nitw.edu
+        Port: 9050
+        ClientTLSCert: ../organizations/ordererOrganizations/nitw.edu/orderers/orderer3.nitw.edu/tls/server.crt
+        ServerTLSCert: ../organizations/ordererOrganizations/nitw.edu/orderers/orderer3.nitw.edu/tls/server.crt
+    Options:
+      TickInterval: 500ms
+      ElectionTick: 10
+      HeartbeatTick: 1
+      MaxInflightBlocks: 5
+      SnapshotIntervalSize: 16 MB
   BatchTimeout: 2s
   BatchSize:
     MaxMessageCount: 10
@@ -156,7 +181,7 @@ Channel: &ChannelDefaults
     <<: *ChannelCapabilities
 
 Profiles:
-  ThreeOrgsOrdererGenesis:
+  AcademicRecordsGenesis:
     <<: *ChannelDefaults
     Orderer:
       <<: *OrdererDefaults
@@ -172,7 +197,6 @@ Profiles:
       Capabilities: *ApplicationCapabilities
 
   AcademicRecordsChannel:
-    Consortium: NITWConsortium
     <<: *ChannelDefaults
     Orderer:
       <<: *OrdererDefaults
