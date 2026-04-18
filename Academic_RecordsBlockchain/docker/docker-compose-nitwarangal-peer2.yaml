@@ -1,33 +1,33 @@
 version: '3.7'
 
-# Node 09 — Departments ECE HOD
-# Roles: ECE HOD approvals
-# Machine IP: ${DEPT_ECE_HOD_HOST}
+# Node 06 — NITWarangal Peer 2 (Dean Academic)
+# Roles: Dean Academic approvals
+# Machine IP: ${NITW_PEER2_HOST}
 
 networks:
   fabric_net:
     driver: bridge
 
 volumes:
-  peer0.ece.departments.nitw.edu:
-  couchdb.ece.hod:
+  peer2.nitwarangal.nitw.edu:
+  couchdb.nitw.peer2:
 
 
 services:
 
-  couchdb.ece.hod:
-    container_name: couchdb.ece.hod
+  couchdb.nitw.peer2:
+    container_name: couchdb.nitw.peer2
     image: couchdb:3.3
     environment:
       - COUCHDB_USER=admin
       - COUCHDB_PASSWORD=adminpw
     ports:
-      - "${DEPT_ECE_HOD_COUCHDB_PORT:-5989}:5984"
+      - "${NITW_COUCHDB2_PORT:-5986}:5984"
     networks:
       - fabric_net
 
-  peer0.ece.departments.nitw.edu:
-    container_name: peer0.ece.departments.nitw.edu
+  peer2.nitwarangal.nitw.edu:
+    container_name: peer2.nitwarangal.nitw.edu
     image: hyperledger/fabric-peer:2.5
     labels:
       service: hyperledger-fabric
@@ -40,32 +40,32 @@ services:
       - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
       - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
       - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
-      - CORE_PEER_ID=peer0.ece.departments.nitw.edu
-      - CORE_PEER_ADDRESS=peer0.ece.departments.nitw.edu:${DEPT_ECE_HOD_PORT:-9251}
-      - CORE_PEER_LISTENADDRESS=0.0.0.0:${DEPT_ECE_HOD_PORT:-9251}
-      - CORE_PEER_CHAINCODEADDRESS=peer0.ece.departments.nitw.edu:${DEPT_ECE_HOD_CHAINCODE_PORT:-9252}
-      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:${DEPT_ECE_HOD_CHAINCODE_PORT:-9252}
-      # Gossip bootstrap from anchor peer (peer0.cse)
-      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.cse.departments.nitw.edu:${DEPT_CSE_HOD_PORT:-9051}
-      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=${DEPT_ECE_HOD_HOST:-localhost}:${DEPT_ECE_HOD_PORT:-9251}
-      - CORE_PEER_LOCALMSPID=DepartmentsMSP
+      - CORE_PEER_ID=peer2.nitwarangal.nitw.edu
+      - CORE_PEER_ADDRESS=peer2.nitwarangal.nitw.edu:${NITW_PEER2_PORT:-7251}
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:${NITW_PEER2_PORT:-7251}
+      - CORE_PEER_CHAINCODEADDRESS=peer2.nitwarangal.nitw.edu:${NITW_PEER2_CHAINCODE_PORT:-7252}
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:${NITW_PEER2_CHAINCODE_PORT:-7252}
+      # Gossip bootstrap from anchor peer (peer0)
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.nitwarangal.nitw.edu:${NITW_PEER0_PORT:-7051}
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=${NITW_PEER2_HOST:-localhost}:${NITW_PEER2_PORT:-7251}
+      - CORE_PEER_LOCALMSPID=NITWarangalMSP
       - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
-      - CORE_OPERATIONS_LISTENADDRESS=peer0.ece.departments.nitw.edu:17054
+      - CORE_OPERATIONS_LISTENADDRESS=peer2.nitwarangal.nitw.edu:17251
       - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
-      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.ece.hod:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.nitw.peer2:5984
       - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
       - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
     volumes:
       - /var/run/docker.sock:/host/var/run/docker.sock
-      - ../organizations/peerOrganizations/departments.nitw.edu/peers/peer0.ece.departments.nitw.edu/msp:/etc/hyperledger/fabric/msp
-      - ../organizations/peerOrganizations/departments.nitw.edu/peers/peer0.ece.departments.nitw.edu/tls:/etc/hyperledger/fabric/tls
-      - peer0.ece.departments.nitw.edu:/var/hyperledger/production
+      - ../organizations/peerOrganizations/nitwarangal.nitw.edu/peers/peer2.nitwarangal.nitw.edu/msp:/etc/hyperledger/fabric/msp
+      - ../organizations/peerOrganizations/nitwarangal.nitw.edu/peers/peer2.nitwarangal.nitw.edu/tls:/etc/hyperledger/fabric/tls
+      - peer2.nitwarangal.nitw.edu:/var/hyperledger/production
     working_dir: /root
     command: peer node start
     ports:
-      - "${DEPT_ECE_HOD_PORT:-9251}:${DEPT_ECE_HOD_PORT:-9251}"
+      - "${NITW_PEER2_PORT:-7251}:${NITW_PEER2_PORT:-7251}"
     depends_on:
-      - couchdb.ece.hod
+      - couchdb.nitw.peer2
     networks:
       - fabric_net
     extra_hosts:
@@ -74,9 +74,9 @@ services:
       - "orderer3.nitw.edu:${ORDERER3_HOST:-host-gateway}"
       - "peer0.nitwarangal.nitw.edu:${NITW_PEER0_HOST:-host-gateway}"
       - "peer1.nitwarangal.nitw.edu:${NITW_PEER1_HOST:-host-gateway}"
-      - "peer2.nitwarangal.nitw.edu:${NITW_PEER2_HOST:-host-gateway}"
       - "peer0.cse.departments.nitw.edu:${DEPT_CSE_HOD_HOST:-host-gateway}"
       - "peer1.cse.departments.nitw.edu:${DEPT_CSE_FAC_HOST:-host-gateway}"
+      - "peer0.ece.departments.nitw.edu:${DEPT_ECE_HOD_HOST:-host-gateway}"
       - "peer1.ece.departments.nitw.edu:${DEPT_ECE_FAC_HOST:-host-gateway}"
       - "peer0.verifiers.nitw.edu:${VERI_PEER0_HOST:-host-gateway}"
       - "peer1.verifiers.nitw.edu:${VERI_PEER1_HOST:-host-gateway}"

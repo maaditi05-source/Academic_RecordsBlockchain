@@ -1,7 +1,7 @@
 # NIT Warangal Academic Records Blockchain — ConfigTx
-# 12-System Distributed Architecture
+# 13-System Distributed Architecture
 # Orderer: 3-node Raft HA (orderer1, orderer2, orderer3)
-# Peers: 8 peers across 3 organizations
+# Peers: 9 peers across 3 organizations (3 NITW + 4 Depts + 2 Verifiers)
 
 Organizations:
   - &OrdererOrg

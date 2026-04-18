@@ -1,8 +1,8 @@
 version: '3.7'
 
-# Node 06 — Departments CSE Peer (Anchor Peer for DepartmentsMSP)
-# Roles: CSE Faculty + HOD approvals. Anchor peer for Departments org gossip.
-# Machine IP: ${DEPT_CSE_HOST}
+# Node 07 — Departments CSE HOD (Anchor Peer for DepartmentsMSP)
+# Roles: CSE HOD approvals. Anchor peer for Departments org gossip.
+# Machine IP: ${DEPT_CSE_HOD_HOST}
 
 networks:
   fabric_net:
@@ -10,7 +10,7 @@ networks:
 
 volumes:
   peer0.cse.departments.nitw.edu:
-  couchdb.cse:
+  couchdb.cse.hod:
 
 
 services:
@@ -33,14 +33,14 @@ services:
     networks:
       - fabric_net
 
-  couchdb.cse:
-    container_name: couchdb.cse
+  couchdb.cse.hod:
+    container_name: couchdb.cse.hod
     image: couchdb:3.3
     environment:
       - COUCHDB_USER=admin
       - COUCHDB_PASSWORD=adminpw
     ports:
-      - "${DEPT_CSE_COUCHDB_PORT:-5986}:5984"
+      - "${DEPT_CSE_HOD_COUCHDB_PORT:-5987}:5984"
     networks:
       - fabric_net
 
@@ -59,18 +59,18 @@ services:
       - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
       - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
       - CORE_PEER_ID=peer0.cse.departments.nitw.edu
-      - CORE_PEER_ADDRESS=peer0.cse.departments.nitw.edu:${DEPT_CSE_PORT:-9051}
-      - CORE_PEER_LISTENADDRESS=0.0.0.0:${DEPT_CSE_PORT:-9051}
-      - CORE_PEER_CHAINCODEADDRESS=peer0.cse.departments.nitw.edu:${DEPT_CSE_CHAINCODE_PORT:-9052}
-      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:${DEPT_CSE_CHAINCODE_PORT:-9052}
-      # Gossip — anchor peer for Departments org, bootstraps to other dept peers
-      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.ece.departments.nitw.edu:${DEPT_ECE_PORT:-9151}
-      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=${DEPT_CSE_HOST:-localhost}:${DEPT_CSE_PORT:-9051}
+      - CORE_PEER_ADDRESS=peer0.cse.departments.nitw.edu:${DEPT_CSE_HOD_PORT:-9051}
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:${DEPT_CSE_HOD_PORT:-9051}
+      - CORE_PEER_CHAINCODEADDRESS=peer0.cse.departments.nitw.edu:${DEPT_CSE_HOD_CHAINCODE_PORT:-9052}
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:${DEPT_CSE_HOD_CHAINCODE_PORT:-9052}
+      # Gossip — anchor peer for Departments org
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.cse.departments.nitw.edu:${DEPT_CSE_FAC_PORT:-9151}
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=${DEPT_CSE_HOD_HOST:-localhost}:${DEPT_CSE_HOD_PORT:-9051}
       - CORE_PEER_LOCALMSPID=DepartmentsMSP
       - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
       - CORE_OPERATIONS_LISTENADDRESS=peer0.cse.departments.nitw.edu:17052
       - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
-      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.cse:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.cse.hod:5984
       - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
       - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
     volumes:
@@ -81,10 +81,10 @@ services:
     working_dir: /root
     command: peer node start
     ports:
-      - "${DEPT_CSE_PORT:-9051}:${DEPT_CSE_PORT:-9051}"
+      - "${DEPT_CSE_HOD_PORT:-9051}:${DEPT_CSE_HOD_PORT:-9051}"
       - "17052:17052"
     depends_on:
-      - couchdb.cse
+      - couchdb.cse.hod
     networks:
       - fabric_net
     extra_hosts:
@@ -93,8 +93,9 @@ services:
       - "orderer3.nitw.edu:${ORDERER3_HOST:-host-gateway}"
       - "peer0.nitwarangal.nitw.edu:${NITW_PEER0_HOST:-host-gateway}"
       - "peer1.nitwarangal.nitw.edu:${NITW_PEER1_HOST:-host-gateway}"
-      - "peer0.ece.departments.nitw.edu:${DEPT_ECE_HOST:-host-gateway}"
-      - "peer0.me.departments.nitw.edu:${DEPT_ME_HOST:-host-gateway}"
-      - "peer0.dac.departments.nitw.edu:${DEPT_DAC_HOST:-host-gateway}"
+      - "peer2.nitwarangal.nitw.edu:${NITW_PEER2_HOST:-host-gateway}"
+      - "peer1.cse.departments.nitw.edu:${DEPT_CSE_FAC_HOST:-host-gateway}"
+      - "peer0.ece.departments.nitw.edu:${DEPT_ECE_HOD_HOST:-host-gateway}"
+      - "peer1.ece.departments.nitw.edu:${DEPT_ECE_FAC_HOST:-host-gateway}"
       - "peer0.verifiers.nitw.edu:${VERI_PEER0_HOST:-host-gateway}"
       - "peer1.verifiers.nitw.edu:${VERI_PEER1_HOST:-host-gateway}"

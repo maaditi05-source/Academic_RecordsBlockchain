@@ -1,5 +1,5 @@
 # NIT Warangal Academic Records Blockchain — Crypto Configuration
-# 12-System Distributed Architecture
+# 13-System Distributed Architecture
 #
 # ORDERER CLUSTER: 3-node Raft HA
 #   orderer1.nitw.edu → Node 01
@@ -7,9 +7,9 @@
 #   orderer3.nitw.edu → Node 03
 #
 # PEER ORGS:
-#   NITWarangal: peer0 (admin), peer1 (student portal) → Nodes 04-05
-#   Departments: peer0.cse, peer0.ece, peer0.me, peer0.dac → Nodes 06-09
-#   Verifiers:   peer0 (primary), peer1 (secondary)       → Nodes 10-11
+#   NITWarangal: peer0 (admin), peer1 (exam section), peer2 (dean) → Nodes 04-06
+#   Departments: peer0.cse (HOD), peer1.cse (faculty), peer0.ece (HOD), peer1.ece (faculty) → Nodes 07-10
+#   Verifiers:   peer0 (primary), peer1 (secondary) → Nodes 11-12
 
 OrdererOrgs:
   - Name: Orderer
@@ -25,25 +25,25 @@ PeerOrgs:
     Domain: nitwarangal.nitw.edu
     EnableNodeOUs: true
     Template:
-      Count: 2              # peer0 (admin/Node04) + peer1 (student/Node05)
+      Count: 3              # peer0 (admin/04) + peer1 (exam/05) + peer2 (dean/06)
     Users:
-      Count: 5              # admin, exam_section, dean, student, default
+      Count: 5              # admin, exam_section, dean_academic, student, default
 
   - Name: Departments
     Domain: departments.nitw.edu
     EnableNodeOUs: true
     Specs:
-      - Hostname: peer0.cse  # Node 06 — CSE anchor peer
-      - Hostname: peer0.ece  # Node 07 — ECE peer
-      - Hostname: peer0.me   # Node 08 — ME peer
-      - Hostname: peer0.dac  # Node 09 — DAC committee peer
+      - Hostname: peer0.cse  # Node 07 — CSE HOD (anchor peer)
+      - Hostname: peer1.cse  # Node 08 — CSE Faculty Advisor
+      - Hostname: peer0.ece  # Node 09 — ECE HOD
+      - Hostname: peer1.ece  # Node 10 — ECE Faculty Advisor
     Users:
-      Count: 6              # admin, faculty(cse), hod(cse), faculty(ece), hod(ece), dac_member
+      Count: 6              # admin, faculty_cse, hod_cse, faculty_ece, hod_ece, default
 
   - Name: Verifiers
     Domain: verifiers.nitw.edu
     EnableNodeOUs: true
     Template:
-      Count: 2              # peer0 (anchor/Node10) + peer1 (secondary/Node11)
+      Count: 2              # peer0 (primary/11) + peer1 (secondary/12)
     Users:
       Count: 3              # admin, verifier, default

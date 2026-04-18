@@ -1,33 +1,33 @@
 version: '3.7'
 
-# Node 09 — Departments ECE HOD
-# Roles: ECE HOD approvals
-# Machine IP: ${DEPT_ECE_HOD_HOST}
+# Node 10 — Departments ECE Faculty Advisor
+# Roles: ECE Faculty creates academic records, submits for approval
+# Machine IP: ${DEPT_ECE_FAC_HOST}
 
 networks:
   fabric_net:
     driver: bridge
 
 volumes:
-  peer0.ece.departments.nitw.edu:
-  couchdb.ece.hod:
+  peer1.ece.departments.nitw.edu:
+  couchdb.ece.faculty:
 
 
 services:
 
-  couchdb.ece.hod:
-    container_name: couchdb.ece.hod
+  couchdb.ece.faculty:
+    container_name: couchdb.ece.faculty
     image: couchdb:3.3
     environment:
       - COUCHDB_USER=admin
       - COUCHDB_PASSWORD=adminpw
     ports:
-      - "${DEPT_ECE_HOD_COUCHDB_PORT:-5989}:5984"
+      - "${DEPT_ECE_FAC_COUCHDB_PORT:-5990}:5984"
     networks:
       - fabric_net
 
-  peer0.ece.departments.nitw.edu:
-    container_name: peer0.ece.departments.nitw.edu
+  peer1.ece.departments.nitw.edu:
+    container_name: peer1.ece.departments.nitw.edu
     image: hyperledger/fabric-peer:2.5
     labels:
       service: hyperledger-fabric
@@ -40,32 +40,32 @@ services:
       - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
       - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
       - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
-      - CORE_PEER_ID=peer0.ece.departments.nitw.edu
-      - CORE_PEER_ADDRESS=peer0.ece.departments.nitw.edu:${DEPT_ECE_HOD_PORT:-9251}
-      - CORE_PEER_LISTENADDRESS=0.0.0.0:${DEPT_ECE_HOD_PORT:-9251}
-      - CORE_PEER_CHAINCODEADDRESS=peer0.ece.departments.nitw.edu:${DEPT_ECE_HOD_CHAINCODE_PORT:-9252}
-      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:${DEPT_ECE_HOD_CHAINCODE_PORT:-9252}
+      - CORE_PEER_ID=peer1.ece.departments.nitw.edu
+      - CORE_PEER_ADDRESS=peer1.ece.departments.nitw.edu:${DEPT_ECE_FAC_PORT:-9351}
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:${DEPT_ECE_FAC_PORT:-9351}
+      - CORE_PEER_CHAINCODEADDRESS=peer1.ece.departments.nitw.edu:${DEPT_ECE_FAC_CHAINCODE_PORT:-9352}
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:${DEPT_ECE_FAC_CHAINCODE_PORT:-9352}
       # Gossip bootstrap from anchor peer (peer0.cse)
       - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.cse.departments.nitw.edu:${DEPT_CSE_HOD_PORT:-9051}
-      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=${DEPT_ECE_HOD_HOST:-localhost}:${DEPT_ECE_HOD_PORT:-9251}
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=${DEPT_ECE_FAC_HOST:-localhost}:${DEPT_ECE_FAC_PORT:-9351}
       - CORE_PEER_LOCALMSPID=DepartmentsMSP
       - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
-      - CORE_OPERATIONS_LISTENADDRESS=peer0.ece.departments.nitw.edu:17054
+      - CORE_OPERATIONS_LISTENADDRESS=peer1.ece.departments.nitw.edu:17055
       - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
-      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.ece.hod:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.ece.faculty:5984
       - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
       - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
     volumes:
       - /var/run/docker.sock:/host/var/run/docker.sock
-      - ../organizations/peerOrganizations/departments.nitw.edu/peers/peer0.ece.departments.nitw.edu/msp:/etc/hyperledger/fabric/msp
-      - ../organizations/peerOrganizations/departments.nitw.edu/peers/peer0.ece.departments.nitw.edu/tls:/etc/hyperledger/fabric/tls
-      - peer0.ece.departments.nitw.edu:/var/hyperledger/production
+      - ../organizations/peerOrganizations/departments.nitw.edu/peers/peer1.ece.departments.nitw.edu/msp:/etc/hyperledger/fabric/msp
+      - ../organizations/peerOrganizations/departments.nitw.edu/peers/peer1.ece.departments.nitw.edu/tls:/etc/hyperledger/fabric/tls
+      - peer1.ece.departments.nitw.edu:/var/hyperledger/production
     working_dir: /root
     command: peer node start
     ports:
-      - "${DEPT_ECE_HOD_PORT:-9251}:${DEPT_ECE_HOD_PORT:-9251}"
+      - "${DEPT_ECE_FAC_PORT:-9351}:${DEPT_ECE_FAC_PORT:-9351}"
     depends_on:
-      - couchdb.ece.hod
+      - couchdb.ece.faculty
     networks:
       - fabric_net
     extra_hosts:
@@ -77,6 +77,6 @@ services:
       - "peer2.nitwarangal.nitw.edu:${NITW_PEER2_HOST:-host-gateway}"
       - "peer0.cse.departments.nitw.edu:${DEPT_CSE_HOD_HOST:-host-gateway}"
       - "peer1.cse.departments.nitw.edu:${DEPT_CSE_FAC_HOST:-host-gateway}"
-      - "peer1.ece.departments.nitw.edu:${DEPT_ECE_FAC_HOST:-host-gateway}"
+      - "peer0.ece.departments.nitw.edu:${DEPT_ECE_HOD_HOST:-host-gateway}"
       - "peer0.verifiers.nitw.edu:${VERI_PEER0_HOST:-host-gateway}"
       - "peer1.verifiers.nitw.edu:${VERI_PEER1_HOST:-host-gateway}"

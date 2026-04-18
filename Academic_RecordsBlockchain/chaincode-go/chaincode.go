@@ -1506,6 +1506,133 @@ func (s *SmartContract) RevokeCertificate(ctx contractapi.TransactionContextInte
 	return nil
 }
 
+// AdminRevokeRecord allows the university admin (NITWarangalMSP) to revoke
+// any academic record at ANY status, plus all associated certificates.
+// This is an admin override — it bypasses the normal approval pipeline.
+func (s *SmartContract) AdminRevokeRecord(ctx contractapi.TransactionContextInterface,
+	recordID, reason string) error {
+
+	// Access Control: Only NITWarangalMSP admin can use this override
+	err := checkMSPAccess(ctx, NITWarangalMSP)
+	if err != nil {
+		return fmt.Errorf("admin revocation denied: %v", err)
+	}
+
+	// Validate reason
+	if len(reason) < 10 {
+		return fmt.Errorf("revocation reason must be at least 10 characters")
+	}
+
+	// Get the academic record
+	recordJSON, err := ctx.GetStub().GetState(recordID)
+	if err != nil {
+		return fmt.Errorf("failed to read record: %v", err)
+	}
+	if recordJSON == nil {
+		return fmt.Errorf("academic record %s does not exist", recordID)
+	}
+
+	var record AcademicRecord
+	err = json.Unmarshal(recordJSON, &record)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal record: %v", err)
+	}
+
+	// Check if already revoked
+	if record.Status == "REVOKED" {
+		return fmt.Errorf("record %s is already revoked", recordID)
+	}
+
+	// Get admin identity
+	clientID, err := ctx.GetClientIdentity().GetID()
+	if err != nil {
+		return fmt.Errorf("failed to get client identity: %v", err)
+	}
+
+	// Get timestamp
+	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
+	if err != nil {
+		return fmt.Errorf("failed to get transaction timestamp: %v", err)
+	}
+	revokedAt := time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos))
+
+	// Store previous status for audit trail
+	previousStatus := record.Status
+
+	// Revoke the record
+	record.Status = "REVOKED"
+	record.UpdatedAt = revokedAt
+
+	updatedRecordJSON, err := json.Marshal(record)
+	if err != nil {
+		return fmt.Errorf("failed to marshal updated record: %v", err)
+	}
+
+	err = ctx.GetStub().PutState(recordID, updatedRecordJSON)
+	if err != nil {
+		return fmt.Errorf("failed to update record: %v", err)
+	}
+
+	// Also revoke ALL certificates linked to this student
+	revokedCertCount := 0
+	certIterator, err := ctx.GetStub().GetStateByPartialCompositeKey(CertStudentKey, []string{record.StudentID})
+	if err == nil {
+		defer certIterator.Close()
+		for certIterator.HasNext() {
+			queryResult, err := certIterator.Next()
+			if err != nil {
+				continue
+			}
+			_, compositeKeyParts, err := ctx.GetStub().SplitCompositeKey(queryResult.Key)
+			if err != nil || len(compositeKeyParts) < 2 {
+				continue
+			}
+			certID := compositeKeyParts[1]
+			certJSON, err := ctx.GetStub().GetState(certID)
+			if err != nil || certJSON == nil {
+				continue
+			}
+
+			var cert Certificate
+			if err := json.Unmarshal(certJSON, &cert); err != nil {
+				continue
+			}
+			if cert.Revoked {
+				continue // already revoked
+			}
+
+			cert.Revoked = true
+			cert.RevokedBy = clientID
+			cert.RevokedAt = revokedAt
+			cert.RevocationReason = fmt.Sprintf("Admin override: %s (record %s revoked)", reason, recordID)
+			cert.Verified = false
+			cert.IsValid = false
+
+			updatedCertJSON, err := json.Marshal(cert)
+			if err != nil {
+				continue
+			}
+			ctx.GetStub().PutState(certID, updatedCertJSON)
+			revokedCertCount++
+		}
+	}
+
+	// Emit event
+	eventPayload := map[string]interface{}{
+		"recordID":         recordID,
+		"studentID":        record.StudentID,
+		"previousStatus":   previousStatus,
+		"revokedBy":        clientID,
+		"revokedAt":        revokedAt.Format("2006-01-02T15:04:05Z07:00"),
+		"reason":           reason,
+		"certificatesRevoked": revokedCertCount,
+	}
+	eventJSON, _ := json.Marshal(eventPayload)
+	ctx.GetStub().SetEvent("AdminRecordRevoked", eventJSON)
+
+	return nil
+}
+
 // GetCertificatesByStudent retrieves all certificates for a student (NEW)
 func (s *SmartContract) GetCertificatesByStudent(ctx contractapi.TransactionContextInterface,
 	studentID string) ([]*Certificate, error) {

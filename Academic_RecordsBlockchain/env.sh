@@ -1,6 +1,6 @@
 #!/bin/bash
 # =================================================================
-#  Central Environment Configuration — 12-System Distributed Network
+#  Central Environment Configuration — 13-System Distributed Network
 #  Purpose: Single source of truth for ALL machine IPs and ports
 #
 #  MACHINE MAP:
@@ -9,22 +9,23 @@
 #  │  Node 02: orderer2.nitw.edu  (Raft follower)                 │
 #  │  Node 03: orderer3.nitw.edu  (Raft follower)                 │
 #  └──────────────────────────────────────────────────────────────┘
-#  ┌─── NITWarangal ORG (Admin + Registry) ───────────────────────┐
-#  │  Node 04: peer0.nitwarangal (Admin + ExamSection + Dean)     │
-#  │  Node 05: peer1.nitwarangal (Student Portal backend)         │
+#  ┌─── NITWarangal ORG (Admin + ExamSection + Dean) ─────────────┐
+#  │  Node 04: peer0.nitwarangal (Admin + AdminFinalApprove)      │
+#  │  Node 05: peer1.nitwarangal (Exam Section approvals)         │
+#  │  Node 06: peer2.nitwarangal (Dean Academic approvals)        │
 #  └──────────────────────────────────────────────────────────────┘
-#  ┌─── DEPARTMENTS ORG (Faculty + HOD + DAC) ────────────────────┐
-#  │  Node 06: peer0.cse.departments (CSE Dept)                   │
-#  │  Node 07: peer0.ece.departments (ECE Dept)                   │
-#  │  Node 08: peer0.me.departments  (ME Dept)                    │
-#  │  Node 09: peer0.dac.departments (DAC Committee)              │
+#  ┌─── DEPARTMENTS ORG (CSE + ECE, HOD + Faculty each) ──────────┐
+#  │  Node 07: peer0.cse.departments (CSE HOD — Anchor)           │
+#  │  Node 08: peer1.cse.departments (CSE Faculty Advisor)        │
+#  │  Node 09: peer0.ece.departments (ECE HOD)                    │
+#  │  Node 10: peer1.ece.departments (ECE Faculty Advisor)        │
 #  └──────────────────────────────────────────────────────────────┘
 #  ┌─── VERIFIERS ORG (External Credential Verifiers) ────────────┐
-#  │  Node 10: peer0.verifiers (Primary verifier)                 │
-#  │  Node 11: peer1.verifiers (Secondary verifier)               │
+#  │  Node 11: peer0.verifiers (Primary verifier)                 │
+#  │  Node 12: peer1.verifiers (Secondary verifier)               │
 #  └──────────────────────────────────────────────────────────────┘
-#  ┌─── STUDENT PORTAL (SDK-only — no peer) ───────────────────────┐
-#  │  Node 12: student-portal  (Light client, read + cert request) │
+#  ┌─── STUDENT PORTAL (SDK-only — no peer) ──────────────────────┐
+#  │  Node 13: student-portal (Light client, read + cert request) │
 #  └──────────────────────────────────────────────────────────────┘
 #
 #  Usage: source ./env.sh before running any other script
@@ -46,11 +47,11 @@ export ORDERER3_HOST="${ORDERER3_HOST:-localhost}"
 export ORDERER3_PORT="${ORDERER3_PORT:-9050}"
 export ORDERER3_ADMIN_PORT="${ORDERER3_ADMIN_PORT:-9053}"
 
-# Backward-compat alias (existing scripts use ORDERER_HOST)
+# Backward-compat alias
 export ORDERER_HOST="${ORDERER1_HOST}"
 export ORDERER_PORT="${ORDERER1_PORT}"
 
-# ─── Node 04: NITWarangal Peer 0 (Admin/ExamSection/Dean) ──────
+# ─── Node 04: NITWarangal Peer 0 (Admin) ───────────────────────
 export NITW_PEER0_HOST="${NITW_PEER0_HOST:-localhost}"
 export NITW_PEER0_PORT="${NITW_PEER0_PORT:-7051}"
 export NITW_PEER0_CHAINCODE_PORT="${NITW_PEER0_CHAINCODE_PORT:-7052}"
@@ -58,88 +59,96 @@ export NITW_CA_PORT="${NITW_CA_PORT:-8054}"
 export NITW_COUCHDB0_PORT="${NITW_COUCHDB0_PORT:-5984}"
 export NITW_BACKEND_PORT="${NITW_BACKEND_PORT:-3000}"
 
-# ─── Node 05: NITWarangal Peer 1 (Student Portal backend) ──────
+# ─── Node 05: NITWarangal Peer 1 (Exam Section) ────────────────
 export NITW_PEER1_HOST="${NITW_PEER1_HOST:-localhost}"
 export NITW_PEER1_PORT="${NITW_PEER1_PORT:-7151}"
+export NITW_PEER1_CHAINCODE_PORT="${NITW_PEER1_CHAINCODE_PORT:-7152}"
 export NITW_COUCHDB1_PORT="${NITW_COUCHDB1_PORT:-5985}"
 export NITW_BACKEND1_PORT="${NITW_BACKEND1_PORT:-3001}"
+
+# ─── Node 06: NITWarangal Peer 2 (Dean Academic) ───────────────
+export NITW_PEER2_HOST="${NITW_PEER2_HOST:-localhost}"
+export NITW_PEER2_PORT="${NITW_PEER2_PORT:-7251}"
+export NITW_PEER2_CHAINCODE_PORT="${NITW_PEER2_CHAINCODE_PORT:-7252}"
+export NITW_COUCHDB2_PORT="${NITW_COUCHDB2_PORT:-5986}"
+export NITW_BACKEND2_PORT="${NITW_BACKEND2_PORT:-3002}"
 
 # Backward-compat alias
 export NITWARANGAL_HOST="${NITW_PEER0_HOST}"
 export NITWARANGAL_PEER_PORT="${NITW_PEER0_PORT}"
 export NITWARANGAL_CA_PORT="${NITW_CA_PORT}"
 
-# ─── Node 06: Departments — CSE peer ───────────────────────────
-export DEPT_CSE_HOST="${DEPT_CSE_HOST:-localhost}"
-export DEPT_CSE_PORT="${DEPT_CSE_PORT:-9051}"
-export DEPT_CSE_CHAINCODE_PORT="${DEPT_CSE_CHAINCODE_PORT:-9052}"
-export DEPT_CSE_COUCHDB_PORT="${DEPT_CSE_COUCHDB_PORT:-5986}"
-export DEPT_CSE_BACKEND_PORT="${DEPT_CSE_BACKEND_PORT:-3002}"
+# ─── Node 07: Departments — CSE HOD (Anchor Peer) ──────────────
+export DEPT_CSE_HOD_HOST="${DEPT_CSE_HOD_HOST:-localhost}"
+export DEPT_CSE_HOD_PORT="${DEPT_CSE_HOD_PORT:-9051}"
+export DEPT_CSE_HOD_CHAINCODE_PORT="${DEPT_CSE_HOD_CHAINCODE_PORT:-9052}"
+export DEPT_CSE_HOD_COUCHDB_PORT="${DEPT_CSE_HOD_COUCHDB_PORT:-5987}"
+export DEPT_CSE_HOD_BACKEND_PORT="${DEPT_CSE_HOD_BACKEND_PORT:-3003}"
 
-# ─── Node 07: Departments — ECE peer ───────────────────────────
-export DEPT_ECE_HOST="${DEPT_ECE_HOST:-localhost}"
-export DEPT_ECE_PORT="${DEPT_ECE_PORT:-9151}"
-export DEPT_ECE_CHAINCODE_PORT="${DEPT_ECE_CHAINCODE_PORT:-9152}"
-export DEPT_ECE_COUCHDB_PORT="${DEPT_ECE_COUCHDB_PORT:-5987}"
-export DEPT_ECE_BACKEND_PORT="${DEPT_ECE_BACKEND_PORT:-3003}"
+# ─── Node 08: Departments — CSE Faculty Advisor ────────────────
+export DEPT_CSE_FAC_HOST="${DEPT_CSE_FAC_HOST:-localhost}"
+export DEPT_CSE_FAC_PORT="${DEPT_CSE_FAC_PORT:-9151}"
+export DEPT_CSE_FAC_CHAINCODE_PORT="${DEPT_CSE_FAC_CHAINCODE_PORT:-9152}"
+export DEPT_CSE_FAC_COUCHDB_PORT="${DEPT_CSE_FAC_COUCHDB_PORT:-5988}"
+export DEPT_CSE_FAC_BACKEND_PORT="${DEPT_CSE_FAC_BACKEND_PORT:-3004}"
 
-# ─── Node 08: Departments — ME peer ────────────────────────────
-export DEPT_ME_HOST="${DEPT_ME_HOST:-localhost}"
-export DEPT_ME_PORT="${DEPT_ME_PORT:-9251}"
-export DEPT_ME_CHAINCODE_PORT="${DEPT_ME_CHAINCODE_PORT:-9252}"
-export DEPT_ME_COUCHDB_PORT="${DEPT_ME_COUCHDB_PORT:-5988}"
-export DEPT_ME_BACKEND_PORT="${DEPT_ME_BACKEND_PORT:-3004}"
+# ─── Node 09: Departments — ECE HOD ────────────────────────────
+export DEPT_ECE_HOD_HOST="${DEPT_ECE_HOD_HOST:-localhost}"
+export DEPT_ECE_HOD_PORT="${DEPT_ECE_HOD_PORT:-9251}"
+export DEPT_ECE_HOD_CHAINCODE_PORT="${DEPT_ECE_HOD_CHAINCODE_PORT:-9252}"
+export DEPT_ECE_HOD_COUCHDB_PORT="${DEPT_ECE_HOD_COUCHDB_PORT:-5989}"
+export DEPT_ECE_HOD_BACKEND_PORT="${DEPT_ECE_HOD_BACKEND_PORT:-3005}"
 
-# ─── Node 09: Departments — DAC Committee peer ─────────────────
-export DEPT_DAC_HOST="${DEPT_DAC_HOST:-localhost}"
-export DEPT_DAC_PORT="${DEPT_DAC_PORT:-9351}"
-export DEPT_DAC_CHAINCODE_PORT="${DEPT_DAC_CHAINCODE_PORT:-9352}"
-export DEPT_DAC_COUCHDB_PORT="${DEPT_DAC_COUCHDB_PORT:-5989}"
-export DEPT_DAC_BACKEND_PORT="${DEPT_DAC_BACKEND_PORT:-3005}"
+# ─── Node 10: Departments — ECE Faculty Advisor ────────────────
+export DEPT_ECE_FAC_HOST="${DEPT_ECE_FAC_HOST:-localhost}"
+export DEPT_ECE_FAC_PORT="${DEPT_ECE_FAC_PORT:-9351}"
+export DEPT_ECE_FAC_CHAINCODE_PORT="${DEPT_ECE_FAC_CHAINCODE_PORT:-9352}"
+export DEPT_ECE_FAC_COUCHDB_PORT="${DEPT_ECE_FAC_COUCHDB_PORT:-5990}"
+export DEPT_ECE_FAC_BACKEND_PORT="${DEPT_ECE_FAC_BACKEND_PORT:-3006}"
 
-# Backward-compat alias (existing scripts use DEPARTMENTS_*)
-export DEPARTMENTS_HOST="${DEPT_CSE_HOST}"
-export DEPARTMENTS_PEER_PORT="${DEPT_CSE_PORT}"
-export DEPARTMENTS_CA_PORT="${DEPT_CA_PORT:-9054}"
-
-# ─── Departments CA (shared across all dept peers) ─────────────
-export DEPT_CA_HOST="${DEPT_CA_HOST:-${DEPT_CSE_HOST}}"
+# ─── Departments CA (shared across all dept peers, runs on CSE HOD node) ──
+export DEPT_CA_HOST="${DEPT_CA_HOST:-${DEPT_CSE_HOD_HOST}}"
 export DEPT_CA_PORT="${DEPT_CA_PORT:-9054}"
 
-# ─── Node 10: Verifiers — Peer 0 ───────────────────────────────
+# Backward-compat alias
+export DEPARTMENTS_HOST="${DEPT_CSE_HOD_HOST}"
+export DEPARTMENTS_PEER_PORT="${DEPT_CSE_HOD_PORT}"
+export DEPARTMENTS_CA_PORT="${DEPT_CA_PORT}"
+
+# ─── Node 11: Verifiers — Peer 0 (Primary) ─────────────────────
 export VERI_PEER0_HOST="${VERI_PEER0_HOST:-localhost}"
 export VERI_PEER0_PORT="${VERI_PEER0_PORT:-11051}"
 export VERI_PEER0_CHAINCODE_PORT="${VERI_PEER0_CHAINCODE_PORT:-11052}"
 export VERI_CA_PORT="${VERI_CA_PORT:-11054}"
-export VERI_COUCHDB0_PORT="${VERI_COUCHDB0_PORT:-5990}"
-export VERI_BACKEND_PORT="${VERI_BACKEND_PORT:-3006}"
+export VERI_COUCHDB0_PORT="${VERI_COUCHDB0_PORT:-5991}"
+export VERI_BACKEND_PORT="${VERI_BACKEND_PORT:-3007}"
 
-# ─── Node 11: Verifiers — Peer 1 ───────────────────────────────
+# ─── Node 12: Verifiers — Peer 1 (Secondary HA) ────────────────
 export VERI_PEER1_HOST="${VERI_PEER1_HOST:-localhost}"
 export VERI_PEER1_PORT="${VERI_PEER1_PORT:-11151}"
-export VERI_COUCHDB1_PORT="${VERI_COUCHDB1_PORT:-5991}"
-export VERI_BACKEND1_PORT="${VERI_BACKEND1_PORT:-3007}"
+export VERI_PEER1_CHAINCODE_PORT="${VERI_PEER1_CHAINCODE_PORT:-11152}"
+export VERI_COUCHDB1_PORT="${VERI_COUCHDB1_PORT:-5992}"
+export VERI_BACKEND1_PORT="${VERI_BACKEND1_PORT:-3008}"
 
 # Backward-compat alias
 export VERIFIERS_HOST="${VERI_PEER0_HOST}"
 export VERIFIERS_PEER_PORT="${VERI_PEER0_PORT}"
 export VERIFIERS_CA_PORT="${VERI_CA_PORT}"
 
-# ─── Node 12: Student Portal (SDK-only, no peer) ───────────────
+# ─── Node 13: Student Portal (SDK-only, no peer) ───────────────
 export STUDENT_PORTAL_HOST="${STUDENT_PORTAL_HOST:-localhost}"
-export STUDENT_PORTAL_BACKEND_PORT="${STUDENT_PORTAL_BACKEND_PORT:-3008}"
-export STUDENT_PORTAL_FRONTEND_PORT="${STUDENT_PORTAL_FRONTEND_PORT:-4208}"
+export STUDENT_PORTAL_BACKEND_PORT="${STUDENT_PORTAL_BACKEND_PORT:-3009}"
+export STUDENT_PORTAL_FRONTEND_PORT="${STUDENT_PORTAL_FRONTEND_PORT:-4200}"
 
 # ─── Fabric Channel + Chaincode ────────────────────────────────
 export CHANNEL_NAME="${CHANNEL_NAME:-academic-records-channel}"
 export CHAINCODE_NAME="${CHAINCODE_NAME:-academic-records}"
-export CHAINCODE_VERSION="${CHAINCODE_VERSION:-1.0}"
+export CHAINCODE_VERSION="${CHAINCODE_VERSION:-2.0}"
 export CHAINCODE_SEQUENCE="${CHAINCODE_SEQUENCE:-1}"
 
 # ─── Multi-Host Detection ───────────────────────────────────────
-# If any peer host differs from orderer1, we're in multi-host mode
 LOCALHOST_HOSTS=(
-    "${ORDERER1_HOST}" "${NITW_PEER0_HOST}" "${DEPT_CSE_HOST}"
+    "${ORDERER1_HOST}" "${NITW_PEER0_HOST}" "${DEPT_CSE_HOD_HOST}"
     "${VERI_PEER0_HOST}"
 )
 ALL_LOCALHOST=true
@@ -165,12 +174,13 @@ echo "  Orderer Cluster: ${ORDERER1_HOST}:${ORDERER1_PORT} (primary)"
 echo "                   ${ORDERER2_HOST}:${ORDERER2_PORT} (raft-2)"
 echo "                   ${ORDERER3_HOST}:${ORDERER3_PORT} (raft-3)"
 echo ""
-echo "  NITWarangal:  peer0=${NITW_PEER0_HOST}:${NITW_PEER0_PORT}"
-echo "                peer1=${NITW_PEER1_HOST}:${NITW_PEER1_PORT}"
-echo "  Departments:  CSE=${DEPT_CSE_HOST}:${DEPT_CSE_PORT}"
-echo "                ECE=${DEPT_ECE_HOST}:${DEPT_ECE_PORT}"
-echo "                ME=${DEPT_ME_HOST}:${DEPT_ME_PORT}"
-echo "                DAC=${DEPT_DAC_HOST}:${DEPT_DAC_PORT}"
+echo "  NITWarangal:  peer0=${NITW_PEER0_HOST}:${NITW_PEER0_PORT} (Admin)"
+echo "                peer1=${NITW_PEER1_HOST}:${NITW_PEER1_PORT} (ExamSection)"
+echo "                peer2=${NITW_PEER2_HOST}:${NITW_PEER2_PORT} (Dean)"
+echo "  Departments:  CSE HOD=${DEPT_CSE_HOD_HOST}:${DEPT_CSE_HOD_PORT}"
+echo "                CSE Faculty=${DEPT_CSE_FAC_HOST}:${DEPT_CSE_FAC_PORT}"
+echo "                ECE HOD=${DEPT_ECE_HOD_HOST}:${DEPT_ECE_HOD_PORT}"
+echo "                ECE Faculty=${DEPT_ECE_FAC_HOST}:${DEPT_ECE_FAC_PORT}"
 echo "  Verifiers:    peer0=${VERI_PEER0_HOST}:${VERI_PEER0_PORT}"
 echo "                peer1=${VERI_PEER1_HOST}:${VERI_PEER1_PORT}"
 echo "  Student Portal: ${STUDENT_PORTAL_HOST}:${STUDENT_PORTAL_BACKEND_PORT}"
