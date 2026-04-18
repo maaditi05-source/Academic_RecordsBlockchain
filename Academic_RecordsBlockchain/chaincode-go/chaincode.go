@@ -179,10 +179,17 @@ const (
 	RecordSemesterKey = "record~semester"
 	RecordStatusKey   = "record~status"
 	RecordDeptKey     = "record~department"
-	CertStudentKey    = "cert~student"
-	DepartmentAllKey  = "department~all"
-	CourseOfferingKey = "course~offering"
-	CourseDeptKey     = "course~dept"
+	CertStudentKey       = "cert~student"
+	DepartmentAllKey     = "department~all"
+	CourseOfferingKey    = "course~offering"
+	CourseDeptKey        = "course~dept"
+	RecordStudentSemKey  = "record~student~semester" // Composite key for strict duplicate detection
+
+	// SLA enforcement constants
+	SLAApprovalHours = 72 // Each approval step must complete within 72 hours
+
+	// Multi-signature DAC approval quorum
+	DACQuorumRequired = 2 // Minimum DAC member signatures needed (out of total DAC members)
 )
 
 // Validation helper functions
@@ -846,6 +853,21 @@ func (s *SmartContract) CreateAcademicRecord(ctx contractapi.TransactionContextI
 		return fmt.Errorf("academic record %s already exists", recordID)
 	}
 
+	// ON-CHAIN DUPLICATE DETECTION via composite key: record~student~semester
+	// This prevents duplicate academic records for the same student and semester,
+	// even if different recordIDs are used (e.g., by bypassing the frontend).
+	duplicateKey, err := ctx.GetStub().CreateCompositeKey(RecordStudentSemKey, []string{rollNumber, fmt.Sprintf("%d", semester)})
+	if err != nil {
+		return fmt.Errorf("failed to create duplicate-check key: %w", err)
+	}
+	existingDup, err := ctx.GetStub().GetState(duplicateKey)
+	if err != nil {
+		return fmt.Errorf("failed to check for duplicate record: %w", err)
+	}
+	if existingDup != nil {
+		return fmt.Errorf("DUPLICATE DETECTED: an academic record for student %s semester %d already exists on the ledger", rollNumber, semester)
+	}
+
 	// Verify student exists
 	exists, err = s.StudentExists(ctx, rollNumber)
 	if err != nil {
@@ -983,6 +1005,12 @@ func (s *SmartContract) CreateAcademicRecord(ctx contractapi.TransactionContextI
 	err = ctx.GetStub().PutState(deptKey, []byte{0x00}) // Use a null byte as value
 	if err != nil {
 		return fmt.Errorf("failed to put state for department record key: %w", err)
+	}
+
+	// 5. record~student~semester — strict duplicate prevention key
+	err = ctx.GetStub().PutState(duplicateKey, []byte(recordID))
+	if err != nil {
+		return fmt.Errorf("failed to store duplicate-detection key: %w", err)
 	}
 
 	// Emit event
@@ -2693,15 +2721,18 @@ type ApprovalStep struct {
 
 // ApprovalRecord holds full approval chain for an academic record
 type ApprovalRecord struct {
-	RecordID      string          `json:"recordId"`
-	StudentID     string          `json:"studentId"`
-	Department    string          `json:"department"`
-	Semester      int             `json:"semester"`
-	CurrentStatus string          `json:"currentStatus"`
-	ApprovalChain []ApprovalStep  `json:"approvalChain"`
-	Rejections    []ApprovalStep  `json:"rejections"`
-	CreatedAt     time.Time       `json:"createdAt"`
-	UpdatedAt     time.Time       `json:"updatedAt"`
+	RecordID       string          `json:"recordId"`
+	StudentID      string          `json:"studentId"`
+	Department     string          `json:"department"`
+	Semester       int             `json:"semester"`
+	CurrentStatus  string          `json:"currentStatus"`
+	ApprovalChain  []ApprovalStep  `json:"approvalChain"`
+	Rejections     []ApprovalStep  `json:"rejections"`
+	DACSignatures  []ApprovalStep  `json:"dacSignatures"`  // Multi-sig: collected DAC member signatures
+	SLADeadline    time.Time       `json:"slaDeadline"`    // Time-bound: must be approved before this
+	SLABreached    bool            `json:"slaBreached"`    // Flag: set to true if SLA was exceeded
+	CreatedAt      time.Time       `json:"createdAt"`
+	UpdatedAt      time.Time       `json:"updatedAt"`
 }
 
 // DocumentUpload represents a document uploaded and hashed on the blockchain
@@ -2794,6 +2825,52 @@ func (s *SmartContract) saveApprovalRecord(ctx contractapi.TransactionContextInt
 	return ctx.GetStub().PutState(approvalKey, arJSON)
 }
 
+// setSLADeadline is a helper to set or update the SLA deadline on an approval record.
+func (s *SmartContract) setSLADeadline(ar *ApprovalRecord, now time.Time) {
+	ar.SLADeadline = now.Add(time.Duration(SLAApprovalHours) * time.Hour)
+	ar.SLABreached = false
+}
+
+// CheckSLABreach queries all approval records and returns those that have breached SLA.
+// This is a read-only query — it does NOT modify state.
+// Frontend or admin dashboard can call this periodically to flag overdue records.
+func (s *SmartContract) CheckSLABreach(ctx contractapi.TransactionContextInterface) ([]*ApprovalRecord, error) {
+	txTimestamp, _ := ctx.GetStub().GetTxTimestamp()
+	now := time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos))
+
+	// Query all approval records using the composite key prefix
+	resultsIterator, err := ctx.GetStub().GetStateByPartialCompositeKey(ApprovalKey, []string{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to query approval records: %w", err)
+	}
+	defer resultsIterator.Close()
+
+	var breached []*ApprovalRecord
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			continue
+		}
+
+		var ar ApprovalRecord
+		if err := json.Unmarshal(queryResponse.Value, &ar); err != nil {
+			continue
+		}
+
+		// Only flag records that are NOT finalized and have passed their deadline
+		if ar.CurrentStatus != RecordAdminFinalized &&
+			ar.CurrentStatus != RecordFinalized &&
+			ar.CurrentStatus != RecordRejected &&
+			!ar.SLADeadline.IsZero() &&
+			now.After(ar.SLADeadline) {
+			ar.SLABreached = true
+			breached = append(breached, &ar)
+		}
+	}
+
+	return breached, nil
+}
+
 // updateRecordStatus updates the AcademicRecord's status field and composite keys
 func (s *SmartContract) updateRecordStatus(ctx contractapi.TransactionContextInterface, recordID, newStatus string) error {
 	recJSON, err := ctx.GetStub().GetState(recordID)
@@ -2882,6 +2959,9 @@ func (s *SmartContract) SubmitForApproval(ctx contractapi.TransactionContextInte
 	}
 	ar.ApprovalChain = append(ar.ApprovalChain, step)
 
+	// SLA: Set initial 72hr deadline for the first approval step (Faculty)
+	s.setSLADeadline(ar, now)
+
 	if err := s.saveApprovalRecord(ctx, ar); err != nil {
 		return err
 	}
@@ -2936,6 +3016,9 @@ func (s *SmartContract) FacultyApprove(ctx contractapi.TransactionContextInterfa
 		TxID:       ctx.GetStub().GetTxID(),
 	})
 
+	// SLA: Reset deadline for next step (HOD)
+	s.setSLADeadline(ar, now)
+
 	if err := s.saveApprovalRecord(ctx, ar); err != nil {
 		return err
 	}
@@ -2984,6 +3067,9 @@ func (s *SmartContract) HODApprove(ctx contractapi.TransactionContextInterface, 
 		TxID:       ctx.GetStub().GetTxID(),
 	})
 
+	// SLA: Reset deadline for next step (DAC)
+	s.setSLADeadline(ar, now)
+
 	if err := s.saveApprovalRecord(ctx, ar); err != nil {
 		return err
 	}
@@ -2995,9 +3081,10 @@ func (s *SmartContract) HODApprove(ctx contractapi.TransactionContextInterface, 
 	return nil
 }
 
-// DACApprove records the DAC (Departmental Academic Committee) approval.
+// DACApprove records a DAC member's signature for the record.
 // STEP 3 in the chain: Faculty → HOD → DAC → ExamSection → Dean → AdminFinal
-// DAC reviews academic compliance and advances to DAC_APPROVED.
+// MULTI-SIGNATURE: Requires 2-of-3 (DACQuorumRequired) DAC member signatures
+// to advance to DAC_APPROVED. If quorum not reached, records the signature and waits.
 // NOTE: DAC no longer finalizes — Admin (NITWarangalMSP) is the final step.
 func (s *SmartContract) DACApprove(ctx contractapi.TransactionContextInterface, recordID, memberRole, comment string) error {
 	recJSON, err := ctx.GetStub().GetState(recordID)
@@ -3023,38 +3110,84 @@ func (s *SmartContract) DACApprove(ctx contractapi.TransactionContextInterface, 
 	txTimestamp, _ := ctx.GetStub().GetTxTimestamp()
 	now := time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos))
 
-	// Advance status to DAC_APPROVED — no CGPA calc here (that belongs to Admin final step)
-	if err := s.updateRecordStatus(ctx, recordID, RecordDACApproved); err != nil {
-		return err
-	}
-
 	ar, err := s.getOrCreateApprovalRecord(ctx, recordID)
 	if err != nil {
 		return err
 	}
-	ar.CurrentStatus = RecordDACApproved
-	ar.UpdatedAt = now
-	ar.ApprovalChain = append(ar.ApprovalChain, ApprovalStep{
+
+	// SLA ENFORCEMENT: Check if the current deadline has been breached
+	if !ar.SLADeadline.IsZero() && now.After(ar.SLADeadline) {
+		ar.SLABreached = true
+	}
+
+	// MULTI-SIGNATURE: Check if this DAC member already signed
+	for _, sig := range ar.DACSignatures {
+		if sig.ApprovedBy == clientID {
+			return fmt.Errorf("DAC member %s has already signed this record", clientID)
+		}
+	}
+
+	// Add this member's signature
+	ar.DACSignatures = append(ar.DACSignatures, ApprovalStep{
 		Role:       RoleDAC,
 		ApprovedBy: clientID,
 		Timestamp:  now,
-		Comment:    comment,
+		Comment:    fmt.Sprintf("[%s] %s", memberRole, comment),
 		TxID:       ctx.GetStub().GetTxID(),
 	})
+	ar.UpdatedAt = now
+
+	// Check if quorum is reached
+	if len(ar.DACSignatures) >= DACQuorumRequired {
+		// Quorum reached — advance status to DAC_APPROVED
+		if err := s.updateRecordStatus(ctx, recordID, RecordDACApproved); err != nil {
+			return err
+		}
+
+		ar.CurrentStatus = RecordDACApproved
+		ar.ApprovalChain = append(ar.ApprovalChain, ApprovalStep{
+			Role:       RoleDAC,
+			ApprovedBy: fmt.Sprintf("QUORUM(%d-of-%d)", len(ar.DACSignatures), DACQuorumRequired),
+			Timestamp:  now,
+			Comment:    fmt.Sprintf("DAC quorum reached with %d signatures", len(ar.DACSignatures)),
+			TxID:       ctx.GetStub().GetTxID(),
+		})
+
+		// Set new SLA deadline for next step (ExamSection)
+		ar.SLADeadline = now.Add(time.Duration(SLAApprovalHours) * time.Hour)
+
+		rec.Status = RecordDACApproved
+		rec.Timestamp = now
+		updatedJSON, _ := json.Marshal(rec)
+		ctx.GetStub().PutState(recordID, updatedJSON)
+
+		eventPayload := map[string]interface{}{
+			"recordId":      recordID,
+			"role":          RoleDAC,
+			"quorumReached": true,
+			"signaturesCount": len(ar.DACSignatures),
+			"timestamp":     now.Format("2006-01-02T15:04:05Z07:00"),
+		}
+		eventJSON, _ := json.Marshal(eventPayload)
+		ctx.GetStub().SetEvent("RecordDACApproved", eventJSON)
+	} else {
+		// Quorum NOT yet reached — emit partial signature event
+		eventPayload := map[string]interface{}{
+			"recordId":         recordID,
+			"role":             RoleDAC,
+			"signedBy":         clientID,
+			"currentSignatures": len(ar.DACSignatures),
+			"requiredQuorum":   DACQuorumRequired,
+			"quorumReached":    false,
+			"timestamp":        now.Format("2006-01-02T15:04:05Z07:00"),
+		}
+		eventJSON, _ := json.Marshal(eventPayload)
+		ctx.GetStub().SetEvent("DACSignatureCollected", eventJSON)
+	}
 
 	if err := s.saveApprovalRecord(ctx, ar); err != nil {
 		return err
 	}
-
-	eventPayload := map[string]interface{}{
-		"recordId":   recordID,
-		"role":       RoleDAC,
-		"memberRole": memberRole,
-		"approvedBy": clientID,
-		"timestamp":  now.Format("2006-01-02T15:04:05Z07:00"),
-	}
-	eventJSON, _ := json.Marshal(eventPayload)
-	ctx.GetStub().SetEvent("RecordDACApproved", eventJSON)
 
 	return nil
 }
@@ -3103,6 +3236,9 @@ func (s *SmartContract) ExamSectionApprove(ctx contractapi.TransactionContextInt
 		Comment:    comment,
 		TxID:       ctx.GetStub().GetTxID(),
 	})
+
+	// SLA: Reset deadline for next step (Dean)
+	s.setSLADeadline(ar, now)
 
 	if err := s.saveApprovalRecord(ctx, ar); err != nil {
 		return err
@@ -3157,6 +3293,9 @@ func (s *SmartContract) DeanAcademicApprove(ctx contractapi.TransactionContextIn
 		Comment:    comment,
 		TxID:       ctx.GetStub().GetTxID(),
 	})
+
+	// SLA: Reset deadline for final step (AdminFinal)
+	s.setSLADeadline(ar, now)
 
 	if err := s.saveApprovalRecord(ctx, ar); err != nil {
 		return err
