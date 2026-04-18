@@ -1362,6 +1362,41 @@ func (s *SmartContract) VerifyCertificate(ctx contractapi.TransactionContextInte
 	return true, nil
 }
 
+// VerifyCertificateByHash queries the ledger for a certificate using its PDF hash.
+// This is used for PDF-upload based verification (Process 2).
+func (s *SmartContract) VerifyCertificateByHash(ctx contractapi.TransactionContextInterface, hash string) (*Certificate, error) {
+	queryString := fmt.Sprintf(`{"selector":{"pdfHash":"%s"}}`, hash)
+	
+	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query by hash: %w", err)
+	}
+	defer resultsIterator.Close()
+	
+	if !resultsIterator.HasNext() {
+		return nil, fmt.Errorf("no certificate found matching the provided hash")
+	}
+	
+	queryResponse, err := resultsIterator.Next()
+	if err != nil {
+		return nil, err
+	}
+	
+	var certificate Certificate
+	if err := json.Unmarshal(queryResponse.Value, &certificate); err != nil {
+		return nil, err
+	}
+	
+	// Dynamically compute IsValid based on revocation and time
+	txTimestamp, _ := ctx.GetStub().GetTxTimestamp()
+	currentTime := time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos))
+	
+	certificate.IsValid = !certificate.Revoked &&
+		(certificate.ExpiryDate.IsZero() || currentTime.Before(certificate.ExpiryDate))
+	
+	return &certificate, nil
+}
+
 // RevokeCertificate revokes a certificate (NEW - with multi-party approval)
 func (s *SmartContract) RevokeCertificate(ctx contractapi.TransactionContextInterface,
 	certificateID, reason string) error {
@@ -3174,6 +3209,39 @@ func (s *SmartContract) AdminFinalApprove(ctx contractapi.TransactionContextInte
 		return fmt.Errorf("failed to calculate CGPA: %w", err)
 	}
 	rec.CGPA = newCGPA
+
+	// AUTOMATED REVOCATION LOGIC (NEW)
+	// If performance falls below threshold (5.0), trigger revocation event
+	if newCGPA < 5.0 {
+		certs, err := s.GetCertificatesByStudent(ctx, rec.StudentID)
+		if err == nil {
+			for _, cert := range certs {
+				// Prevent revoking already revoked certs. Usually triggers on high-level credentials.
+				if cert.IsValid && !cert.Revoked && (cert.Type == CertDegree || cert.Type == CertProvisional || cert.Type == CertTranscript) {
+					cert.Revoked = true
+					cert.IsValid = false
+					cert.RevokedBy = clientID
+					cert.RevokedAt = now
+					cert.RevocationReason = "Automated Revocation: Academic performance fell below minimum threshold (CGPA < 5.0)"
+					
+					certJSON, _ := json.Marshal(cert)
+					ctx.GetStub().PutState(cert.CertificateID, certJSON)
+					
+					// Emit revocation event
+					revEventPayload := map[string]interface{}{
+						"certificateID": cert.CertificateID,
+						"studentID":     cert.StudentID,
+						"type":          cert.Type,
+						"revokedBy":     clientID,
+						"revokedAt":     now.Format("2006-01-02T15:04:05Z07:00"),
+						"reason":        cert.RevocationReason,
+					}
+					revEventJSON, _ := json.Marshal(revEventPayload)
+					ctx.GetStub().SetEvent("CertificateRevoked", revEventJSON)
+				}
+			}
+		}
+	}
 
 	// Update student overall profile with finalized CGPA
 	student, err := s.GetStudent(ctx, rec.StudentID)
