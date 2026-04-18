@@ -194,6 +194,11 @@ export class BlockchainService {
     return this.http.get<ApiResponse<any>>(`${this.apiUrl}/approval/queue/${status}`);
   }
 
+  /** SLA Breach Check — returns records where 72hr approval deadline was exceeded */
+  checkSLABreach(): Observable<ApiResponse<any>> {
+    return this.http.get<ApiResponse<any>>(`${this.apiUrl}/approval/sla-breached`);
+  }
+
   // ============ Document Upload / Verification APIs ============
 
   uploadDocument(formData: FormData): Observable<ApiResponse<any>> {
