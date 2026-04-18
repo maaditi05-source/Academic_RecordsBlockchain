@@ -122,27 +122,27 @@ On **System 01**, edit `env.sh`:
 
 ```bash
 # ORDERER CLUSTER
-export ORDERER1_HOST="192.168.1.101"     # System 01
-export ORDERER2_HOST="192.168.1.102"     # System 02
-export ORDERER3_HOST="192.168.1.103"     # System 03
+export ORDERER1_HOST="172.20.242.77"     # System 01
+export ORDERER2_HOST="172.20.233.222"     # System 02
+export ORDERER3_HOST="172.20.241.65"     # System 03
 
 # NITWARANGAL PEERS
-export NITW_PEER0_HOST="192.168.1.104"   # System 04 — Admin
-export NITW_PEER1_HOST="192.168.1.105"   # System 05 — Exam Section
-export NITW_PEER2_HOST="192.168.1.106"   # System 06 — Dean
+export NITW_PEER0_HOST="172.20.229.166"   # System 04 — Admin
+export NITW_PEER1_HOST="172.20.238.52"   # System 05 — Exam Section
+export NITW_PEER2_HOST="172.20.255.20"   # System 06 — Dean
 
 # DEPARTMENT PEERS
-export DEPT_CSE_HOD_HOST="192.168.1.107" # System 07 — CSE HOD
-export DEPT_CSE_FAC_HOST="192.168.1.108" # System 08 — CSE Faculty
-export DEPT_ECE_HOD_HOST="192.168.1.109" # System 09 — ECE HOD
-export DEPT_ECE_FAC_HOST="192.168.1.110" # System 10 — ECE Faculty
+export DEPT_CSE_HOD_HOST="172.20.247.9" # System 07 — CSE HOD
+export DEPT_CSE_FAC_HOST="172.20.252.32" # System 08 — CSE Faculty
+export DEPT_ECE_HOD_HOST="172.20.244.81" # System 09 — ECE HOD
+export DEPT_ECE_FAC_HOST="172.20.235.77" # System 10 — ECE Faculty
 
 # VERIFIER PEERS
-export VERI_PEER0_HOST="192.168.1.111"   # System 11 — Primary
-export VERI_PEER1_HOST="192.168.1.112"   # System 12 — Secondary
+export VERI_PEER0_HOST="172.20.254.157"   # System 11 — Primary
+export VERI_PEER1_HOST="172.20.252.188"   # System 12 — Secondary
 
 # STUDENT PORTAL
-export STUDENT_PORTAL_HOST="192.168.1.113"  # System 13
+export STUDENT_PORTAL_HOST="127.0.0.1"  # System 13 (Assuming local or replace as needed)
 ```
 
 ---
