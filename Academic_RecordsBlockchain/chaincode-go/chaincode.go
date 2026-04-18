@@ -1561,7 +1561,7 @@ func (s *SmartContract) AdminRevokeRecord(ctx contractapi.TransactionContextInte
 
 	// Revoke the record
 	record.Status = "REVOKED"
-	record.UpdatedAt = revokedAt
+	record.Timestamp = revokedAt
 
 	updatedRecordJSON, err := json.Marshal(record)
 	if err != nil {
