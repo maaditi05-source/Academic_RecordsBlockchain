@@ -111,7 +111,7 @@ Run this on **System 4** (NITWarangal), **System 7** (CSE HOD = Departments), **
   --version 2.0 \
   --package-id academic_records_2.0:ad101ee57747b7dc6a99e189508af0b48ab4513abcd1c6296a8234e963796e81 \
   --sequence 1 \
-  --collections-config /opt/gopath/src/github.com/hyperledger/fabric/peer/collections_config.json
+  --collections-config /opt/gopath/src/github.com/hyperledger/fabric/peer/chaincode-go/../collections_config.json
 ```
 Expected output: `Approved chaincode definition for channel 'academic-records-channel'`
 
