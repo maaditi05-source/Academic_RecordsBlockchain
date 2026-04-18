@@ -287,5 +287,22 @@
     "verifiedBy": "exam_section_demo",
     "uploadedAt": "2026-03-01T11:47:51.744Z",
     "verifiedAt": "2026-03-01T11:48:06.776Z"
+  },
+  {
+    "id": "mark-1772432481522-ohz5e",
+    "studentId": "25CSM2R50",
+    "courseCode": "CS601",
+    "semester": 6,
+    "year": 2026,
+    "marksObtained": 79,
+    "maxMarks": 100,
+    "grade": "B+",
+    "gradePoint": 8,
+    "credits": 3,
+    "status": "verified",
+    "uploadedBy": "faculty_demo",
+    "verifiedBy": "exam_section_demo",
+    "uploadedAt": "2026-03-02T06:21:21.522Z",
+    "verifiedAt": "2026-03-02T06:21:43.594Z"
   }
 ]

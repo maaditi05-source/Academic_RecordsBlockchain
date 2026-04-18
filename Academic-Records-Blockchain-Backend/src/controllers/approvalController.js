@@ -362,6 +362,29 @@ const getApprovalQueue = async (req, res) => {
     }
 };
 
+/**
+ * GET /api/approval/sla-breached
+ * Returns approval records where the 72hr SLA deadline has been exceeded.
+ * Admin-only endpoint for dashboard monitoring.
+ */
+const checkSLABreach = async (req, res) => {
+    const gateway = new FabricGateway();
+    try {
+        await gateway.connect(req.user);
+        const result = await gateway.evaluateTransaction('CheckSLABreach');
+        res.json({
+            success: true,
+            message: 'SLA breach check completed',
+            data: result
+        });
+    } catch (error) {
+        logger.error(`checkSLABreach error: ${error.message}`);
+        res.json({ success: true, data: [] });
+    } finally {
+        await gateway.disconnect();
+    }
+};
+
 module.exports = {
     submitForApproval,
     facultyApprove,
@@ -369,8 +392,9 @@ module.exports = {
     dacApprove,
     examSectionApprove,
     deanApprove,
-    adminFinalApprove,  // NEW — final step, NITWarangalMSP only
+    adminFinalApprove,
     rejectRecord,
     getApprovalStatus,
-    getApprovalQueue
+    getApprovalQueue,
+    checkSLABreach
 };

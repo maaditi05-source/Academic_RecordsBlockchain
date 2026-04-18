@@ -34,4 +34,7 @@ router.get('/status/:recordId', authenticateToken, ApprovalController.getApprova
 // Get records at a specific approval stage (queue) — all 7 stages supported
 router.get('/queue/:status', authenticateToken, requireRole('admin', 'faculty', 'department', 'hod', 'dac_member', 'exam_section', 'dean_academic'), ApprovalController.getApprovalQueue);
 
+// SLA Breach Check — returns records that have exceeded their 72hr approval deadline
+router.get('/sla-breached', authenticateToken, requireRole('admin'), ApprovalController.checkSLABreach);
+
 module.exports = router;

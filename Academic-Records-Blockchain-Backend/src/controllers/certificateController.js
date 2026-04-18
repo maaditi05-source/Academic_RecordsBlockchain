@@ -1,33 +1,77 @@
 const FabricGateway = require('../fabricGateway');
 const logger = require('../utils/logger');
+const { generateCertificatePDF } = require('../utils/pdfService');
+const { uploadBufferToIPFS, unpinFromIPFS, getIPFSUrl, computeSHA256 } = require('../utils/ipfsService');
 
 class CertificateController {
-    // Issue certificate
+    // Issue certificate — generates PDF, uploads to IPFS, stores hashes on blockchain
     static async issueCertificate(req, res) {
         const gateway = new FabricGateway();
 
         try {
-            const { certificateID, studentID, certType, pdfBase64, ipfsHash } = req.body;
+            const { certificateID, studentID, certType, pdfBase64, ipfsHash: providedIpfsHash } = req.body;
             const userId = req.user.userId;
 
             // Validate required fields
-            if (!certificateID || !studentID || !certType || !pdfBase64) {
+            if (!certificateID || !studentID || !certType) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Missing required fields: certificateID, studentID, certType, pdfBase64'
+                    message: 'Missing required fields: certificateID, studentID, certType'
                 });
             }
 
             await gateway.connect(userId);
 
-            // Chaincode signature: IssueCertificate(certificateID, studentID, certType, pdfBase64, ipfsHash string)
+            // Step 1: Fetch student from blockchain for PDF generation
+            let student = null;
+            try {
+                const studentResult = await gateway.evaluateTransaction('GetStudent', studentID);
+                student = typeof studentResult === 'string' ? JSON.parse(studentResult) : studentResult;
+            } catch (err) {
+                logger.warn(`Could not fetch student ${studentID}: ${err.message}`);
+            }
+
+            let pdfHash = '';
+            let ipfsHash = providedIpfsHash || '';
+            let ipfsUrl = '';
+
+            // Step 2: Generate PDF if no pdfBase64 was provided
+            if (!pdfBase64 && student) {
+                try {
+                    const pdfResult = await generateCertificatePDF({
+                        student,
+                        record: null,
+                        certificate: { certificateID, certType },
+                        approvalChain: []
+                    });
+
+                    // Step 3: Compute SHA-256 hash
+                    const fs = require('fs');
+                    const pdfBuffer = fs.readFileSync(pdfResult.filePath);
+                    pdfHash = computeSHA256(pdfBuffer);
+
+                    // Step 4: Upload to IPFS
+                    const ipfsResult = await uploadBufferToIPFS(pdfBuffer, `${certificateID}.pdf`);
+                    ipfsHash = ipfsResult.cid;
+                    ipfsUrl = ipfsResult.url;
+                    logger.info(`PDF uploaded to IPFS: ${ipfsUrl} (mode: ${ipfsResult.mode})`);
+                } catch (pdfErr) {
+                    logger.warn(`PDF generation/IPFS upload failed: ${pdfErr.message}. Proceeding without IPFS.`);
+                }
+            } else if (pdfBase64) {
+                // Hash the provided base64 PDF
+                const crypto = require('crypto');
+                pdfHash = crypto.createHash('sha256').update(pdfBase64).digest('hex');
+            }
+
+            // Step 5: Store hashes on blockchain
             await gateway.submitTransaction(
                 'IssueCertificate',
                 certificateID,
                 studentID,
                 certType,
-                pdfBase64,
-                ipfsHash || ''
+                pdfHash || pdfBase64 || '',
+                ipfsHash
             );
 
             logger.info(`Certificate issued: ${certificateID}`);
@@ -35,7 +79,13 @@ class CertificateController {
             res.status(201).json({
                 success: true,
                 message: 'Certificate issued successfully',
-                data: certificateID
+                data: {
+                    certificateID,
+                    pdfHash,
+                    ipfsHash,
+                    ipfsUrl: ipfsUrl || (ipfsHash ? getIPFSUrl(ipfsHash) : ''),
+                    downloadUrl: ipfsUrl || (ipfsHash ? getIPFSUrl(ipfsHash) : '')
+                }
             });
         } catch (error) {
             logger.error(`Error issuing certificate: ${error.message}`);
@@ -60,10 +110,17 @@ class CertificateController {
             await gateway.connect(userId);
 
             const result = await gateway.evaluateTransaction('GetCertificate', certificateID);
+            const cert = typeof result === 'string' ? JSON.parse(result) : result;
+
+            // Append IPFS URL if available
+            if (cert && cert.ipfsHash) {
+                cert.ipfsUrl = getIPFSUrl(cert.ipfsHash);
+                cert.downloadUrl = cert.ipfsUrl;
+            }
 
             res.status(200).json({
                 success: true,
-                data: result
+                data: cert
             });
         } catch (error) {
             logger.error(`Error getting certificate: ${error.message}`);
@@ -71,6 +128,31 @@ class CertificateController {
                 success: false,
                 message: error.message
             });
+        } finally {
+            await gateway.disconnect();
+        }
+    }
+
+    // Download certificate — redirect to IPFS gateway
+    static async downloadCertificate(req, res) {
+        const gateway = new FabricGateway();
+        try {
+            const { certificateID } = req.params;
+            const userId = req.user ? req.user.userId : 'admin';
+            await gateway.connect(userId);
+
+            const result = await gateway.evaluateTransaction('GetCertificate', certificateID);
+            const cert = typeof result === 'string' ? JSON.parse(result) : result;
+
+            if (!cert || !cert.ipfsHash) {
+                return res.status(404).json({ success: false, message: 'No IPFS file linked to this certificate' });
+            }
+
+            // Redirect browser to IPFS gateway — PDF downloads automatically
+            res.redirect(getIPFSUrl(cert.ipfsHash));
+        } catch (error) {
+            logger.error(`Error downloading certificate: ${error.message}`);
+            res.status(500).json({ success: false, message: error.message });
         } finally {
             await gateway.disconnect();
         }
@@ -190,7 +272,7 @@ class CertificateController {
         }
     }
 
-    // Revoke certificate
+    // Revoke certificate — also unpins from IPFS
     static async revokeCertificate(req, res) {
         const gateway = new FabricGateway();
 
@@ -201,6 +283,16 @@ class CertificateController {
 
             await gateway.connect(userId);
 
+            // Fetch ipfsHash BEFORE revoking so we can unpin after
+            let ipfsHashToUnpin = '';
+            try {
+                const certBefore = await gateway.evaluateTransaction('GetCertificate', certificateID);
+                const cert = typeof certBefore === 'string' ? JSON.parse(certBefore) : certBefore;
+                ipfsHashToUnpin = cert?.ipfsHash || '';
+            } catch (err) {
+                logger.warn(`Could not fetch certificate before revoke: ${err.message}`);
+            }
+
             const result = await gateway.submitTransaction(
                 'RevokeCertificate',
                 certificateID,
@@ -208,6 +300,16 @@ class CertificateController {
             );
 
             logger.info(`Certificate revoked: ${certificateID}`);
+
+            // Unpin from IPFS so the file becomes inaccessible (non-fatal)
+            if (ipfsHashToUnpin) {
+                try {
+                    await unpinFromIPFS(ipfsHashToUnpin);
+                    logger.info(`IPFS file unpinned after revocation: ${ipfsHashToUnpin}`);
+                } catch (unpinErr) {
+                    logger.warn(`IPFS unpin failed (non-fatal): ${unpinErr.message}`);
+                }
+            }
 
             res.status(200).json({
                 success: true,

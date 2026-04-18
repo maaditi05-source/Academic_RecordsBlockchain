@@ -20,6 +20,9 @@ router.post('/', authenticateToken, requireRole('admin'), CertificateController.
 // Get certificate (All authenticated users, or anonymous for verification)
 router.get('/:certificateID', optionalAuth, CertificateController.getCertificate);
 
+// Download certificate PDF from IPFS
+router.get('/:certificateID/download', optionalAuth, CertificateController.downloadCertificate);
+
 // Verify certificate (Public endpoint - no auth required for external verifiers)
 router.post('/verify', optionalAuth, upload.single('file'), CertificateController.verifyCertificate);
 

@@ -175,5 +175,19 @@
     "isActive": true,
     "passwordChangeRequired": true,
     "firstLogin": true
+  },
+  {
+    "id": "student-1772432261406",
+    "username": "25CSM2R50",
+    "email": "25csm2r50@student.nitw.ac.in",
+    "passwordHash": "$2a$10$w75GW.N5UvkF0xcP2dZq7.YbNLLBpttsJicYho/RPzG57qPK4HMJW",
+    "name": "Ayan Mishra",
+    "role": "student",
+    "department": "CSE",
+    "mspId": "NITWarangalMSP",
+    "createdAt": "2026-03-02T06:17:41.406Z",
+    "isActive": true,
+    "passwordChangeRequired": true,
+    "firstLogin": true
   }
 ]
