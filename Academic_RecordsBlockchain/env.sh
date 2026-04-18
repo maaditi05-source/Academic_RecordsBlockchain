@@ -32,13 +32,13 @@
 # =================================================================
 
 # ─── Node 01: Orderer 1 (Primary Raft Leader) ──────────────────
-export ORDERER1_HOST="${ORDERER1_HOST:-172.20.242.77}"
+export ORDERER1_HOST="${ORDERER1_HOST:-172.20.233.222}"
 export ORDERER1_PORT="${ORDERER1_PORT:-7050}"
 export ORDERER1_ADMIN_PORT="${ORDERER1_ADMIN_PORT:-7053}"
 export ORDERER1_CA_PORT="${ORDERER1_CA_PORT:-7054}"
 
 # ─── Node 02: Orderer 2 (Raft Follower) ────────────────────────
-export ORDERER2_HOST="${ORDERER2_HOST:-172.20.233.222}"
+export ORDERER2_HOST="${ORDERER2_HOST:-172.20.242.77}"
 export ORDERER2_PORT="${ORDERER2_PORT:-8050}"
 export ORDERER2_ADMIN_PORT="${ORDERER2_ADMIN_PORT:-8053}"
 

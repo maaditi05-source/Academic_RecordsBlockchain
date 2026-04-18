@@ -122,27 +122,24 @@ On **System 01**, edit `env.sh`:
 
 ```bash
 # ORDERER CLUSTER
-export ORDERER1_HOST="172.20.242.77"     # System 01
-export ORDERER2_HOST="172.20.233.222"     # System 02
+export ORDERER1_HOST="172.20.233.222"    # System 01
+export ORDERER2_HOST="172.20.242.77"     # System 02
 export ORDERER3_HOST="172.20.241.65"     # System 03
 
 # NITWARANGAL PEERS
-export NITW_PEER0_HOST="172.20.229.166"   # System 04 — Admin
+export NITW_PEER0_HOST="172.20.229.166"  # System 04 — Admin
 export NITW_PEER1_HOST="172.20.238.52"   # System 05 — Exam Section
 export NITW_PEER2_HOST="172.20.255.20"   # System 06 — Dean
 
 # DEPARTMENT PEERS
-export DEPT_CSE_HOD_HOST="172.20.247.9" # System 07 — CSE HOD
+export DEPT_CSE_HOD_HOST="172.20.247.9"  # System 07 — CSE HOD
 export DEPT_CSE_FAC_HOST="172.20.252.32" # System 08 — CSE Faculty
 export DEPT_ECE_HOD_HOST="172.20.244.81" # System 09 — ECE HOD
 export DEPT_ECE_FAC_HOST="172.20.235.77" # System 10 — ECE Faculty
 
 # VERIFIER PEERS
-export VERI_PEER0_HOST="172.20.254.157"   # System 11 — Primary
-export VERI_PEER1_HOST="172.20.252.188"   # System 12 — Secondary
-
-# STUDENT PORTAL
-export STUDENT_PORTAL_HOST="127.0.0.1"  # System 13 (Assuming local or replace as needed)
+export VERI_PEER0_HOST="172.20.254.157"  # System 11 — Primary
+export VERI_PEER1_HOST="172.20.252.188"  # System 12 — Secondary
 ```
 
 ---
@@ -150,42 +147,42 @@ export STUDENT_PORTAL_HOST="127.0.0.1"  # System 13 (Assuming local or replace a
 ## PHASE 2: Generate Crypto Material (System 01 Only)
 
 ```bash
-chmod +x generate-multihost-crypto.sh
+chmod +x generate-multihost-crypto.sh scripts/registerEnroll.sh generate-connection-profiles.sh scripts/utils.sh
 ./generate-multihost-crypto.sh
 ```
 
 ---
 
-## PHASE 3: Distribute to All 13 Systems
+## PHASE 3: Distribute to All Systems
 
+Transfer `multihost-crypto-bundle.tar.gz` from System 01 to all other systems via SCP or USB.
+
+On each receiving system:
 ```bash
-# On System 01
-for IP in 192.168.1.{102..113}; do
-    scp -r ~/Academic_RecordsBlockchain $USER@${IP}:~/
-done
+cd ~/Academic_RecordsBlockchain
+tar -xzvf multihost-crypto-bundle.tar.gz
+source env.sh
 ```
-
-On each system: `cd ~/Academic_RecordsBlockchain && tar -xzvf multihost-crypto-bundle.tar.gz && source env.sh`
 
 ---
 
-## PHASE 4: Setup /etc/hosts (All 13 Systems)
+## PHASE 4: Setup /etc/hosts (All 12 Systems)
 
 ```bash
 sudo bash -c 'cat >> /etc/hosts << EOF
 # === Academic Records Blockchain Network ===
-192.168.1.101  orderer1.nitw.edu
-192.168.1.102  orderer2.nitw.edu
-192.168.1.103  orderer3.nitw.edu
-192.168.1.104  peer0.nitwarangal.nitw.edu ca-nitwarangal
-192.168.1.105  peer1.nitwarangal.nitw.edu
-192.168.1.106  peer2.nitwarangal.nitw.edu
-192.168.1.107  peer0.cse.departments.nitw.edu ca-departments
-192.168.1.108  peer1.cse.departments.nitw.edu
-192.168.1.109  peer0.ece.departments.nitw.edu
-192.168.1.110  peer1.ece.departments.nitw.edu
-192.168.1.111  peer0.verifiers.nitw.edu ca-verifiers
-192.168.1.112  peer1.verifiers.nitw.edu
+172.20.233.222  orderer1.nitw.edu
+172.20.242.77   orderer2.nitw.edu
+172.20.241.65   orderer3.nitw.edu
+172.20.229.166  peer0.nitwarangal.nitw.edu ca-nitwarangal
+172.20.238.52   peer1.nitwarangal.nitw.edu
+172.20.255.20   peer2.nitwarangal.nitw.edu
+172.20.247.9    peer0.cse.departments.nitw.edu ca-departments
+172.20.252.32   peer1.cse.departments.nitw.edu
+172.20.244.81   peer0.ece.departments.nitw.edu
+172.20.235.77   peer1.ece.departments.nitw.edu
+172.20.254.157  peer0.verifiers.nitw.edu ca-verifiers
+172.20.252.188  peer1.verifiers.nitw.edu
 # === END ===
 EOF'
 ```

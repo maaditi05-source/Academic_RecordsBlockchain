@@ -1,0 +1,66 @@
+# Copyright NIT Warangal Academic Records Blockchain Network
+
+volumes:
+  orderer3.nitw.edu:
+
+networks:
+  nitw:
+    name: fabric_nitw
+
+services:
+
+  orderer3.nitw.edu:
+    container_name: orderer3.nitw.edu
+    image: hyperledger/fabric-orderer:latest
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053
+      - ORDERER_OPERATIONS_LISTENADDRESS=orderer3.nitw.edu:9443
+      - ORDERER_METRICS_PROVIDER=prometheus
+    working_dir: /root
+    command: orderer
+    volumes:
+      - ../organizations/ordererOrganizations/nitw.edu/orderers/orderer3.nitw.edu/msp:/var/hyperledger/orderer/msp
+      - ../organizations/ordererOrganizations/nitw.edu/orderers/orderer3.nitw.edu/tls:/var/hyperledger/orderer/tls
+      - orderer3.nitw.edu:/var/hyperledger/production/orderer
+    ports:
+      - "7050:7050"
+      - "7053:7053"
+      - "9443:9443"
+    networks:
+      - nitw
+
+    extra_hosts:
+      - "orderer1.nitw.edu:${ORDERER1_IP}"
+      - "orderer2.nitw.edu:${ORDERER2_IP}"
+      - "orderer3.nitw.edu:${ORDERER3_IP}"
+      - "peer0.nitwarangal.nitw.edu:${PEER0_NITW_IP}"
+      - "peer1.nitwarangal.nitw.edu:${PEER1_NITW_IP}"
+      - "peer2.nitwarangal.nitw.edu:${PEER2_NITW_IP}"
+      - "peer0.departments.nitw.edu:${PEER0_DEPT_IP}"
+      - "peer1.departments.nitw.edu:${PEER1_DEPT_IP}"
+      - "peer2.departments.nitw.edu:${PEER2_DEPT_IP}"
+      - "peer0.verifiers.nitw.edu:${PEER0_VERIF_IP}"
+      - "peer1.verifiers.nitw.edu:${PEER1_VERIF_IP}"
+      - "peer2.verifiers.nitw.edu:${PEER2_VERIF_IP}"
+

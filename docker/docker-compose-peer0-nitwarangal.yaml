@@ -1,0 +1,147 @@
+# Copyright NIT Warangal Academic Records Blockchain Network
+
+volumes:
+  peer0.nitwarangal.nitw.edu:
+
+networks:
+  nitw:
+    name: fabric_nitw
+
+services:
+
+  ca_nitwarangal:
+    image: hyperledger/fabric-ca:latest
+    labels:
+      service: hyperledger-fabric
+    command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+    environment:
+      - FABRIC_CA_SERVER_CA_NAME=ca-nitwarangal
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=8054
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:18054
+      - FABRIC_CA_SERVER_CSR_HOSTS=ca-nitwarangal,localhost
+      - FABRIC_CA_SERVER_CSR_CN=ca-nitwarangal.nitw.edu
+    ports:
+      - "8054:8054"
+      - "18054:18054"
+    volumes:
+      - ../organizations/fabric-ca/nitwarangal:/etc/hyperledger/fabric-ca-server
+    container_name: ca_nitwarangal
+    networks:
+      - nitw
+
+  couchdb_nitwarangal0:
+    container_name: couchdb_nitwarangal0
+    image: couchdb:3.3
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - "5984:5984"
+    networks:
+      - nitw
+
+  peer0.nitwarangal.nitw.edu:
+    container_name: peer0.nitwarangal.nitw.edu
+    image: hyperledger/fabric-peer:latest
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_ID=peer0.nitwarangal.nitw.edu
+      - CORE_PEER_ADDRESS=peer0.nitwarangal.nitw.edu:7051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.nitwarangal.nitw.edu:7052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.nitwarangal.nitw.edu:7051
+      - CORE_PEER_LOCALMSPID=NITWarangalMSP
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_VM_ENDPOINT=unix:///var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_nitw
+      - CORE_OPERATIONS_LISTENADDRESS=peer0.nitwarangal.nitw.edu:9446
+      - CORE_METRICS_PROVIDER=prometheus
+      - CORE_CHAINCODE_EXECUTETIMEOUT=300s
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb_nitwarangal0:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+    working_dir: /root
+    command: sh -c "sleep 5 && peer node start"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ../organizations/peerOrganizations/nitwarangal.nitw.edu/peers/peer0.nitwarangal.nitw.edu/msp:/etc/hyperledger/fabric/msp
+      - ../organizations/peerOrganizations/nitwarangal.nitw.edu/peers/peer0.nitwarangal.nitw.edu/tls:/etc/hyperledger/fabric/tls
+      - peer0.nitwarangal.nitw.edu:/var/hyperledger/production
+    ports:
+      - "7051:7051"
+      - "9446:9446"
+    networks:
+      - nitw
+    depends_on:
+      couchdb_nitwarangal0:
+       condition: service_started
+
+    extra_hosts:
+      - "orderer1.nitw.edu:${ORDERER1_IP}"
+      - "orderer2.nitw.edu:${ORDERER2_IP}"
+      - "orderer3.nitw.edu:${ORDERER3_IP}"
+      - "peer0.nitwarangal.nitw.edu:${PEER0_NITW_IP}"
+      - "peer1.nitwarangal.nitw.edu:${PEER1_NITW_IP}"
+      - "peer2.nitwarangal.nitw.edu:${PEER2_NITW_IP}"
+      - "peer0.departments.nitw.edu:${PEER0_DEPT_IP}"
+      - "peer1.departments.nitw.edu:${PEER1_DEPT_IP}"
+      - "peer2.departments.nitw.edu:${PEER2_DEPT_IP}"
+      - "peer0.verifiers.nitw.edu:${PEER0_VERIF_IP}"
+      - "peer1.verifiers.nitw.edu:${PEER1_VERIF_IP}"
+      - "peer2.verifiers.nitw.edu:${PEER2_VERIF_IP}"
+
+
+  cli_nitwarangal:
+    container_name: cli_nitwarangal
+    image: hyperledger/fabric-tools:latest
+    labels:
+      service: hyperledger-fabric
+    tty: true
+    stdin_open: true
+    environment:
+      - GOPATH=/opt/gopath
+      - CORE_VM_ENDPOINT=unix:///var/run/docker.sock
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_ID=cli_nitwarangal
+      - CORE_PEER_ADDRESS=peer0.nitwarangal.nitw.edu:7051
+      - CORE_PEER_LOCALMSPID=NITWarangalMSP
+      - CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/nitwarangal.nitw.edu/peers/peer0.nitwarangal.nitw.edu/tls/ca.crt
+      - CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/nitwarangal.nitw.edu/users/Admin@nitwarangal.nitw.edu/msp
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: /bin/bash
+    volumes:
+      - /var/run/:/var/run/
+      - ../organizations:/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations
+      - ../scripts:/opt/gopath/src/github.com/hyperledger/fabric/peer/scripts/
+      - ../channel-artifacts:/opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts
+      - ../collections_config.json:/opt/gopath/src/github.com/hyperledger/fabric/peer/collections_config.json
+      - ../configtx:/opt/gopath/src/github.com/hyperledger/fabric/peer/configtx
+      - ../chaincode-go:/opt/gopath/src/github.com/hyperledger/fabric/peer/chaincode-go
+    depends_on:
+      - peer0.nitwarangal.nitw.edu
+    networks:
+      - nitw
+
+    extra_hosts:
+      - "orderer1.nitw.edu:${ORDERER1_IP}"
+      - "orderer2.nitw.edu:${ORDERER2_IP}"
+      - "orderer3.nitw.edu:${ORDERER3_IP}"
+      - "peer0.nitwarangal.nitw.edu:${PEER0_NITW_IP}"
+      - "peer1.nitwarangal.nitw.edu:${PEER1_NITW_IP}"
+      - "peer2.nitwarangal.nitw.edu:${PEER2_NITW_IP}"
+      - "peer0.departments.nitw.edu:${PEER0_DEPT_IP}"
+      - "peer1.departments.nitw.edu:${PEER1_DEPT_IP}"
+      - "peer2.departments.nitw.edu:${PEER2_DEPT_IP}"
+      - "peer0.verifiers.nitw.edu:${PEER0_VERIF_IP}"
+      - "peer1.verifiers.nitw.edu:${PEER1_VERIF_IP}"
+      - "peer2.verifiers.nitw.edu:${PEER2_VERIF_IP}"
+

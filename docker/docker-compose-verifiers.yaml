@@ -1,0 +1,92 @@
+# Copyright NIT Warangal Academic Records Blockchain Network
+# Docker Compose configuration for the Verifiers organization
+
+volumes:
+  peer0.verifiers.nitw.edu:
+
+networks:
+  nitw:
+    name: fabric_nitw
+
+services:
+  ca_verifiers:
+    image: hyperledger/fabric-ca:latest
+    labels:
+      service: hyperledger-fabric
+    command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+    environment:
+      - FABRIC_CA_SERVER_CA_NAME=ca-verifiers
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=11054
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:21054
+      - FABRIC_CA_SERVER_CSR_HOSTS=ca-verifiers,localhost
+      - FABRIC_CA_SERVER_CSR_CN=ca-verifiers.nitw.edu
+    ports:
+      - "11054:11054"
+      - "21054:21054"
+    volumes:
+      - ../organizations/fabric-ca/verifiers:/etc/hyperledger/fabric-ca-server
+    container_name: ca_verifiers
+    networks:
+      - nitw
+
+  couchdb2:
+    container_name: couchdb2
+    image: couchdb:3.3
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - "7984:5984"
+    networks:
+      - nitw
+
+  peer0.verifiers.nitw.edu:
+    container_name: peer0.verifiers.nitw.edu
+    image: hyperledger/fabric-peer:latest
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_ID=peer0.verifiers.nitw.edu
+      - CORE_PEER_ADDRESS=peer0.verifiers.nitw.edu:11051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:11051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.verifiers.nitw.edu:11052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:11052
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.verifiers.nitw.edu:11051
+      - CORE_PEER_LOCALMSPID=VerifiersMSP
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_VM_ENDPOINT=unix:///var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_nitw
+      - CORE_OPERATIONS_LISTENADDRESS=peer0.verifiers.nitw.edu:9450
+      - CORE_METRICS_PROVIDER=prometheus
+      - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={"peername":"peer0verifiers"}
+      - CORE_CHAINCODE_EXECUTETIMEOUT=300s
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb2:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+
+    working_dir: /root
+    command: sh -c "sleep 10 && peer node start"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ../organizations/peerOrganizations/verifiers.nitw.edu/peers/peer0.verifiers.nitw.edu/msp:/etc/hyperledger/fabric/msp
+      - ../organizations/peerOrganizations/verifiers.nitw.edu/peers/peer0.verifiers.nitw.edu/tls:/etc/hyperledger/fabric/tls
+      - peer0.verifiers.nitw.edu:/var/hyperledger/production
+    ports:
+      - "11051:11051"
+      - "9450:9450"
+    networks:
+      - nitw
+    depends_on:
+      couchdb2:
+       condition: service_started
+    # NOTE FOR MULTIHOST: Add extra_hosts mapping other laptop VPN IPs here when bringing up channel
+    extra_hosts:
+      - "orderer.nitw.edu:100.88.165.33"
+      - "peer0.nitwarangal.nitw.edu:100.79.122.76"
+      - "peer0.departments.nitw.edu:100.101.132.58"

@@ -1,0 +1,77 @@
+# Copyright NIT Warangal Academic Records Blockchain Network
+# Docker Compose configuration for the Orderer organization
+
+volumes:
+  orderer.nitw.edu:
+
+networks:
+  nitw:
+    name: fabric_nitw
+
+services:
+  ca_orderer:
+    image: hyperledger/fabric-ca:latest
+    labels:
+      service: hyperledger-fabric
+    command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+    environment:
+      - FABRIC_CA_SERVER_CA_NAME=ca-orderer
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=7054
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:17054
+      - FABRIC_CA_SERVER_CSR_HOSTS=ca-orderer,localhost
+      - FABRIC_CA_SERVER_CSR_CN=ca-orderer.nitw.edu
+    ports:
+      - "7054:7054"
+      - "17054:17054"
+    volumes:
+      - ../organizations/fabric-ca/ordererOrg:/etc/hyperledger/fabric-ca-server
+    container_name: ca_orderer
+    networks:
+      - nitw
+
+  orderer.nitw.edu:
+    container_name: orderer.nitw.edu
+    image: hyperledger/fabric-orderer:latest
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053
+      - ORDERER_OPERATIONS_LISTENADDRESS=orderer.nitw.edu:9443
+      - ORDERER_METRICS_PROVIDER=prometheus
+    working_dir: /root
+    command: orderer
+    volumes:
+      - ../organizations/ordererOrganizations/nitw.edu/orderers/orderer.nitw.edu/msp:/var/hyperledger/orderer/msp
+      - ../organizations/ordererOrganizations/nitw.edu/orderers/orderer.nitw.edu/tls:/var/hyperledger/orderer/tls
+      - orderer.nitw.edu:/var/hyperledger/production/orderer
+    ports:
+      - "7050:7050"
+      - "7053:7053"
+      - "9443:9443"
+    networks:
+      - nitw
+    # NOTE FOR MULTIHOST: Add extra_hosts mapping other laptop VPN IPs here when bringing up channel
+    extra_hosts:
+      - "peer0.nitwarangal.nitw.edu:100.79.122.76"
+      - "peer0.departments.nitw.edu:100.101.132.58"
+      - "peer0.verifiers.nitw.edu:100.88.165.33"

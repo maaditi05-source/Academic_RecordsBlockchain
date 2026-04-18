@@ -1,0 +1,79 @@
+# Copyright NIT Warangal Academic Records Blockchain Network
+
+volumes:
+  peer2.nitwarangal.nitw.edu:
+
+networks:
+  nitw:
+    name: fabric_nitw
+
+services:
+
+  couchdb_nitwarangal2:
+    container_name: couchdb_nitwarangal2
+    image: couchdb:3.3
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - "7984:5984"
+    networks:
+      - nitw
+
+  peer2.nitwarangal.nitw.edu:
+    container_name: peer2.nitwarangal.nitw.edu
+    image: hyperledger/fabric-peer:latest
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_ID=peer2.nitwarangal.nitw.edu
+      - CORE_PEER_ADDRESS=peer2.nitwarangal.nitw.edu:7071
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7071
+      - CORE_PEER_CHAINCODEADDRESS=peer2.nitwarangal.nitw.edu:7072
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7072
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer2.nitwarangal.nitw.edu:7071
+      - CORE_PEER_LOCALMSPID=NITWarangalMSP
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_VM_ENDPOINT=unix:///var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_nitw
+      - CORE_OPERATIONS_LISTENADDRESS=peer2.nitwarangal.nitw.edu:9466
+      - CORE_METRICS_PROVIDER=prometheus
+      - CORE_CHAINCODE_EXECUTETIMEOUT=300s
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb_nitwarangal2:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+    working_dir: /root
+    command: sh -c "sleep 5 && peer node start"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ../organizations/peerOrganizations/nitwarangal.nitw.edu/peers/peer2.nitwarangal.nitw.edu/msp:/etc/hyperledger/fabric/msp
+      - ../organizations/peerOrganizations/nitwarangal.nitw.edu/peers/peer2.nitwarangal.nitw.edu/tls:/etc/hyperledger/fabric/tls
+      - peer2.nitwarangal.nitw.edu:/var/hyperledger/production
+    ports:
+      - "7071:7071"
+      - "9466:9466"
+    networks:
+      - nitw
+    depends_on:
+      couchdb_nitwarangal2:
+       condition: service_started
+
+    extra_hosts:
+      - "orderer1.nitw.edu:${ORDERER1_IP}"
+      - "orderer2.nitw.edu:${ORDERER2_IP}"
+      - "orderer3.nitw.edu:${ORDERER3_IP}"
+      - "peer0.nitwarangal.nitw.edu:${PEER0_NITW_IP}"
+      - "peer1.nitwarangal.nitw.edu:${PEER1_NITW_IP}"
+      - "peer2.nitwarangal.nitw.edu:${PEER2_NITW_IP}"
+      - "peer0.departments.nitw.edu:${PEER0_DEPT_IP}"
+      - "peer1.departments.nitw.edu:${PEER1_DEPT_IP}"
+      - "peer2.departments.nitw.edu:${PEER2_DEPT_IP}"
+      - "peer0.verifiers.nitw.edu:${PEER0_VERIF_IP}"
+      - "peer1.verifiers.nitw.edu:${PEER1_VERIF_IP}"
+      - "peer2.verifiers.nitw.edu:${PEER2_VERIF_IP}"
+
