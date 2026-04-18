@@ -78,21 +78,18 @@ else
     exit 1
 fi
 
-FABRIC_NET=$(docker network ls --filter name=fabric_net -q)
-if [ -z "$FABRIC_NET" ]; then
-    echo "ERROR: Docker network fabric_net not found! Did you start the container?"
-    exit 1
-fi
+FABRIC_NET="host"
 
 echo "Detected local peer: $PEER_ADDRESS"
 echo "Executing: $@"
 echo "------------------------------------------------------"
 
 docker run --rm \
-  --network $FABRIC_NET \
+  --network host \
   -v $(pwd)/channel-artifacts:/tmp/channel-artifacts \
   -v $(pwd)/chaincode-go:/opt/gopath/src/github.com/hyperledger/fabric/peer/chaincode-go \
   -v $(pwd)/organizations:/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations \
+  -v $(pwd)/collections_config.json:/opt/gopath/src/github.com/hyperledger/fabric/peer/collections_config.json \
   -e CORE_PEER_TLS_ENABLED=true \
   -e CORE_PEER_LOCALMSPID="${PEER_MSP}" \
   -e CORE_PEER_ADDRESS="${PEER_ADDRESS}" \
