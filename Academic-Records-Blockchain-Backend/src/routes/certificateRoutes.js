@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const CertificateController = require('../controllers/certificateController');
 const { authenticateToken, requireRole, optionalAuth } = require('../middleware/auth');
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
 
 // Request certificate (Student)
 router.post('/request', authenticateToken, requireRole('student'), CertificateController.requestCertificate);
@@ -19,7 +21,7 @@ router.post('/', authenticateToken, requireRole('admin'), CertificateController.
 router.get('/:certificateID', optionalAuth, CertificateController.getCertificate);
 
 // Verify certificate (Public endpoint - no auth required for external verifiers)
-router.post('/verify', optionalAuth, CertificateController.verifyCertificate);
+router.post('/verify', optionalAuth, upload.single('file'), CertificateController.verifyCertificate);
 
 // Get student certificates (Admin, Faculty, and the student themselves)
 router.get('/student/:studentID', authenticateToken, CertificateController.getStudentCertificates);

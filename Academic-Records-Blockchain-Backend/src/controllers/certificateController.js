@@ -76,27 +76,72 @@ class CertificateController {
         }
     }
 
-    // Verify certificate
+    // PDF-Blockchain Cryptographic Verification (verify by file or hash)
     static async verifyCertificate(req, res) {
         const gateway = new FabricGateway();
 
         try {
-            const { certificateID, pdfHash } = req.body;
+            let { pdfHash } = req.body;
+
+            // If user uploaded the file instead of providing the hash directly
+            if (!pdfHash && req.file) {
+                const crypto = require('crypto');
+                const fs = require('fs');
+                const fileBuffer = fs.readFileSync(req.file.path);
+                pdfHash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+                fs.unlinkSync(req.file.path); // Clean up the temp file
+            }
+
+            if (!pdfHash) {
+                return res.status(400).json({
+                    success: false,
+                    message: "PDF hash or uploaded file is required for verification."
+                });
+            }
+
             // Use admin for anonymous verification, or authenticated user if available
             const userId = req.user ? req.user.userId : 'admin';
-
             await gateway.connect(userId);
 
-            const result = await gateway.evaluateTransaction(
-                'VerifyCertificate',
-                certificateID,
-                pdfHash
-            );
+            try {
+                // Request the blockchain to verify if this cryptographic fingerprint exists
+                const result = await gateway.evaluateTransaction('VerifyCertificateByHash', pdfHash);
+                const certificate = JSON.parse(result.toString());
 
-            res.status(200).json({
-                success: true,
-                data: result
-            });
+                // Condition 2: Authentic but Invalid (Revoked)
+                if (certificate.revoked) {
+                    return res.status(200).json({
+                        success: true,
+                        message: "⚠️ Document is Authentic but INVALID (Revoked). " + (certificate.revocationReason || ""),
+                        data: {
+                            status: "REVOKED",
+                            certificate
+                        }
+                    });
+                }
+
+                // Condition 1: Authentic and Valid
+                return res.status(200).json({
+                    success: true,
+                    message: "✅ Document is Authentic and Valid",
+                    data: {
+                        status: "VALID",
+                        certificate
+                    }
+                });
+            } catch (error) {
+                // Condition 3: Fake or Modified
+                if (error.message.includes("no certificate found matching the provided hash")) {
+                    return res.status(200).json({
+                        success: false,
+                        message: "❌ Document is Fake or has been Modified (Fingerprint not securely registered on ledger).",
+                        data: {
+                            status: "FAKE"
+                        }
+                    });
+                }
+                throw error;
+            }
         } catch (error) {
             logger.error(`Error verifying certificate: ${error.message}`);
             res.status(500).json({
