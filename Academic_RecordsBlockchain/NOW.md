@@ -34,7 +34,7 @@ docker run --rm --network host \
   hyperledger/fabric-tools:2.5 \
   osnadmin channel join --channelID academic-records-channel \
   --config-block /tmp/channel-artifacts/academic-records-channel.block \
-  -o localhost:7053 \
+  -o localhost:8053 \
   --ca-file /organizations/ordererOrganizations/nitw.edu/orderers/orderer2.nitw.edu/tls/ca.crt \
   --client-cert /organizations/ordererOrganizations/nitw.edu/orderers/orderer2.nitw.edu/tls/server.crt \
   --client-key /organizations/ordererOrganizations/nitw.edu/orderers/orderer2.nitw.edu/tls/server.key
@@ -49,7 +49,7 @@ docker run --rm --network host \
   hyperledger/fabric-tools:2.5 \
   osnadmin channel join --channelID academic-records-channel \
   --config-block /tmp/channel-artifacts/academic-records-channel.block \
-  -o localhost:7053 \
+  -o localhost:9053 \
   --ca-file /organizations/ordererOrganizations/nitw.edu/orderers/orderer3.nitw.edu/tls/ca.crt \
   --client-cert /organizations/ordererOrganizations/nitw.edu/orderers/orderer3.nitw.edu/tls/server.crt \
   --client-key /organizations/ordererOrganizations/nitw.edu/orderers/orderer3.nitw.edu/tls/server.key
@@ -61,10 +61,15 @@ docker run --rm --network host \
 ## 🟢 ALL PEER SYSTEMS (4–12) — Same 4 Steps
 
 > ⚠️ **First, get the channel block from System 1 (Bhargav):**
-> Ask Bhargav to run this on his machine, then send you the file or SCP it:
+> Ask Bhargav to run this on his machine for each of you (replace `<THEIR_USER>` and `<THEIR_IP>`):
 > ```bash
-> # Bhargav sends the block to your IP — replace YOUR_IP and YOUR_USER
-> scp channel-artifacts/academic-records-channel.block YOUR_USER@YOUR_IP:~/Academic_RecordsBlockchain/Academic_RecordsBlockchain/channel-artifacts/
+> # Bhargav runs this once per person — replace THEIR_USER and THEIR_IP
+> scp channel-artifacts/academic-records-channel.block <THEIR_USER>@<THEIR_IP>:~/Academic_RecordsBlockchain/Academic_RecordsBlockchain/channel-artifacts/
+> ```
+> **OR** each person can pull from Bhargav directly:
+> ```bash
+> mkdir -p channel-artifacts
+> scp bhargav-patil@172.20.233.222:~/Academic_RecordsBlockchain/Academic_RecordsBlockchain/channel-artifacts/academic-records-channel.block channel-artifacts/
 > ```
 
 ### Step 1 — Pull latest code
