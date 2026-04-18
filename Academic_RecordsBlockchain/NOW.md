@@ -4,26 +4,55 @@
 
 ---
 
-## 🔵 SYSTEMS 1, 2, 3 — Orderers (Bhargav, Nithin, Rahul)
+## 🔵 SYSTEMS 1, 2, 3 — Orderers (Bhargav, Atul, Vindhya)
 
 **Goal: Join the Raft channel.**
 
+> Run ALL commands from: `~/Academic_RecordsBlockchain/Academic_RecordsBlockchain`
+
 ### System 1 (Bhargav — orderer1):
 ```bash
-docker cp channel-artifacts/academic-records-channel.block orderer1.nitw.edu:/tmp/academic-records-channel.block
-docker exec orderer1.nitw.edu osnadmin channel join --channelID academic-records-channel --config-block /tmp/academic-records-channel.block -o 127.0.0.1:7053 --ca-file /var/hyperledger/orderer/tls/ca.crt --client-cert /var/hyperledger/orderer/tls/server.crt --client-key /var/hyperledger/orderer/tls/server.key
+cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
+docker run --rm --network host \
+  -v $(pwd)/channel-artifacts:/tmp/channel-artifacts \
+  -v $(pwd)/organizations:/organizations \
+  hyperledger/fabric-tools:2.5 \
+  osnadmin channel join --channelID academic-records-channel \
+  --config-block /tmp/channel-artifacts/academic-records-channel.block \
+  -o localhost:7053 \
+  --ca-file /organizations/ordererOrganizations/nitw.edu/orderers/orderer1.nitw.edu/tls/ca.crt \
+  --client-cert /organizations/ordererOrganizations/nitw.edu/orderers/orderer1.nitw.edu/tls/server.crt \
+  --client-key /organizations/ordererOrganizations/nitw.edu/orderers/orderer1.nitw.edu/tls/server.key
 ```
 
-### System 2 (Nithin — orderer2):
+### System 2 (Atul — orderer2):
 ```bash
-docker cp channel-artifacts/academic-records-channel.block orderer2.nitw.edu:/tmp/academic-records-channel.block
-docker exec orderer2.nitw.edu osnadmin channel join --channelID academic-records-channel --config-block /tmp/academic-records-channel.block -o 127.0.0.1:7053 --ca-file /var/hyperledger/orderer/tls/ca.crt --client-cert /var/hyperledger/orderer/tls/server.crt --client-key /var/hyperledger/orderer/tls/server.key
+cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
+docker run --rm --network host \
+  -v $(pwd)/channel-artifacts:/tmp/channel-artifacts \
+  -v $(pwd)/organizations:/organizations \
+  hyperledger/fabric-tools:2.5 \
+  osnadmin channel join --channelID academic-records-channel \
+  --config-block /tmp/channel-artifacts/academic-records-channel.block \
+  -o localhost:7053 \
+  --ca-file /organizations/ordererOrganizations/nitw.edu/orderers/orderer2.nitw.edu/tls/ca.crt \
+  --client-cert /organizations/ordererOrganizations/nitw.edu/orderers/orderer2.nitw.edu/tls/server.crt \
+  --client-key /organizations/ordererOrganizations/nitw.edu/orderers/orderer2.nitw.edu/tls/server.key
 ```
 
-### System 3 (Rahul — orderer3):
+### System 3 (Vindhya — orderer3):
 ```bash
-docker cp channel-artifacts/academic-records-channel.block orderer3.nitw.edu:/tmp/academic-records-channel.block
-docker exec orderer3.nitw.edu osnadmin channel join --channelID academic-records-channel --config-block /tmp/academic-records-channel.block -o 127.0.0.1:7053 --ca-file /var/hyperledger/orderer/tls/ca.crt --client-cert /var/hyperledger/orderer/tls/server.crt --client-key /var/hyperledger/orderer/tls/server.key
+cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
+docker run --rm --network host \
+  -v $(pwd)/channel-artifacts:/tmp/channel-artifacts \
+  -v $(pwd)/organizations:/organizations \
+  hyperledger/fabric-tools:2.5 \
+  osnadmin channel join --channelID academic-records-channel \
+  --config-block /tmp/channel-artifacts/academic-records-channel.block \
+  -o localhost:7053 \
+  --ca-file /organizations/ordererOrganizations/nitw.edu/orderers/orderer3.nitw.edu/tls/ca.crt \
+  --client-cert /organizations/ordererOrganizations/nitw.edu/orderers/orderer3.nitw.edu/tls/server.crt \
+  --client-key /organizations/ordererOrganizations/nitw.edu/orderers/orderer3.nitw.edu/tls/server.key
 ```
 > ✅ Done? Tell System 4 (Aditi) "orderers ready"
 
