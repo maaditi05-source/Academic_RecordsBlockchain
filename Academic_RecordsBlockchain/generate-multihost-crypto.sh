@@ -14,9 +14,11 @@ export PATH=${PWD}/bin:$PATH
 CHANNEL_NAME="academic-records-channel"
 
 printHeader "🧹 Cleaning old network and artifacts..."
-# We use the old monolith to clean just in case
-if [ -f "docker/docker-compose-net.yaml" ]; then
-    docker compose -f docker/docker-compose-net.yaml down --volumes --remove-orphans 2>/dev/null
+if [ -f "docker/docker-compose-orderer1.yaml" ]; then
+    docker-compose -f docker/docker-compose-orderer1.yaml down --volumes --remove-orphans 2>/dev/null
+    docker-compose -f docker/docker-compose-nitwarangal-peer0.yaml down --volumes --remove-orphans 2>/dev/null
+    docker-compose -f docker/docker-compose-depts-cse.yaml down --volumes --remove-orphans 2>/dev/null
+    docker-compose -f docker/docker-compose-verifiers-peer0.yaml down --volumes --remove-orphans 2>/dev/null
 fi
 docker ps -aq | xargs -r docker rm -f 2>/dev/null || true
 docker network ls | grep "nit-warangal-network" | awk '{print $1}' | xargs -r docker network rm 2>/dev/null || true
@@ -24,9 +26,11 @@ rm -rf organizations channel-artifacts system-genesis-block *.tar.gz multihost-c
 mkdir -p channel-artifacts system-genesis-block
 
 printHeader "🧬 Starting CAs to generate identities..."
-# Only start the CAs using the individual files but combining them, or just use the monolithic file for the CAs.
-# The monolithic is easiest for CAs locally.
-docker-compose -f docker/docker-compose-net.yaml up -d ca_orderer ca_nitwarangal ca_departments ca_verifiers
+# Start the CAs using their respective actual docker compose files
+docker-compose -f docker/docker-compose-orderer1.yaml up -d ca_orderer
+docker-compose -f docker/docker-compose-nitwarangal-peer0.yaml up -d ca_nitwarangal
+docker-compose -f docker/docker-compose-depts-cse.yaml up -d ca_departments
+docker-compose -f docker/docker-compose-verifiers-peer0.yaml up -d ca_verifiers
 
 infoln "Waiting for Fabric CAs to initialize..."
 sleep 10
@@ -47,7 +51,10 @@ configtxgen -profile AcademicRecordsChannel -outputBlock ./channel-artifacts/${C
 unset FABRIC_CFG_PATH
 
 printHeader "🛑 Stopping CAs..."
-docker-compose -f docker/docker-compose-net.yaml stop ca_orderer ca_nitwarangal ca_departments ca_verifiers
+docker-compose -f docker/docker-compose-orderer1.yaml stop ca_orderer
+docker-compose -f docker/docker-compose-nitwarangal-peer0.yaml stop ca_nitwarangal
+docker-compose -f docker/docker-compose-depts-cse.yaml stop ca_departments
+docker-compose -f docker/docker-compose-verifiers-peer0.yaml stop ca_verifiers
 
 printHeader "📦 Packaging crypto material..."
 # Package both organizations and channel-artifacts into a single file
