@@ -72,6 +72,9 @@ function createNITWarangal() {
   mkdir -p "${PWD}/organizations/peerOrganizations/nitwarangal.nitw.edu/msp/tlscacerts"
   cp "${PWD}/organizations/fabric-ca/nitwarangal/ca-cert.pem" "${PWD}/organizations/peerOrganizations/nitwarangal.nitw.edu/msp/tlscacerts/ca.crt"
 
+  mkdir -p "${PWD}/organizations/peerOrganizations/nitwarangal.nitw.edu/msp/cacerts"
+  cp "${PWD}/organizations/fabric-ca/nitwarangal/ca-cert.pem" "${PWD}/organizations/peerOrganizations/nitwarangal.nitw.edu/msp/cacerts/localhost-8054-ca-nitwarangal.pem"
+
   mkdir -p "${PWD}/organizations/peerOrganizations/nitwarangal.nitw.edu/tlsca"
   cp "${PWD}/organizations/fabric-ca/nitwarangal/ca-cert.pem" "${PWD}/organizations/peerOrganizations/nitwarangal.nitw.edu/tlsca/tlsca.nitwarangal.nitw.edu-cert.pem"
 
@@ -147,6 +150,10 @@ function createDepartments() {
   # Copy the CA cert to the organization MSP
   mkdir -p "${PWD}/organizations/peerOrganizations/departments.nitw.edu/msp/tlscacerts"
   cp "${PWD}/organizations/fabric-ca/departments/ca-cert.pem" "${PWD}/organizations/peerOrganizations/departments.nitw.edu/msp/tlscacerts/ca.crt"
+  
+  mkdir -p "${PWD}/organizations/peerOrganizations/departments.nitw.edu/msp/cacerts"
+  cp "${PWD}/organizations/fabric-ca/departments/ca-cert.pem" "${PWD}/organizations/peerOrganizations/departments.nitw.edu/msp/cacerts/localhost-9054-ca-departments.pem"
+
   mkdir -p "${PWD}/organizations/peerOrganizations/departments.nitw.edu/tlsca"
   cp "${PWD}/organizations/fabric-ca/departments/ca-cert.pem" "${PWD}/organizations/peerOrganizations/departments.nitw.edu/tlsca/tlsca.departments.nitw.edu-cert.pem"
   mkdir -p "${PWD}/organizations/peerOrganizations/departments.nitw.edu/ca"
@@ -208,6 +215,10 @@ function createVerifiers() {
   # Copy the CA cert to the organization MSP
   mkdir -p "${PWD}/organizations/peerOrganizations/verifiers.nitw.edu/msp/tlscacerts"
   cp "${PWD}/organizations/fabric-ca/verifiers/ca-cert.pem" "${PWD}/organizations/peerOrganizations/verifiers.nitw.edu/msp/tlscacerts/ca.crt"
+  
+  mkdir -p "${PWD}/organizations/peerOrganizations/verifiers.nitw.edu/msp/cacerts"
+  cp "${PWD}/organizations/fabric-ca/verifiers/ca-cert.pem" "${PWD}/organizations/peerOrganizations/verifiers.nitw.edu/msp/cacerts/localhost-11054-ca-verifiers.pem"
+
   mkdir -p "${PWD}/organizations/peerOrganizations/verifiers.nitw.edu/tlsca"
   cp "${PWD}/organizations/fabric-ca/verifiers/ca-cert.pem" "${PWD}/organizations/peerOrganizations/verifiers.nitw.edu/tlsca/tlsca.verifiers.nitw.edu-cert.pem"
   mkdir -p "${PWD}/organizations/peerOrganizations/verifiers.nitw.edu/ca"
@@ -263,6 +274,9 @@ function createOrderer() {
   # Copy the CA cert to the organization MSP
   mkdir -p "${PWD}/organizations/ordererOrganizations/nitw.edu/msp/tlscacerts"
   cp "${PWD}/organizations/fabric-ca/ordererOrg/ca-cert.pem" "${PWD}/organizations/ordererOrganizations/nitw.edu/msp/tlscacerts/tlsca.nitw.edu-cert.pem"
+
+  mkdir -p "${PWD}/organizations/ordererOrganizations/nitw.edu/msp/cacerts"
+  cp "${PWD}/organizations/fabric-ca/ordererOrg/ca-cert.pem" "${PWD}/organizations/ordererOrganizations/nitw.edu/msp/cacerts/localhost-7054-ca-orderer.pem"
 
   mkdir -p "${PWD}/organizations/ordererOrganizations/nitw.edu/tlsca"
   cp "${PWD}/organizations/fabric-ca/ordererOrg/ca-cert.pem" "${PWD}/organizations/ordererOrganizations/nitw.edu/tlsca/tlsca.nitw.edu-cert.pem"
