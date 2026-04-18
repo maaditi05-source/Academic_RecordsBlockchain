@@ -16,15 +16,15 @@
 ║                                                                           ║
 ║  System 01 ┃ orderer1.nitw.edu:7050                                       ║
 ║            ┃ Raft PRIMARY + CA Orderer (:7054) + Admin API (:7053)         ║
-║            ┃ Docker: docker-compose-orderer1.yaml                         ║
+║            ┃ Docker: docker compose-orderer1.yaml                         ║
 ║                                                                           ║
 ║  System 02 ┃ orderer2.nitw.edu:8050                                       ║
 ║            ┃ Raft FOLLOWER                                                ║
-║            ┃ Docker: docker-compose-orderer2.yaml                         ║
+║            ┃ Docker: docker compose-orderer2.yaml                         ║
 ║                                                                           ║
 ║  System 03 ┃ orderer3.nitw.edu:9050                                       ║
 ║            ┃ Raft FOLLOWER                                                ║
-║            ┃ Docker: docker-compose-orderer3.yaml                         ║
+║            ┃ Docker: docker compose-orderer3.yaml                         ║
 ║                                                                           ║
 ╚═══════════════════════════════════════════════════════════════════════════╝
 
@@ -33,17 +33,17 @@
 ║  System 04 ┃ peer0.nitwarangal.nitw.edu:7051  (ANCHOR PEER)              ║
 ║            ┃ University Admin — AdminFinalApprove, AdminRevokeRecord      ║
 ║            ┃ CA NITWarangal (:8054) + CouchDB (:5984)                    ║
-║            ┃ Docker: docker-compose-nitwarangal-peer0.yaml                ║
+║            ┃ Docker: docker compose-nitwarangal-peer0.yaml                ║
 ║                                                                           ║
 ║  System 05 ┃ peer1.nitwarangal.nitw.edu:7151                             ║
 ║            ┃ Exam Section — ExamSectionApprove, grade locking             ║
 ║            ┃ CouchDB (:5985)                                             ║
-║            ┃ Docker: docker-compose-nitwarangal-peer1.yaml                ║
+║            ┃ Docker: docker compose-nitwarangal-peer1.yaml                ║
 ║                                                                           ║
 ║  System 06 ┃ peer2.nitwarangal.nitw.edu:7251                             ║
 ║            ┃ Dean Academic — DeanAcademicApprove                          ║
 ║            ┃ CouchDB (:5986)                                             ║
-║            ┃ Docker: docker-compose-nitwarangal-peer2.yaml                ║
+║            ┃ Docker: docker compose-nitwarangal-peer2.yaml                ║
 ║                                                                           ║
 ╚═══════════════════════════════════════════════════════════════════════════╝
 
@@ -52,22 +52,22 @@
 ║  System 07 ┃ peer0.cse.departments.nitw.edu:9051  (ANCHOR PEER)          ║
 ║            ┃ CSE HOD — HODApprove                                         ║
 ║            ┃ CA Departments (:9054) + CouchDB (:5987)                    ║
-║            ┃ Docker: docker-compose-depts-cse.yaml                        ║
+║            ┃ Docker: docker compose-depts-cse.yaml                        ║
 ║                                                                           ║
 ║  System 08 ┃ peer1.cse.departments.nitw.edu:9151                         ║
 ║            ┃ CSE Faculty Advisor — CreateAcademicRecord, FacultyApprove   ║
 ║            ┃ CouchDB (:5988)                                             ║
-║            ┃ Docker: docker-compose-depts-cse-faculty.yaml                ║
+║            ┃ Docker: docker compose-depts-cse-faculty.yaml                ║
 ║                                                                           ║
 ║  System 09 ┃ peer0.ece.departments.nitw.edu:9251                         ║
 ║            ┃ ECE HOD — HODApprove                                         ║
 ║            ┃ CouchDB (:5989)                                             ║
-║            ┃ Docker: docker-compose-depts-ece.yaml                        ║
+║            ┃ Docker: docker compose-depts-ece.yaml                        ║
 ║                                                                           ║
 ║  System 10 ┃ peer1.ece.departments.nitw.edu:9351                         ║
 ║            ┃ ECE Faculty Advisor — CreateAcademicRecord, FacultyApprove   ║
 ║            ┃ CouchDB (:5990)                                             ║
-║            ┃ Docker: docker-compose-depts-ece-faculty.yaml                ║
+║            ┃ Docker: docker compose-depts-ece-faculty.yaml                ║
 ║                                                                           ║
 ╚═══════════════════════════════════════════════════════════════════════════╝
 
@@ -76,12 +76,12 @@
 ║  System 11 ┃ peer0.verifiers.nitw.edu:11051  (ANCHOR PEER)               ║
 ║            ┃ Primary Verifier — VerifyCertificateByHash                   ║
 ║            ┃ CA Verifiers (:11054) + CouchDB (:5991)                     ║
-║            ┃ Docker: docker-compose-verifiers-peer0.yaml                  ║
+║            ┃ Docker: docker compose-verifiers-peer0.yaml                  ║
 ║                                                                           ║
 ║  System 12 ┃ peer1.verifiers.nitw.edu:11151                              ║
 ║            ┃ Secondary Verifier (HA)                                      ║
 ║            ┃ CouchDB (:5992)                                             ║
-║            ┃ Docker: docker-compose-verifiers-peer1.yaml                  ║
+║            ┃ Docker: docker compose-verifiers-peer1.yaml                  ║
 ║                                                                           ║
 ╚═══════════════════════════════════════════════════════════════════════════╝
 
@@ -195,11 +195,11 @@ EOF'
 
 ```bash
 # System 01
-docker-compose -f docker/docker-compose-orderer1.yaml up -d
+docker compose -f docker/docker compose-orderer1.yaml up -d
 # System 02
-docker-compose -f docker/docker-compose-orderer2.yaml up -d
+docker compose -f docker/docker compose-orderer2.yaml up -d
 # System 03
-docker-compose -f docker/docker-compose-orderer3.yaml up -d
+docker compose -f docker/docker compose-orderer3.yaml up -d
 ```
 
 > ⏳ Wait 10 seconds for Raft leader election.
@@ -208,33 +208,33 @@ docker-compose -f docker/docker-compose-orderer3.yaml up -d
 
 ```bash
 # System 04 — Admin (Anchor Peer + CA)
-docker-compose -f docker/docker-compose-nitwarangal-peer0.yaml up -d
+docker compose -f docker/docker compose-nitwarangal-peer0.yaml up -d
 # System 05 — Exam Section
-docker-compose -f docker/docker-compose-nitwarangal-peer1.yaml up -d
+docker compose -f docker/docker compose-nitwarangal-peer1.yaml up -d
 # System 06 — Dean Academic
-docker-compose -f docker/docker-compose-nitwarangal-peer2.yaml up -d
+docker compose -f docker/docker compose-nitwarangal-peer2.yaml up -d
 ```
 
 ### Step 3: Department Peers (Systems 07, 08, 09, 10)
 
 ```bash
 # System 07 — CSE HOD (Anchor Peer + CA)
-docker-compose -f docker/docker-compose-depts-cse.yaml up -d
+docker compose -f docker/docker compose-depts-cse.yaml up -d
 # System 08 — CSE Faculty Advisor
-docker-compose -f docker/docker-compose-depts-cse-faculty.yaml up -d
+docker compose -f docker/docker compose-depts-cse-faculty.yaml up -d
 # System 09 — ECE HOD
-docker-compose -f docker/docker-compose-depts-ece.yaml up -d
+docker compose -f docker/docker compose-depts-ece.yaml up -d
 # System 10 — ECE Faculty Advisor
-docker-compose -f docker/docker-compose-depts-ece-faculty.yaml up -d
+docker compose -f docker/docker compose-depts-ece-faculty.yaml up -d
 ```
 
 ### Step 4: Verifier Peers (Systems 11, 12)
 
 ```bash
 # System 11 — Primary Verifier (Anchor Peer + CA)
-docker-compose -f docker/docker-compose-verifiers-peer0.yaml up -d
+docker compose -f docker/docker compose-verifiers-peer0.yaml up -d
 # System 12 — Secondary Verifier
-docker-compose -f docker/docker-compose-verifiers-peer1.yaml up -d
+docker compose -f docker/docker compose-verifiers-peer1.yaml up -d
 ```
 
 > ⏳ Wait 15 seconds for gossip discovery.
@@ -327,18 +327,18 @@ Admin (System 04) can revoke **any** record at **any** status via `AdminRevokeRe
 
 | File | System | Services |
 |------|--------|----------|
-| `docker-compose-orderer1.yaml` | 01 | orderer1 + ca_orderer |
-| `docker-compose-orderer2.yaml` | 02 | orderer2 |
-| `docker-compose-orderer3.yaml` | 03 | orderer3 |
-| `docker-compose-nitwarangal-peer0.yaml` | 04 | peer0 + ca_nitwarangal + couchdb |
-| `docker-compose-nitwarangal-peer1.yaml` | 05 | peer1 + couchdb |
-| `docker-compose-nitwarangal-peer2.yaml` | 06 | peer2 + couchdb |
-| `docker-compose-depts-cse.yaml` | 07 | peer0.cse + ca_departments + couchdb |
-| `docker-compose-depts-cse-faculty.yaml` | 08 | peer1.cse + couchdb |
-| `docker-compose-depts-ece.yaml` | 09 | peer0.ece + couchdb |
-| `docker-compose-depts-ece-faculty.yaml` | 10 | peer1.ece + couchdb |
-| `docker-compose-verifiers-peer0.yaml` | 11 | peer0 + ca_verifiers + couchdb |
-| `docker-compose-verifiers-peer1.yaml` | 12 | peer1 + couchdb |
+| `docker compose-orderer1.yaml` | 01 | orderer1 + ca_orderer |
+| `docker compose-orderer2.yaml` | 02 | orderer2 |
+| `docker compose-orderer3.yaml` | 03 | orderer3 |
+| `docker compose-nitwarangal-peer0.yaml` | 04 | peer0 + ca_nitwarangal + couchdb |
+| `docker compose-nitwarangal-peer1.yaml` | 05 | peer1 + couchdb |
+| `docker compose-nitwarangal-peer2.yaml` | 06 | peer2 + couchdb |
+| `docker compose-depts-cse.yaml` | 07 | peer0.cse + ca_departments + couchdb |
+| `docker compose-depts-cse-faculty.yaml` | 08 | peer1.cse + couchdb |
+| `docker compose-depts-ece.yaml` | 09 | peer0.ece + couchdb |
+| `docker compose-depts-ece-faculty.yaml` | 10 | peer1.ece + couchdb |
+| `docker compose-verifiers-peer0.yaml` | 11 | peer0 + ca_verifiers + couchdb |
+| `docker compose-verifiers-peer1.yaml` | 12 | peer1 + couchdb |
 
 ---
 

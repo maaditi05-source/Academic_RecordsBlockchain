@@ -23,7 +23,7 @@
 ```bash
 # 1. Install Docker
 sudo apt-get update
-sudo apt-get install -y docker.io docker-compose curl git jq build-essential
+sudo apt-get install -y docker.io docker compose curl git jq build-essential
 sudo systemctl start docker && sudo systemctl enable docker
 sudo usermod -aG docker $USER
 # LOG OUT AND LOG BACK IN after this step
@@ -108,7 +108,7 @@ scp multihost-crypto-bundle.tar.gz user@172.20.252.188:~/Academic_RecordsBlockch
 **Step 5:** Start the orderer1 Docker containers.
 ```bash
 source env.sh
-docker-compose -f docker/docker-compose-orderer1.yaml up -d
+docker compose -f docker/docker compose-orderer1.yaml up -d
 ```
 
 **Step 6:** Wait for ALL other systems (02–12) to confirm their containers are running. Then wait at least 15 seconds for gossip discovery.
@@ -140,7 +140,7 @@ npm run dev
 cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
 tar -xzvf multihost-crypto-bundle.tar.gz
 source env.sh
-docker-compose -f docker/docker-compose-orderer2.yaml up -d
+docker compose -f docker/docker compose-orderer2.yaml up -d
 ```
 
 **Step 3:** Confirm container is running: `docker ps`. Tell System 1 you are ready.
@@ -156,7 +156,7 @@ docker-compose -f docker/docker-compose-orderer2.yaml up -d
 cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
 tar -xzvf multihost-crypto-bundle.tar.gz
 source env.sh
-docker-compose -f docker/docker-compose-orderer3.yaml up -d
+docker compose -f docker/docker compose-orderer3.yaml up -d
 ```
 
 **Step 3:** Confirm container is running: `docker ps`. Tell System 1 you are ready.
@@ -172,7 +172,7 @@ docker-compose -f docker/docker-compose-orderer3.yaml up -d
 cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
 tar -xzvf multihost-crypto-bundle.tar.gz
 source env.sh
-docker-compose -f docker/docker-compose-nitwarangal-peer0.yaml up -d
+docker compose -f docker/docker compose-nitwarangal-peer0.yaml up -d
 ```
 
 **Step 3:** Confirm container is running: `docker ps`. Tell System 1 you are ready.
@@ -196,7 +196,7 @@ npm run dev
 cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
 tar -xzvf multihost-crypto-bundle.tar.gz
 source env.sh
-docker-compose -f docker/docker-compose-nitwarangal-peer1.yaml up -d
+docker compose -f docker/docker compose-nitwarangal-peer1.yaml up -d
 ```
 
 **Step 3:** Confirm: `docker ps`. Tell System 1 you are ready.
@@ -220,7 +220,7 @@ npm run dev
 cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
 tar -xzvf multihost-crypto-bundle.tar.gz
 source env.sh
-docker-compose -f docker/docker-compose-nitwarangal-peer2.yaml up -d
+docker compose -f docker/docker compose-nitwarangal-peer2.yaml up -d
 ```
 
 **Step 3:** Confirm: `docker ps`. Tell System 1 you are ready.
@@ -244,7 +244,7 @@ npm run dev
 cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
 tar -xzvf multihost-crypto-bundle.tar.gz
 source env.sh
-docker-compose -f docker/docker-compose-depts-cse.yaml up -d
+docker compose -f docker/docker compose-depts-cse.yaml up -d
 ```
 
 **Step 3:** Confirm: `docker ps`. Tell System 1 you are ready.
@@ -268,7 +268,7 @@ npm run dev
 cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
 tar -xzvf multihost-crypto-bundle.tar.gz
 source env.sh
-docker-compose -f docker/docker-compose-depts-cse-faculty.yaml up -d
+docker compose -f docker/docker compose-depts-cse-faculty.yaml up -d
 ```
 
 **Step 3:** Confirm: `docker ps`. Tell System 1 you are ready.
@@ -292,7 +292,7 @@ npm run dev
 cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
 tar -xzvf multihost-crypto-bundle.tar.gz
 source env.sh
-docker-compose -f docker/docker-compose-depts-ece.yaml up -d
+docker compose -f docker/docker compose-depts-ece.yaml up -d
 ```
 
 **Step 3:** Confirm: `docker ps`. Tell System 1 you are ready.
@@ -316,7 +316,7 @@ npm run dev
 cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
 tar -xzvf multihost-crypto-bundle.tar.gz
 source env.sh
-docker-compose -f docker/docker-compose-depts-ece-faculty.yaml up -d
+docker compose -f docker/docker compose-depts-ece-faculty.yaml up -d
 ```
 
 **Step 3:** Confirm: `docker ps`. Tell System 1 you are ready.
@@ -340,7 +340,7 @@ npm run dev
 cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
 tar -xzvf multihost-crypto-bundle.tar.gz
 source env.sh
-docker-compose -f docker/docker-compose-verifiers-peer0.yaml up -d
+docker compose -f docker/docker compose-verifiers-peer0.yaml up -d
 ```
 
 **Step 3:** Confirm: `docker ps`. Tell System 1 you are ready.
@@ -364,7 +364,7 @@ npm run dev
 cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
 tar -xzvf multihost-crypto-bundle.tar.gz
 source env.sh
-docker-compose -f docker/docker-compose-verifiers-peer1.yaml up -d
+docker compose -f docker/docker compose-verifiers-peer1.yaml up -d
 ```
 
 **Step 3:** Confirm: `docker ps`. Tell System 1 you are ready.
