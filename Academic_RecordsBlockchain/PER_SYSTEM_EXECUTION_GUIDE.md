@@ -113,13 +113,13 @@ docker compose -f docker/docker compose-orderer1.yaml up -d
 
 **Step 6:** Wait for ALL other systems (02–12) to confirm their containers are running. Then wait at least 15 seconds for gossip discovery.
 
-**Step 7:** Create the channel and join all peers.
+**Step 7:** Create the channel and join (System 1 Only).
 ```bash
-chmod +x join-channel-multihost.sh
-./join-channel-multihost.sh
+docker cp channel-artifacts/academic-records-channel.block orderer1.nitw.edu:/tmp/academic-records-channel.block
+docker exec orderer1.nitw.edu osnadmin channel join --channelID academic-records-channel --config-block /tmp/academic-records-channel.block -o 127.0.0.1:7053 --ca-file /var/hyperledger/orderer/tls/ca.crt --client-cert /var/hyperledger/orderer/tls/server.crt --client-key /var/hyperledger/orderer/tls/server.key
 ```
 
-**Step 8:** Deploy the chaincode (this script handles packaging, installing, approving, and committing across all peers).
+**Step 8:** Commit the chaincode (Aditi on System 4 runs this ONLY after all 3 orgs approve the chaincode!).
 
 **Step 9:** ONLY after the blockchain is fully running, start the backend on this system (if needed).
 ```bash
@@ -145,6 +145,12 @@ docker compose -f docker/docker compose-orderer2.yaml up -d
 
 **Step 3:** Confirm container is running: `docker ps`. Tell System 1 you are ready.
 
+**Step 4:** Join the channel.
+```bash
+docker cp channel-artifacts/academic-records-channel.block orderer2.nitw.edu:/tmp/academic-records-channel.block
+docker exec orderer2.nitw.edu osnadmin channel join --channelID academic-records-channel --config-block /tmp/academic-records-channel.block -o 127.0.0.1:7053 --ca-file /var/hyperledger/orderer/tls/ca.crt --client-cert /var/hyperledger/orderer/tls/server.crt --client-key /var/hyperledger/orderer/tls/server.key
+```
+
 ---
 
 ## 💻 SYSTEM 3: Orderer 3 (172.20.241.65)
@@ -160,6 +166,12 @@ docker compose -f docker/docker compose-orderer3.yaml up -d
 ```
 
 **Step 3:** Confirm container is running: `docker ps`. Tell System 1 you are ready.
+
+**Step 4:** Join the channel.
+```bash
+docker cp channel-artifacts/academic-records-channel.block orderer3.nitw.edu:/tmp/academic-records-channel.block
+docker exec orderer3.nitw.edu osnadmin channel join --channelID academic-records-channel --config-block /tmp/academic-records-channel.block -o 127.0.0.1:7053 --ca-file /var/hyperledger/orderer/tls/ca.crt --client-cert /var/hyperledger/orderer/tls/server.crt --client-key /var/hyperledger/orderer/tls/server.key
+```
 
 ---
 
@@ -177,7 +189,15 @@ docker compose -f docker/docker compose-nitwarangal-peer0.yaml up -d
 
 **Step 3:** Confirm container is running: `docker ps`. Tell System 1 you are ready.
 
-**Step 4:** ONLY AFTER System 1 has completed channel join and chaincode deployment:
+**Step 4:** Join the network and install chaincode.
+```bash
+git pull
+chmod +x run-cli.sh
+./run-cli.sh peer channel join -b /tmp/channel-artifacts/academic-records-channel.block
+./run-cli.sh peer lifecycle chaincode install /opt/gopath/src/github.com/hyperledger/fabric/peer/chaincode-go/academic_records_2.0.tar.gz
+```
+
+**Step 5:** Start the backend
 ```bash
 cd ~/Academic_RecordsBlockchain/Academic-Records-Blockchain-Backend
 npm install
@@ -201,7 +221,15 @@ docker compose -f docker/docker compose-nitwarangal-peer1.yaml up -d
 
 **Step 3:** Confirm: `docker ps`. Tell System 1 you are ready.
 
-**Step 4:** After chaincode deployment:
+**Step 4:** Join the network and install chaincode.
+```bash
+git pull
+chmod +x run-cli.sh
+./run-cli.sh peer channel join -b /tmp/channel-artifacts/academic-records-channel.block
+./run-cli.sh peer lifecycle chaincode install /opt/gopath/src/github.com/hyperledger/fabric/peer/chaincode-go/academic_records_2.0.tar.gz
+```
+
+**Step 5:** Start the backend
 ```bash
 cd ~/Academic_RecordsBlockchain/Academic-Records-Blockchain-Backend
 npm install
@@ -225,7 +253,15 @@ docker compose -f docker/docker compose-nitwarangal-peer2.yaml up -d
 
 **Step 3:** Confirm: `docker ps`. Tell System 1 you are ready.
 
-**Step 4:** After chaincode deployment:
+**Step 4:** Join the network and install chaincode.
+```bash
+git pull
+chmod +x run-cli.sh
+./run-cli.sh peer channel join -b /tmp/channel-artifacts/academic-records-channel.block
+./run-cli.sh peer lifecycle chaincode install /opt/gopath/src/github.com/hyperledger/fabric/peer/chaincode-go/academic_records_2.0.tar.gz
+```
+
+**Step 5:** Start the backend
 ```bash
 cd ~/Academic_RecordsBlockchain/Academic-Records-Blockchain-Backend
 npm install
@@ -249,7 +285,15 @@ docker compose -f docker/docker compose-depts-cse.yaml up -d
 
 **Step 3:** Confirm: `docker ps`. Tell System 1 you are ready.
 
-**Step 4:** After chaincode deployment:
+**Step 4:** Join the network and install chaincode.
+```bash
+git pull
+chmod +x run-cli.sh
+./run-cli.sh peer channel join -b /tmp/channel-artifacts/academic-records-channel.block
+./run-cli.sh peer lifecycle chaincode install /opt/gopath/src/github.com/hyperledger/fabric/peer/chaincode-go/academic_records_2.0.tar.gz
+```
+
+**Step 5:** Start the backend
 ```bash
 cd ~/Academic_RecordsBlockchain/Academic-Records-Blockchain-Backend
 npm install
@@ -273,7 +317,15 @@ docker compose -f docker/docker compose-depts-cse-faculty.yaml up -d
 
 **Step 3:** Confirm: `docker ps`. Tell System 1 you are ready.
 
-**Step 4:** After chaincode deployment:
+**Step 4:** Join the network and install chaincode.
+```bash
+git pull
+chmod +x run-cli.sh
+./run-cli.sh peer channel join -b /tmp/channel-artifacts/academic-records-channel.block
+./run-cli.sh peer lifecycle chaincode install /opt/gopath/src/github.com/hyperledger/fabric/peer/chaincode-go/academic_records_2.0.tar.gz
+```
+
+**Step 5:** Start the backend
 ```bash
 cd ~/Academic_RecordsBlockchain/Academic-Records-Blockchain-Backend
 npm install
@@ -297,7 +349,15 @@ docker compose -f docker/docker compose-depts-ece.yaml up -d
 
 **Step 3:** Confirm: `docker ps`. Tell System 1 you are ready.
 
-**Step 4:** After chaincode deployment:
+**Step 4:** Join the network and install chaincode.
+```bash
+git pull
+chmod +x run-cli.sh
+./run-cli.sh peer channel join -b /tmp/channel-artifacts/academic-records-channel.block
+./run-cli.sh peer lifecycle chaincode install /opt/gopath/src/github.com/hyperledger/fabric/peer/chaincode-go/academic_records_2.0.tar.gz
+```
+
+**Step 5:** Start the backend
 ```bash
 cd ~/Academic_RecordsBlockchain/Academic-Records-Blockchain-Backend
 npm install
@@ -321,7 +381,15 @@ docker compose -f docker/docker compose-depts-ece-faculty.yaml up -d
 
 **Step 3:** Confirm: `docker ps`. Tell System 1 you are ready.
 
-**Step 4:** After chaincode deployment:
+**Step 4:** Join the network and install chaincode.
+```bash
+git pull
+chmod +x run-cli.sh
+./run-cli.sh peer channel join -b /tmp/channel-artifacts/academic-records-channel.block
+./run-cli.sh peer lifecycle chaincode install /opt/gopath/src/github.com/hyperledger/fabric/peer/chaincode-go/academic_records_2.0.tar.gz
+```
+
+**Step 5:** Start the backend
 ```bash
 cd ~/Academic_RecordsBlockchain/Academic-Records-Blockchain-Backend
 npm install
@@ -345,7 +413,15 @@ docker compose -f docker/docker compose-verifiers-peer0.yaml up -d
 
 **Step 3:** Confirm: `docker ps`. Tell System 1 you are ready.
 
-**Step 4:** After chaincode deployment:
+**Step 4:** Join the network and install chaincode.
+```bash
+git pull
+chmod +x run-cli.sh
+./run-cli.sh peer channel join -b /tmp/channel-artifacts/academic-records-channel.block
+./run-cli.sh peer lifecycle chaincode install /opt/gopath/src/github.com/hyperledger/fabric/peer/chaincode-go/academic_records_2.0.tar.gz
+```
+
+**Step 5:** Start the backend
 ```bash
 cd ~/Academic_RecordsBlockchain/Academic-Records-Blockchain-Backend
 npm install
@@ -369,7 +445,15 @@ docker compose -f docker/docker compose-verifiers-peer1.yaml up -d
 
 **Step 3:** Confirm: `docker ps`. Tell System 1 you are ready.
 
-**Step 4:** After chaincode deployment:
+**Step 4:** Join the network and install chaincode.
+```bash
+git pull
+chmod +x run-cli.sh
+./run-cli.sh peer channel join -b /tmp/channel-artifacts/academic-records-channel.block
+./run-cli.sh peer lifecycle chaincode install /opt/gopath/src/github.com/hyperledger/fabric/peer/chaincode-go/academic_records_2.0.tar.gz
+```
+
+**Step 5:** Start the backend
 ```bash
 cd ~/Academic_RecordsBlockchain/Academic-Records-Blockchain-Backend
 npm install
