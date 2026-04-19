@@ -12,11 +12,14 @@ const newRoles = ['faculty', 'hod', 'dac_member', 'exam_section', 'dean_academic
 
 newRoles.forEach(role => {
     if (!users.find(u => u.role === role)) {
+        // e.g. for role 'faculty', the password is 'faculty123'
+        const rolePass = bcrypt.hashSync(`${role}123`, SALT_ROUNDS);
+
         users.push({
             id: `${role}-mock`,
             username: `${role}_demo`,
             email: `${role}@nitw.ac.in`,
-            passwordHash: defaultPass,
+            passwordHash: rolePass,
             role: role,
             department: 'CSE',
             createdAt: new Date().toISOString(),
