@@ -51,7 +51,7 @@ services:
       - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
       - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
       - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:${ORDERER1_ADMIN_PORT:-7053}
-      - ORDERER_OPERATIONS_LISTENADDRESS=orderer1.nitw.edu:17050
+      - ORDERER_OPERATIONS_LISTENADDRESS=0.0.0.0:17050
       - ORDERER_METRICS_PROVIDER=prometheus
     working_dir: /root
     command: orderer

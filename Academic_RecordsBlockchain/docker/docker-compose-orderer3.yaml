@@ -35,7 +35,7 @@ services:
       - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
       - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
       - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:${ORDERER3_ADMIN_PORT:-9053}
-      - ORDERER_OPERATIONS_LISTENADDRESS=orderer3.nitw.edu:17052
+      - ORDERER_OPERATIONS_LISTENADDRESS=0.0.0.0:17052
     working_dir: /root
     command: orderer
     volumes:
