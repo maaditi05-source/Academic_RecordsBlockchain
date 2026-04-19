@@ -12,7 +12,7 @@
 |--------|--------|-----------|------|-----|
 | 4 | Aditi | `.env` (default) | 3000 | NITWarangalMSP |
 | 5 | Sejal | `.env.nitwarangal-peer1` | 3001 | NITWarangalMSP |
-| 6 | Shyamashree | — *(no backend, peer only)* | — | — |
+| 6 | Shyamashree | `.env.nitwarangal-peer2` | 3004 | NITWarangalMSP |
 | 7 | Shreya | `.env.departments` | 3000 | DepartmentsMSP |
 | 8 | Manasvi | `.env.cse` | 3002 | DepartmentsMSP |
 | 9 | Saim | `.env.ece` | 3003 | DepartmentsMSP |
@@ -48,6 +48,29 @@ npm run dev
 # Step 3: Start frontend (new terminal)
 cd ~/Academic-Records-Blockchain-Frontend
 # OR wherever your frontend folder is
+npm install
+npx ng serve
+```
+
+---
+
+## 💻 SYSTEM 6: Shyamashree (Dean — NITWarangalMSP)
+
+```bash
+# Step 1: Pull latest code
+cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
+git stash && git pull
+
+# Step 2: Start backend
+cd ~/Academic-Records-Blockchain-Backend
+git stash && git pull
+cp .env.nitwarangal-peer2 .env
+rm -rf wallet/*
+node src/importAdmin.js
+npm run dev
+
+# Step 3: Start frontend (new terminal)
+cd ~/Academic-Records-Blockchain-Frontend
 npm install
 npx ng serve
 ```
