@@ -398,7 +398,7 @@ func (s *SmartContract) CreateStudent(ctx contractapi.TransactionContextInterfac
 	}
 
 	// Get transaction timestamp
-	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
+	txTimestamp, err = ctx.GetStub().GetTxTimestamp()
 	if err != nil {
 		return fmt.Errorf("failed to get transaction timestamp: %v", err)
 	}
