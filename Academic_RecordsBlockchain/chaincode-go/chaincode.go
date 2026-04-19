@@ -315,8 +315,14 @@ func checkDepartmentAccess(ctx contractapi.TransactionContextInterface, departme
 func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) error {
 	fmt.Println("Initializing NIT Warangal Academic Records Blockchain - Production Version")
 
+	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
+	if err != nil {
+		return fmt.Errorf("failed to get tx timestamp: %v", err)
+	}
+	currentTime := time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos))
+
 	// Emit initialization event
-	err := ctx.GetStub().SetEvent("LedgerInitialized", []byte(time.Now().String()))
+	err = ctx.GetStub().SetEvent("LedgerInitialized", []byte(currentTime.String()))
 	if err != nil {
 		return fmt.Errorf("failed to set event: %v", err)
 	}
@@ -363,7 +369,11 @@ func (s *SmartContract) CreateStudent(ctx contractapi.TransactionContextInterfac
 	}
 
 	// Validate enrollment year (must be reasonable)
-	currentYear := time.Now().Year()
+	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
+	if err != nil {
+		return fmt.Errorf("failed to get tx timestamp: %v", err)
+	}
+	currentYear := time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos)).Year()
 	if enrollmentYear < 1950 || enrollmentYear > currentYear+1 {
 		return fmt.Errorf("invalid enrollment year %d", enrollmentYear)
 	}
@@ -2397,6 +2407,12 @@ func (s *SmartContract) CreateDepartment(ctx contractapi.TransactionContextInter
 		return fmt.Errorf("failed to get client ID: %v", err)
 	}
 
+	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
+	if err != nil {
+		return fmt.Errorf("failed to get tx timestamp: %v", err)
+	}
+	currentTime := time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos))
+
 	department := Department{
 		DepartmentID:   departmentID,
 		DepartmentName: departmentName,
@@ -2404,9 +2420,9 @@ func (s *SmartContract) CreateDepartment(ctx contractapi.TransactionContextInter
 		Email:          email,
 		Phone:          phone,
 		CreatedBy:      clientID,
-		CreatedAt:      time.Now(),
+		CreatedAt:      currentTime,
 		ModifiedBy:     clientID,
-		ModifiedAt:     time.Now(),
+		ModifiedAt:     currentTime,
 	}
 
 	departmentJSON, err := json.Marshal(department)
@@ -2534,8 +2550,14 @@ func (s *SmartContract) UpdateDepartment(ctx contractapi.TransactionContextInter
 		return fmt.Errorf("failed to get client ID: %v", err)
 	}
 
+	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
+	if err != nil {
+		return fmt.Errorf("failed to get tx timestamp: %v", err)
+	}
+	currentTime := time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos))
+
 	department.ModifiedBy = clientID
-	department.ModifiedAt = time.Now()
+	department.ModifiedAt = currentTime
 
 	departmentJSON, err := json.Marshal(department)
 	if err != nil {
@@ -2612,6 +2634,12 @@ func (s *SmartContract) CreateCourseOffering(ctx contractapi.TransactionContextI
 		return fmt.Errorf("failed to get client ID: %v", err)
 	}
 
+	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
+	if err != nil {
+		return fmt.Errorf("failed to get tx timestamp: %v", err)
+	}
+	currentTime := time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos))
+
 	offering := CourseOffering{
 		OfferingID:   offeringID,
 		DepartmentID: departmentID,
@@ -2622,9 +2650,9 @@ func (s *SmartContract) CreateCourseOffering(ctx contractapi.TransactionContextI
 		AcademicYear: academicYear,
 		IsActive:     true,
 		CreatedBy:    clientID,
-		CreatedAt:    time.Now(),
+		CreatedAt:    currentTime,
 		ModifiedBy:   clientID,
-		ModifiedAt:   time.Now(),
+		ModifiedAt:   currentTime,
 	}
 
 	offeringJSON, err = json.Marshal(offering)
@@ -2735,9 +2763,15 @@ func (s *SmartContract) UpdateCourseOffering(ctx contractapi.TransactionContextI
 		return fmt.Errorf("failed to get client ID: %v", err)
 	}
 
+	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
+	if err != nil {
+		return fmt.Errorf("failed to get tx timestamp: %v", err)
+	}
+	currentTime := time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos))
+
 	offering.IsActive = isActive
 	offering.ModifiedBy = clientID
-	offering.ModifiedAt = time.Now()
+	offering.ModifiedAt = currentTime
 
 	offeringJSON, err := json.Marshal(offering)
 	if err != nil {
