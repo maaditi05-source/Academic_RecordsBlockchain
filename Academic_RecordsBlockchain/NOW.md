@@ -11,19 +11,19 @@
 **Make sure `/etc/hosts` has these entries** (skip if already added):
 ```bash
 sudo bash -c 'cat >> /etc/hosts << EOF
-# === Academic Records Blockchain Network ===
-172.20.233.222  orderer1.nitw.edu
-172.20.242.77   orderer2.nitw.edu
-172.20.241.65   orderer3.nitw.edu
-172.20.229.166  peer0.nitwarangal.nitw.edu
-172.20.238.52   peer1.nitwarangal.nitw.edu
-172.20.255.20   peer2.nitwarangal.nitw.edu
-172.20.247.9    peer0.cse.departments.nitw.edu
-172.20.252.35   peer1.cse.departments.nitw.edu
-172.20.244.89   peer0.ece.departments.nitw.edu
-172.20.235.77   peer1.ece.departments.nitw.edu
-172.20.254.157  peer0.verifiers.nitw.edu
-172.20.252.188  peer1.verifiers.nitw.edu
+# === Academic Records Blockchain Network (Tailscale) ===
+100.65.71.102   orderer1.nitw.edu
+100.88.165.33   orderer2.nitw.edu
+100.102.112.54  orderer3.nitw.edu
+100.93.235.38   peer0.nitwarangal.nitw.edu
+100.102.67.29   peer1.nitwarangal.nitw.edu
+100.73.161.99   peer2.nitwarangal.nitw.edu
+100.103.144.78  peer0.cse.departments.nitw.edu
+100.118.136.16  peer1.cse.departments.nitw.edu
+100.75.175.30   peer0.ece.departments.nitw.edu
+100.101.132.58  peer1.ece.departments.nitw.edu
+100.123.15.33   peer0.verifiers.nitw.edu
+100.79.122.76   peer1.verifiers.nitw.edu
 # === END ===
 EOF'
 ```
