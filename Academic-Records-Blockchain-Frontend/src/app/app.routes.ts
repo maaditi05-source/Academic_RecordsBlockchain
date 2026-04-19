@@ -23,6 +23,7 @@ export const routes: Routes = [
       }
     ]
   },
+  // ── Admin ─────────────────────────────────────────────────────
   {
     path: 'admin',
     canActivate: [authGuard],
@@ -35,54 +36,36 @@ export const routes: Routes = [
       {
         path: 'students/:rollNumber',
         loadComponent: () => import('./features/student/student-profile.component').then(m => m.StudentProfileComponent)
-      }
-    ]
-  },
-  {
-    path: 'student',
-    canActivate: [authGuard],
-    data: { roles: ['student'] },
-    children: [
-      {
-        path: 'profile/:rollNumber',
-        loadComponent: () => import('./features/student/student-profile.component').then(m => m.StudentProfileComponent)
       },
       {
         path: '',
-        redirectTo: 'profile',
+        redirectTo: 'dashboard',
         pathMatch: 'full'
       }
     ]
   },
+  // ── HOD (separate from faculty) ───────────────────────────────
   {
-    path: 'department',
+    path: 'hod',
     canActivate: [authGuard],
-    data: { roles: ['department'] },
+    data: { roles: ['hod', 'department', 'admin'] },
     children: [
       {
         path: 'dashboard',
-        loadComponent: () => import('./features/department/department-dashboard.component').then(m => m.DepartmentDashboardComponent)
+        loadComponent: () => import('./features/hod/hod-dashboard.component').then(m => m.HodDashboardComponent)
       },
       {
-        path: 'students/:rollNumber',
-        loadComponent: () => import('./features/student/student-profile.component').then(m => m.StudentProfileComponent)
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full'
       }
     ]
   },
-  {
-    path: 'verifier',
-    // Public route - no authentication required
-    loadComponent: () => import('./features/verifier/verifier.component').then(m => m.VerifierComponent)
-  },
-  {
-    path: 'verify',
-    // Public route - no authentication required (alias for verifier)
-    loadComponent: () => import('./features/verifier/verifier.component').then(m => m.VerifierComponent)
-  },
+  // ── Faculty ───────────────────────────────────────────────────
   {
     path: 'faculty',
     canActivate: [authGuard],
-    data: { roles: ['faculty', 'admin', 'hod', 'dac_member', 'exam_section', 'dean_academic'] },
+    data: { roles: ['faculty', 'admin'] },
     children: [
       {
         path: 'dashboard',
@@ -95,6 +78,88 @@ export const routes: Routes = [
       }
     ]
   },
+  // ── Exam Section ──────────────────────────────────────────────
+  {
+    path: 'exam-section',
+    canActivate: [authGuard],
+    data: { roles: ['exam_section', 'admin'] },
+    children: [
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./features/exam-section/exam-section-dashboard.component').then(m => m.ExamSectionDashboardComponent)
+      },
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full'
+      }
+    ]
+  },
+  // ── Dean ──────────────────────────────────────────────────────
+  {
+    path: 'dean',
+    canActivate: [authGuard],
+    data: { roles: ['dean_academic', 'admin'] },
+    children: [
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./features/dean/dean-dashboard.component').then(m => m.DeanDashboardComponent)
+      },
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full'
+      }
+    ]
+  },
+  // ── Student ───────────────────────────────────────────────────
+  {
+    path: 'student',
+    canActivate: [authGuard],
+    data: { roles: ['student'] },
+    children: [
+      {
+        path: 'profile/:rollNumber',
+        loadComponent: () => import('./features/student/student-profile.component').then(m => m.StudentProfileComponent)
+      },
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./features/student/student-profile.component').then(m => m.StudentProfileComponent)
+      },
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full'
+      }
+    ]
+  },
+  // ── Department (legacy alias → redirects to HOD) ──────────────
+  {
+    path: 'department',
+    canActivate: [authGuard],
+    data: { roles: ['department', 'hod'] },
+    children: [
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./features/hod/hod-dashboard.component').then(m => m.HodDashboardComponent)
+      },
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full'
+      }
+    ]
+  },
+  // ── Verifier ──────────────────────────────────────────────────
+  {
+    path: 'verifier',
+    loadComponent: () => import('./features/verifier/verifier.component').then(m => m.VerifierComponent)
+  },
+  {
+    path: 'verify',
+    loadComponent: () => import('./features/verifier/verifier.component').then(m => m.VerifierComponent)
+  },
+  // ── Catch-all ─────────────────────────────────────────────────
   {
     path: '**',
     redirectTo: '/auth/login'

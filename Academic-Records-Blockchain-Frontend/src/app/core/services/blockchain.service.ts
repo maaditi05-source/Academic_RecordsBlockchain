@@ -226,4 +226,127 @@ export class BlockchainService {
   getStudentSemesters(studentId: string): Observable<ApiResponse<any[]>> {
     return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}/semester/student/${studentId}`);
   }
+
+  // ============ COURSES (Req #1, #6) ============
+
+  getCourses(filters?: any): Observable<any> {
+    const params = new URLSearchParams();
+    if (filters) Object.entries(filters).forEach(([k, v]) => { if (v) params.set(k, String(v)); });
+    const q = params.toString() ? `?${params.toString()}` : '';
+    return this.http.get<any>(`${this.apiUrl}/courses${q}`);
+  }
+
+  getCoursesByDepartment(dept: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/courses/department/${dept}`);
+  }
+
+  createCourse(payload: { code: string; name: string; department: string; semester: number; credits?: number }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/courses`, payload);
+  }
+
+  updateCourse(id: string, payload: any): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/courses/${id}`, payload);
+  }
+
+  deleteCourse(id: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/courses/${id}`);
+  }
+
+  assignFacultyToCourse(courseId: string, facultyUsername: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/courses/${courseId}/assign`, { facultyUsername });
+  }
+
+  enrollInCourse(courseId: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/courses/${courseId}/enroll`, {});
+  }
+
+  unenrollFromCourse(courseId: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/courses/${courseId}/unenroll`, {});
+  }
+
+  // ============ MARKS APPROVAL CHAIN (Req #2, #3, #8, #10-13) ============
+
+  getMarks(filters?: { studentId?: string; semester?: number; courseCode?: string; status?: string; department?: string }): Observable<any> {
+    const params = new URLSearchParams();
+    if (filters) Object.entries(filters).forEach(([k, v]) => { if (v !== undefined && v !== null) params.set(k, String(v)); });
+    const q = params.toString() ? `?${params.toString()}` : '';
+    return this.http.get<any>(`${this.apiUrl}/marks${q}`);
+  }
+
+  uploadMarks(payload: { studentId: string; courseCode: string; semester?: number; internal?: number; external?: number; marksObtained?: number; maxMarks?: number; proposedGrade?: string }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/marks/upload`, payload);
+  }
+
+  submitMarks(markId: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/marks/${markId}/submit`, {});
+  }
+
+  hodApproveMarks(markId: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/marks/${markId}/hod-approve`, {});
+  }
+
+  examApproveMarks(markId: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/marks/${markId}/exam-approve`, {});
+  }
+
+  deanApproveMarks(markId: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/marks/${markId}/dean-approve`, {});
+  }
+
+  adminFinalizeMarks(markId: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/marks/${markId}/admin-finalize`, {});
+  }
+
+  rejectMarks(markId: string, reason: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/marks/${markId}/reject`, { reason });
+  }
+
+  lockSemester(dept: string, semester: number): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/marks/semester/${dept}/${semester}/lock`, {});
+  }
+
+  // ============ DOCUMENT REQUESTS (Req #17, #19) ============
+
+  requestDocument(payload: { type: string; studentId: string; semester?: number; reason?: string }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/documents/request`, payload);
+  }
+
+  getDocumentRequests(filters?: { studentId?: string; type?: string; status?: string }): Observable<any> {
+    const params = new URLSearchParams();
+    if (filters) Object.entries(filters).forEach(([k, v]) => { if (v) params.set(k, String(v)); });
+    const q = params.toString() ? `?${params.toString()}` : '';
+    return this.http.get<any>(`${this.apiUrl}/documents/requests${q}`);
+  }
+
+  approveDocumentRequest(requestId: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/documents/requests/${requestId}/approve`, {});
+  }
+
+  rejectDocumentRequest(requestId: string, reason: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/documents/requests/${requestId}/reject`, { reason });
+  }
+
+  raiseCorrectionRequest(payload: { recordId: string; recordType: string; description: string }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/documents/corrections`, payload);
+  }
+
+  // ============ VERIFIER (Req #18, #21) ============
+
+  verifyDocumentHash(hash: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/documents/verify/${hash}`);
+  }
+
+  verifySignature(payload: { documentId: string; signature: string }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/documents/verify`, payload);
+  }
+
+  // ============ STUDENT ENROLLMENT APPROVAL (Req #16) ============
+
+  getPendingStudents(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/auth/users?role=student&active=false`);
+  }
+
+  approveStudentEnrollment(userId: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/auth/users/${userId}/approve`, {});
+  }
 }

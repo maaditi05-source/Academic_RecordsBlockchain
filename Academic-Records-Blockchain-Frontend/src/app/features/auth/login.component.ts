@@ -95,21 +95,35 @@ import { LoginCredentials } from '../../core/models/user.model';
                     <mat-icon class="role-icon admin-icon">admin_panel_settings</mat-icon>
                     <div class="credential-info">
                       <span class="role-label">Admin</span>
-                      <span class="credential-value">admin / password123</span>
-                    </div>
-                  </div>
-                  <div class="credential-item">
-                    <mat-icon class="role-icon student-icon">school</mat-icon>
-                    <div class="credential-info">
-                      <span class="role-label">Student</span>
-                      <span class="credential-value">25CSM2R26 / password123</span>
+                      <span class="credential-value">admin/admin123</span>
                     </div>
                   </div>
                   <div class="credential-item">
                     <mat-icon class="role-icon dept-icon">domain</mat-icon>
                     <div class="credential-info">
-                      <span class="role-label">HOD</span>
-                      <span class="credential-value">hod_demo / password123</span>
+                      <span class="role-label">HOD (CSE/ECE)</span>
+                      <span class="credential-value">cse_hod/csehod123 | ece_hod/ecehod123</span>
+                    </div>
+                  </div>
+                  <div class="credential-item">
+                    <mat-icon class="role-icon dept-icon">group</mat-icon>
+                    <div class="credential-info">
+                      <span class="role-label">Faculty (CSE/ECE)</span>
+                      <span class="credential-value">cse_faculty/csefaculty123 | ece_faculty/ecefaculty123</span>
+                    </div>
+                  </div>
+                  <div class="credential-item">
+                    <mat-icon class="role-icon dept-icon">gavel</mat-icon>
+                    <div class="credential-info">
+                      <span class="role-label">Dean & Exam Section</span>
+                      <span class="credential-value">dean_academic/dean123 | exam_section/exam123</span>
+                    </div>
+                  </div>
+                  <div class="credential-item">
+                    <mat-icon class="role-icon student-icon">verified_user</mat-icon>
+                    <div class="credential-info">
+                      <span class="role-label">Verifier</span>
+                      <span class="credential-value">verifier_demo/verifier123</span>
                     </div>
                   </div>
                 </div>
@@ -603,19 +617,18 @@ export class LoginComponent {
     console.log('Navigating by role:', role, 'userId:', userId);
 
     if (role === 'student' && userId) {
-      // Students go directly to their profile page
       console.log('Navigating to student profile:', userId);
       this.router.navigate(['/student/profile', userId]);
     } else {
       const routes: Record<string, string> = {
         'admin': '/admin/dashboard',
-        'department': '/department/dashboard',
-        'verifier': '/verifier',
+        'department': '/hod/dashboard',
+        'hod': '/hod/dashboard',
         'faculty': '/faculty/dashboard',
-        'hod': '/faculty/dashboard',
-        'dac_member': '/faculty/dashboard',
-        'exam_section': '/faculty/dashboard',
-        'dean_academic': '/faculty/dashboard'
+        'exam_section': '/exam-section/dashboard',
+        'dean_academic': '/dean/dashboard',
+        'verifier': '/verifier',
+        'dac_member': '/faculty/dashboard'
       };
       const targetRoute = routes[role] || '/';
       console.log('Navigating to:', targetRoute);

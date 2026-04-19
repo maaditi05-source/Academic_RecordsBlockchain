@@ -151,8 +151,63 @@ import { AddCourseDialogComponent } from './add-course-dialog/add-course-dialog.
                 </div>
               </div>
             </div>
-            <div *ngIf="pendingCerts.length === 0" class="empty-state">
-              <mat-icon>verified</mat-icon><p>No pending certificate approvals</p>
+            
+            <h3 class="mt-8 mb-4 text-white font-medium">All Certificates</h3>
+            <div class="marks-table-wrapper" *ngIf="allCerts.length > 0">
+              <table class="modern-table">
+                <thead><tr><th>Cert ID</th><th>Student</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let c of allCerts">
+                    <td><span class="course-code">{{ c.id || c.certificateId }}</span></td>
+                    <td>{{ c.studentId }}</td>
+                    <td>{{ c.type || c.certificateType }}</td>
+                    <td><span class="status-badge" [class]="c.status === 'revoked' || !c.isValid ? 'cancelled' : 'active'">{{ c.status === 'revoked' || !c.isValid ? 'REVOKED' : 'VALID' }}</span></td>
+                    <td>
+                      <button *ngIf="c.status !== 'revoked' && c.isValid !== false" mat-stroked-button color="warn" class="view-btn" (click)="revokeCert(c.id || c.certificateId)" matTooltip="Revoke Certificate">
+                        <mat-icon>gavel</mat-icon> Revoke
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div *ngIf="pendingCerts.length === 0 && allCerts.length === 0" class="empty-state">
+              <mat-icon>verified</mat-icon><p>No certificates found in system</p>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- TAB 3.5: MARKS FINALIZATION -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">task_alt</mat-icon><span>Marks Finalization</span>
+            <span class="pending-count" *ngIf="pendingMarks.length > 0">{{ pendingMarks.length }}</span>
+          </ng-template>
+          <div class="tab-content">
+            <p class="info-note"><mat-icon>info</mat-icon> Marks that have completed the full approval chain (Faculty → HOD → Exam Section → Dean → DAC) require Admin finalization.</p>
+            
+            <div class="marks-table-wrapper" *ngIf="pendingMarks.length > 0">
+              <table class="modern-table">
+                <thead><tr><th>Student</th><th>Course</th><th>Semester</th><th>Current Status</th><th>Actions</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let m of pendingMarks">
+                    <td><strong style="color: #38bdf8;">{{ m.studentId }}</strong></td>
+                    <td><span class="course-code">{{ m.courseCode }}</span></td>
+                    <td>{{ m.semester }}</td>
+                    <td><span class="status-badge active">{{ m.status }}</span></td>
+                    <td>
+                      <button mat-raised-button color="primary" class="view-btn h-full" (click)="adminFinalizeMarks(m.id)" style="border-radius: 8px;">
+                        <mat-icon>check_circle</mat-icon> Finalize
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div *ngIf="pendingMarks.length === 0" class="empty-state">
+              <mat-icon>task_alt</mat-icon><p>No marks pending admin finalization</p>
             </div>
           </div>
         </mat-tab>
@@ -214,7 +269,7 @@ import { AddCourseDialogComponent } from './add-course-dialog/add-course-dialog.
           <div class="tab-content">
             <div class="marks-table-wrapper" *ngIf="allUsers.length > 0">
               <table class="modern-table">
-                <thead><tr><th>Username</th><th>Name</th><th>Email</th><th>Role</th><th>Dept</th><th>Status</th></tr></thead>
+                <thead><tr><th>Username</th><th>Name</th><th>Email</th><th>Role</th><th>Dept</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody>
                   <tr *ngFor="let u of allUsers">
                     <td><span class="course-code">{{ u.username }}</span></td>
@@ -223,6 +278,12 @@ import { AddCourseDialogComponent } from './add-course-dialog/add-course-dialog.
                     <td><span class="role-chip" [attr.data-role]="u.role">{{ u.role }}</span></td>
                     <td>{{ u.department || '—' }}</td>
                     <td><span class="status-badge" [class]="u.isActive ? 'active' : 'inactive'">{{ u.isActive ? 'Active' : 'Inactive' }}</span></td>
+                    <td>
+                      <button *ngIf="!u.isActive" mat-stroked-button color="primary" class="view-btn" (click)="approveUser(u)" [disabled]="u.processing" matTooltip="Approve User">
+                        <mat-icon *ngIf="!u.processing">person_add_alt_1</mat-icon>
+                        <mat-icon *ngIf="u.processing" class="rotating">sync</mat-icon>
+                      </button>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -295,6 +356,7 @@ export class AdminDashboardComponent implements OnInit {
   allStudents: any[] = [];
   allCerts: any[] = [];
   pendingCerts: any[] = [];
+  pendingMarks: any[] = [];
   allDepartments: any[] = [];
   allCourses: any[] = [];
   allUsers: any[] = [];
@@ -319,10 +381,18 @@ export class AdminDashboardComponent implements OnInit {
 
   ngOnInit() { this.loadAll(); }
 
-  async loadAll() {
+  loadAll(): void {
     this.loading = true;
-    await Promise.all([this.loadStudents(), this.loadDepartments(), this.loadCourses(), this.loadUsers(), this.loadPendingCerts()]);
-    this.loading = false;
+    Promise.all([
+      this.loadStudents(),
+      this.loadDepartments(),
+      this.loadCourses(),
+      this.loadUsers(),
+      this.loadPendingCerts(),
+      this.loadPendingMarks()
+    ]).finally(() => {
+      this.loading = false;
+    });
   }
 
   private loadStudents(): Promise<void> {
@@ -362,11 +432,25 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   private loadPendingCerts(): Promise<void> {
-    return new Promise(resolve => {
-      this.http.get<any>(`${this.apiUrl}/certificates/requests`, this.authHeaders).subscribe({
-        next: (res) => {
-          const all = res.success ? (Array.isArray(res.data) ? res.data : []) : [];
-          this.pendingCerts = all.filter((r: any) => r.status === 'PENDING');
+    return new Promise((resolve) => {
+      this.blockchainService.getDocumentRequests({}).subscribe({
+        next: (res: any) => {
+          const docs = Array.isArray(res) ? res : (res?.data || []);
+          this.allCerts = docs;
+          this.pendingCerts = docs.filter((c: any) => c.status === 'pending');
+          resolve();
+        },
+        error: () => resolve()
+      });
+    });
+  }
+
+  loadPendingMarks(): Promise<void> {
+    return new Promise((resolve) => {
+      // Load marks that are pending admin finalization (approved by dean/dac)
+      this.blockchainService.getMarks({ status: 'dean_approved' }).subscribe({
+        next: (res: any) => {
+          this.pendingMarks = Array.isArray(res) ? res : (res?.data || []);
           resolve();
         },
         error: () => resolve()
@@ -435,6 +519,54 @@ export class AdminDashboardComponent implements OnInit {
       error: (err: any) => {
         cert.processing = false;
         this.snackBar.open(`Rejection failed: ${err.error?.message || err.message}`, 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  revokeCert(certId: string): void {
+    const reason = prompt('Please provide a reason for certificate revocation (This is an irreversible on-chain action):');
+    if (!reason) return;
+
+    this.blockchainService.revokeCertificate(certId, reason).subscribe({
+      next: () => {
+        this.snackBar.open('Certificate permanently revoked', 'Close', { duration: 4000 });
+        this.loadPendingCerts();
+      },
+      error: (err: any) => {
+        this.snackBar.open(err.error?.message || 'Error revoking certificate', 'Close', { duration: 3000, panelClass: 'error-snackbar' });
+      }
+    });
+  }
+
+  adminFinalizeMarks(markId: string): void {
+    if (!confirm('Are you sure you want to finalize these marks? This will persist them permanently to the blockchain.')) return;
+
+    this.blockchainService.adminFinalizeMarks(markId).subscribe({
+      next: () => {
+        this.snackBar.open('Marks successfully finalized on-chain', 'Close', { duration: 4000 });
+        this.loadPendingMarks(); // Refresh list
+      },
+      error: (err: any) => {
+        this.snackBar.open(err.error?.message || 'Error finalizing marks', 'Close', { duration: 3000, panelClass: 'error-snackbar' });
+      }
+    });
+  }
+
+  approveUser(user: any) {
+    user.processing = true;
+    this.http.post<any>(`${this.apiUrl}/auth/users/${user.username || user.id}/approve`, {}, this.authHeaders).subscribe({
+      next: (res) => {
+        user.processing = false;
+        if (res.success) {
+          this.snackBar.open('User approved and enrolled in blockchain!', 'Close', { duration: 3000 });
+          user.isActive = true;
+        } else {
+          this.snackBar.open(res.message || 'Failed to approve user', 'Close', { duration: 3000 });
+        }
+      },
+      error: (err: any) => {
+        user.processing = false;
+        this.snackBar.open(`Failed to approve user: ${err.error?.message || err.message}`, 'Close', { duration: 3000 });
       }
     });
   }
