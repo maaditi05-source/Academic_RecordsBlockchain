@@ -3,22 +3,35 @@ const router = express.Router();
 const MarksController = require('../controllers/marksController');
 const { authenticateToken } = require('../middleware/auth');
 
-// All routes require authentication
 router.use(authenticateToken);
 
-// Exam section: upload marks (single or bulk)
+// GET all marks with query filters (?studentId=&semester=&status=&department=&courseCode=)
+router.get('/', MarksController.getAllMarks);
+
+// Upload marks (single or bulk) — faculty, HOD, exam_section, admin
 router.post('/upload', MarksController.uploadMarks);
 
-// Faculty: get pending marks for their courses
+// Get pending marks (for approval views)
 router.get('/pending', MarksController.getPendingMarks);
 
-// Faculty: verify a mark record
+// Multi-step approval chain
+router.put('/:markId/submit', MarksController.submitMarks);
+router.put('/:markId/hod-approve', MarksController.hodApproveMarks);
+router.put('/:markId/exam-approve', MarksController.examApproveMarks);
+router.put('/:markId/dean-approve', MarksController.deanApproveMarks);
+router.put('/:markId/admin-finalize', MarksController.adminFinalizeMarks);
+router.put('/:markId/reject', MarksController.rejectMarks);
+
+// Semester lock (exam section / admin)
+router.put('/semester/:dept/:semester/lock', MarksController.lockSemester);
+
+// Legacy verify endpoint
 router.patch('/:markId/verify', MarksController.verifyMarks);
 
-// Get marks for a course (faculty use)
+// Get marks for a course
 router.get('/course/:courseCode', MarksController.getCourseMarks);
 
-// Get student's CGPA
+// Get student CGPA
 router.get('/:studentId/cgpa', MarksController.getStudentCGPA);
 
 // Get student marks for a specific semester

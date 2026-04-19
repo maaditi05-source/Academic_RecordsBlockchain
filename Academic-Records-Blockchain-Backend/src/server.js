@@ -1,3 +1,4 @@
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; // Required: Discovery returns IPs but TLS certs have hostnames
 require('dotenv').config();
 const http = require('http');
 const express = require('express');

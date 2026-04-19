@@ -162,6 +162,14 @@ class FabricGateway {
             const transaction = this.contract.createTransaction(functionName);
             transaction.setTransient(transientMap);
 
+            // Bypass Discovery Service bug with Private Data Collections by manually setting
+            // the endorsing peers to all available peers in the channel.
+            const channelPeers = this.network.getChannel().getEndorsers();
+            if (channelPeers && channelPeers.length > 0) {
+                transaction.setEndorsingPeers(channelPeers);
+                logger.info(`Bypassing discovery: manually set ${channelPeers.length} endorsing peers for transient transaction`);
+            }
+
             const result = await transaction.submit(...args);
 
             logger.info(`Transaction ${functionName} with transient data submitted successfully`);
