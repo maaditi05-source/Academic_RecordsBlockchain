@@ -32,7 +32,7 @@
 # =================================================================
 
 # ─── Node 01: Orderer 1 (Primary Raft Leader) ──────────────────
-export ORDERER1_HOST="${ORDERER1_HOST:-172.20.229.166}"
+export ORDERER1_HOST="${ORDERER1_HOST:-172.20.233.222}"
 export ORDERER1_PORT="${ORDERER1_PORT:-7050}"
 export ORDERER1_ADMIN_PORT="${ORDERER1_ADMIN_PORT:-7053}"
 export ORDERER1_CA_PORT="${ORDERER1_CA_PORT:-7054}"
@@ -52,7 +52,7 @@ export ORDERER_HOST="${ORDERER1_HOST}"
 export ORDERER_PORT="${ORDERER1_PORT}"
 
 # ─── Node 04: NITWarangal Peer 0 (Admin) ───────────────────────
-export NITW_PEER0_HOST="${NITW_PEER0_HOST:-172.20.229.166}"
+export NITW_PEER0_HOST="${NITW_PEER0_HOST:-172.20.240.7}"
 export NITW_PEER0_PORT="${NITW_PEER0_PORT:-7051}"
 export NITW_PEER0_CHAINCODE_PORT="${NITW_PEER0_CHAINCODE_PORT:-7052}"
 export NITW_CA_PORT="${NITW_CA_PORT:-8054}"
