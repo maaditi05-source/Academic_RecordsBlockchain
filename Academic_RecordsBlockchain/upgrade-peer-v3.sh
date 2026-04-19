@@ -10,7 +10,7 @@ CC_PKG="${SCRIPT_DIR}/chaincode-go/academic_records_3.0.tar.gz"
 case "${ORG_MSP}" in
   NITWarangalMSP)
     ADMIN_MSP="${SCRIPT_DIR}/organizations/peerOrganizations/nitwarangal.nitw.edu/users/Admin@nitwarangal.nitw.edu/msp"
-    ORDERER_TLS="${SCRIPT_DIR}/organizations/ordererOrganizations/nitw.edu/orderers/orderer1.nitw.edu/msp/tlscacerts/tlsca.nitw.edu-cert.pem"
+    ORDERER_TLS="${SCRIPT_DIR}/organizations/ordererOrganizations/nitw.edu/orderers/orderer1.nitw.edu/tls/tlscacerts/tls-localhost-7054-ca-orderer.pem"
     ;;
   DepartmentsMSP)
     ADMIN_MSP="${SCRIPT_DIR}/organizations/peerOrganizations/departments.nitw.edu/users/Admin@departments.nitw.edu/msp"
@@ -47,15 +47,21 @@ fi
 
 echo "✅ Installed! Package ID: ${PKG_ID}"
 
+echo "📦 Copying Orderer TLS cert into container..."
+docker cp "${ORDERER_TLS}" "${PEER_CONTAINER}:/tmp/orderer-tls.crt" || true
+
+echo "📦 Copying Collections Config into container..."
+docker cp "${SCRIPT_DIR}/collections_config.json" "${PEER_CONTAINER}:/tmp/collections_config.json" || true
+
 echo "📝 Approving chaincode sequence 2 for ${ORG_MSP}..."
 # Use internal orderer container address if running on Aditi's system, otherwise use the external one
 if [ "${ORG_MSP}" = "NITWarangalMSP" ]; then
   docker exec -e CORE_PEER_MSPCONFIGPATH=/tmp/admin-msp \
-      "${PEER_CONTAINER}" peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer1.nitw.edu --channelID academic-records-channel --name academic-records --version 3.0 --package-id ${PKG_ID} --sequence 2 --tls --cafile /etc/hyperledger/fabric/tls/ca.crt
+      "${PEER_CONTAINER}" peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer1.nitw.edu --channelID academic-records-channel --name academic-records --version 3.0 --package-id ${PKG_ID} --sequence 2 --tls --cafile /tmp/orderer-tls.crt --collections-config /tmp/collections_config.json
 else
   # Cross-organization approval uses the network IP and gossip
   docker exec -e CORE_PEER_MSPCONFIGPATH=/tmp/admin-msp \
-      "${PEER_CONTAINER}" peer lifecycle chaincode approveformyorg -o 172.20.254.34:7050 --ordererTLSHostnameOverride orderer1.nitw.edu --channelID academic-records-channel --name academic-records --version 3.0 --package-id ${PKG_ID} --sequence 2 --tls --cafile /etc/hyperledger/fabric/tls/ca.crt
+      "${PEER_CONTAINER}" peer lifecycle chaincode approveformyorg -o 172.20.254.34:7050 --ordererTLSHostnameOverride orderer1.nitw.edu --channelID academic-records-channel --name academic-records --version 3.0 --package-id ${PKG_ID} --sequence 2 --tls --cafile /tmp/orderer-tls.crt --collections-config /tmp/collections_config.json
 fi
 
 echo "🎉 Approval complete for ${PEER_CONTAINER}!"
