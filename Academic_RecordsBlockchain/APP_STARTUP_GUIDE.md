@@ -46,7 +46,7 @@ git stash && git pull
 cp .env.nitwarangal-peer1 .env
 rm -rf wallet/*
 node src/importAdmin.js
-npm run dev
+npm start
 
 # Step 3: Start frontend (new terminal)
 cd ~/Academic-Records-Blockchain-Frontend
@@ -72,7 +72,7 @@ npm install
 cp .env.nitwarangal-peer2 .env
 rm -rf wallet/*
 node src/importAdmin.js
-npm run dev
+npm start
 
 # Step 3: Start frontend (new terminal)
 cd ~/Academic-Records-Blockchain-Frontend
@@ -97,7 +97,7 @@ npm install
 cp .env.departments .env
 rm -rf wallet/*
 node src/importAdmin.js
-npm run dev
+npm start
 
 # Step 3: Start frontend (new terminal)
 cd ~/Academic-Records-Blockchain-Frontend
@@ -122,7 +122,7 @@ npm install
 cp .env.cse .env
 rm -rf wallet/*
 node src/importAdmin.js
-npm run dev
+npm start
 
 # Step 3: Start frontend (new terminal)
 cd ~/Academic-Records-Blockchain-Frontend
@@ -147,7 +147,7 @@ npm install
 cp .env.ece .env
 rm -rf wallet/*
 node src/importAdmin.js
-npm run dev
+npm start
 
 # Step 3: Start frontend (new terminal)
 cd ~/Academic-Records-Blockchain-Frontend
@@ -172,7 +172,7 @@ npm install
 cp .env.verifiers .env
 rm -rf wallet/*
 node src/importAdmin.js
-npm run dev
+npm start
 
 # Step 3: Start frontend (new terminal)
 cd ~/Academic-Records-Blockchain-Frontend
@@ -197,7 +197,7 @@ npm install
 cp .env.verifiers-peer1 .env
 rm -rf wallet/*
 node src/importAdmin.js
-npm run dev
+npm start
 
 # Step 3: Start frontend (new terminal)
 cd ~/Academic-Records-Blockchain-Frontend
