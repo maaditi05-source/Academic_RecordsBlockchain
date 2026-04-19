@@ -192,7 +192,24 @@ npx ng serve
 
 ---
 
-## 🔍 TROUBLESHOOTING
+## � DEFAULT TEST CREDENTIALS
+
+If you delete `backend/data/users.json` and restart the backend, it will auto-generate these mock testing accounts:
+
+| Role | Username | Password |
+|------|----------|----------|
+| **Admin** | `admin` | `admin123` |
+| **Faculty** | `faculty_demo` | `faculty123` |
+| **HOD** | `hod_demo` | `hod123` |
+| **Dean** | `dean_academic_demo`| `dean_academic123` |
+| **Exam Section** | `exam_section_demo`| `exam_section123` |
+| **DAC Member** | `dac_member_demo` | `dac_member123` |
+
+*(Students do not have a default account — they must be created via the Admin or Dept portal. The default password for a new student is their roll number).*
+
+---
+
+## �🔍 TROUBLESHOOTING
 
 **"Failed to connect to remote gRPC server" warnings:**
 These are non-fatal. The SDK tries to connect to ALL peers discovered on the channel. As long as the anchor peer for your org is reachable, transactions will work.
