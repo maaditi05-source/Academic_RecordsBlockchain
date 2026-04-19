@@ -2,7 +2,10 @@
 
 > **Blockchain network is LIVE.** This guide starts the backend + frontend on each system.
 >
-> **IMPORTANT:** Use `node src/importAdmin.js` (NOT `enrollAdmin.js` — CA servers are offline).
+> ⚠️ **CRITICAL INSTRUCTIONS FOR ALL TEAM MEMBERS:**
+> 1. ALWAYS run `npm install` when opening the Backend or Frontend folders for the first time.
+> 2. The guide below uses `~/Academic-Records-Blockchain-Backend`, but if you downloaded the project into a `workspace` folder, you must use your actual path (e.g., `cd ~/workspace/Academic-Records-Blockchain-Backend`). If `cd` gives a "No such file" error, STOP and fix the path!
+> 3. Use `node src/importAdmin.js` (NOT `enrollAdmin.js` — CA servers are offline).
 
 ---
 
@@ -62,8 +65,10 @@ cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
 git stash && git pull
 
 # Step 2: Start backend
+# IMPORTANT: Replace the path below with your actual backend folder path if it's different!
 cd ~/Academic-Records-Blockchain-Backend
 git stash && git pull
+npm install
 cp .env.nitwarangal-peer2 .env
 rm -rf wallet/*
 node src/importAdmin.js
@@ -85,8 +90,10 @@ cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
 git stash && git pull
 
 # Step 2: Start backend
+# IMPORTANT: Replace the path below with your actual backend folder path if it's different!
 cd ~/Academic-Records-Blockchain-Backend
 git stash && git pull
+npm install
 cp .env.departments .env
 rm -rf wallet/*
 node src/importAdmin.js
@@ -108,8 +115,10 @@ cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
 git stash && git pull
 
 # Step 2: Start backend
+# IMPORTANT: Replace the path below with your actual backend folder path if it's different!
 cd ~/Academic-Records-Blockchain-Backend
 git stash && git pull
+npm install
 cp .env.cse .env
 rm -rf wallet/*
 node src/importAdmin.js
@@ -131,8 +140,10 @@ cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
 git stash && git pull
 
 # Step 2: Start backend
+# IMPORTANT: Replace the path below with your actual backend folder path if it's different!
 cd ~/Academic-Records-Blockchain-Backend
 git stash && git pull
+npm install
 cp .env.ece .env
 rm -rf wallet/*
 node src/importAdmin.js
@@ -154,8 +165,10 @@ cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
 git stash && git pull
 
 # Step 2: Start backend
+# IMPORTANT: Replace the path below with your actual backend folder path if it's different!
 cd ~/Academic-Records-Blockchain-Backend
 git stash && git pull
+npm install
 cp .env.verifiers .env
 rm -rf wallet/*
 node src/importAdmin.js
@@ -177,8 +190,10 @@ cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
 git stash && git pull
 
 # Step 2: Start backend
+# IMPORTANT: Replace the path below with your actual backend folder path if it's different!
 cd ~/Academic-Records-Blockchain-Backend
 git stash && git pull
+npm install
 cp .env.verifiers-peer1 .env
 rm -rf wallet/*
 node src/importAdmin.js
