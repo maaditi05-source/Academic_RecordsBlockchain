@@ -227,29 +227,21 @@ const register = async (req, res) => {
 
             // 2b. Create on-chain record (students only; departments use existing dept entities)
             if (role === 'student') {
-                const gateway = new FabricGateway();
-                try {
-                    await gateway.connect('admin'); // admin creates the student record
-                    const studentName = name || username;
-                    const rollNumber = username;
-                    const enrollmentYear = new Date().getFullYear();
-
-                    await gateway.submitTransactionWithTransient(
-                        'CreateStudent',
-                        { aadhaarHash: `HASH-${rollNumber}`, phone: '0000000000', personalEmail: email },
-                        rollNumber,
-                        studentName,
-                        department || 'CSE',
-                        enrollmentYear.toString(),
-                        email,
-                        'GENERAL'
-                    );
-                    logger.info(`Student created in blockchain: ${user.id}`);
-                } catch (chainErr) {
-                    logger.warn(`Blockchain student creation failed for ${user.id}: ${chainErr.message}`);
-                } finally {
-                    await gateway.disconnect();
-                }
+                return res.status(201).json({
+                    success: true,
+                    message: 'Registration successful. Waiting for Admin approval before blockchain enrollment.',
+                    data: {
+                        user: {
+                            id: user.id,
+                            username: user.username,
+                            email: user.email,
+                            role: user.role,
+                            department: user.department,
+                            mspId: getMSPForRole(user.role),
+                            status: 'Pending Approval'
+                        }
+                    }
+                });
             } else if (role === 'department') {
                 logger.info(`Department user registered (uses existing department entity): ${user.id}`);
             }
@@ -500,6 +492,105 @@ const changePasswordEndpoint = async (req, res) => {
     }
 };
 
+/**
+ * Approve pending student user (Admin only)
+ * POST /api/auth/users/:id/approve
+ */
+const approveUser = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const { getMSPForRole } = require('../utils/mspMapper');
+        const { findUserById, updateUser } = require('../utils/userManager');
+
+        // Find user in DB
+        const user = findUserById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found in database' });
+        }
+        if (user.isActive) {
+            return res.status(400).json({ success: false, message: 'User is already approved and active' });
+        }
+
+        // Only explicitly supporting student approvals presently
+        if (user.role !== 'student') {
+            return res.status(400).json({ success: false, message: 'Only student accounts require approval' });
+        }
+
+        // Step 1: Update DB to Active
+        await updateUser(user.id, { isActive: true });
+        logger.info(`Admin approved user in DB: ${user.username}`);
+
+        // Step 2: Enroll in CA
+        const FabricCAClient = require('../fabricCAClient');
+        const FabricGateway = require('../fabricGateway');
+        let caEnrolled = false;
+
+        try {
+            const caClient = FabricCAClient.getCAClientForRole(user.role);
+            await caClient.registerUser(
+                user.id,
+                { role: user.role, department: user.department || '', email: user.email },
+                'client',
+                ''
+            );
+            logger.info(`Fabric identity enrolled for approved user: ${user.id}`);
+            caEnrolled = true;
+        } catch (enrollErr) {
+            logger.warn(`Could not enroll Fabric identity after approval for ${user.id}: ${enrollErr.message}`);
+        }
+
+        // Step 3: Call CreateStudent in blockchain
+        let blockchainCreated = false;
+        let chaincodeError = null;
+
+        const gateway = new FabricGateway();
+        try {
+            await gateway.connect('admin'); // Admin signs transaction
+            const studentName = user.name || user.username;
+            const rollNumber = user.username;
+            const enrollmentYear = new Date().getFullYear();
+
+            await gateway.submitTransactionWithTransient(
+                'CreateStudent',
+                { aadhaarHash: `HASH-${rollNumber}`, phone: '0000000000', personalEmail: user.email },
+                rollNumber,
+                studentName,
+                user.department || 'CSE',
+                enrollmentYear.toString(),
+                user.email,
+                'GENERAL'
+            );
+            logger.info(`Student officially created in blockchain: ${user.id}`);
+            blockchainCreated = true;
+        } catch (chainErr) {
+            chaincodeError = chainErr.message;
+            logger.warn(`Blockchain student creation failed for ${user.id}: ${chainErr.message}`);
+        } finally {
+            await gateway.disconnect();
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `User ${user.username} approved successfully`,
+            data: {
+                caEnrolled,
+                blockchainCreated,
+                chaincodeError,
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    role: user.role,
+                    isActive: true
+                }
+            }
+        });
+    } catch (error) {
+        logger.error(`Error approving user: ${error.message}`);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 // Get all users (admin only)
 // GET /api/auth/users
 const getAllUsers = async (req, res) => {
@@ -544,5 +635,6 @@ module.exports = {
     logout,
     getProfile,
     changePasswordEndpoint,
-    getAllUsers
+    getAllUsers,
+    approveUser
 };

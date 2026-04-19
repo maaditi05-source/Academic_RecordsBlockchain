@@ -17,5 +17,6 @@ router.post('/logout', authController.logout);
 router.get('/profile', authenticateToken, authController.getProfile);
 router.post('/change-password', authenticateToken, authController.changePasswordEndpoint);
 router.get('/users', authenticateToken, authController.getAllUsers);
+router.post('/users/:id/approve', authenticateToken, authController.approveUser);
 
 module.exports = router;

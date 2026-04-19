@@ -138,7 +138,7 @@ const createUser = async (userData) => {
         department: department || null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        isActive: true
+        isActive: role !== 'student' // Students need admin approval
     };
 
     // Save user
