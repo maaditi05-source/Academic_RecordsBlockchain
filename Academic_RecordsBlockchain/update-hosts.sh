@@ -21,12 +21,12 @@ ${ORDERER3_HOST}  orderer3.nitw.edu
 ${NITW_PEER0_HOST}  peer0.nitwarangal.nitw.edu
 ${NITW_PEER1_HOST}  peer1.nitwarangal.nitw.edu
 ${NITW_PEER2_HOST}  peer2.nitwarangal.nitw.edu
-${DEPTS_CSE_PEER0_HOST}  peer0.cse.departments.nitw.edu
-${DEPTS_CSE_PEER1_HOST}  peer1.cse.departments.nitw.edu
-${DEPTS_ECE_PEER0_HOST}  peer0.ece.departments.nitw.edu
-${DEPTS_ECE_PEER1_HOST}  peer1.ece.departments.nitw.edu
-${VERIFIERS_PEER0_HOST}  peer0.verifiers.nitw.edu
-${VERIFIERS_PEER1_HOST}  peer1.verifiers.nitw.edu
+${DEPT_CSE_HOD_HOST}  peer0.cse.departments.nitw.edu
+${DEPT_CSE_FAC_HOST}  peer1.cse.departments.nitw.edu
+${DEPT_ECE_HOD_HOST}  peer0.ece.departments.nitw.edu
+${DEPT_ECE_FAC_HOST}  peer1.ece.departments.nitw.edu
+${VERI_PEER0_HOST}  peer0.verifiers.nitw.edu
+${VERI_PEER1_HOST}  peer1.verifiers.nitw.edu
 # === END ===
 EOF"
 
