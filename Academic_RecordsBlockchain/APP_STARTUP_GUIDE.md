@@ -19,7 +19,7 @@
 | 7 | Shreya | `.env.departments` | 3000 | DepartmentsMSP |
 | 8 | Manasvi | `.env.cse` | 3002 | DepartmentsMSP |
 | 9 | Saim | `.env.ece` | 3003 | DepartmentsMSP |
-| 10 | Amit | — *(no backend, peer only)* | — | — |
+| 10 | Amit | `.env.ece` | 3003 | DepartmentsMSP |
 | 11 | Mousumi | `.env.verifiers` | 3000 | VerifiersMSP |
 | 12 | Aakash | `.env.verifiers-peer1` | 3007 | VerifiersMSP |
 
@@ -133,6 +133,31 @@ npx ng serve
 ---
 
 ## 💻 SYSTEM 9: Saim (ECE HOD — DepartmentsMSP)
+
+```bash
+# Step 1: Pull latest
+cd ~/Academic_RecordsBlockchain/Academic_RecordsBlockchain
+git stash && git pull
+
+# Step 2: Start backend
+# IMPORTANT: Replace the path below with your actual backend folder path if it's different!
+cd ~/Academic-Records-Blockchain-Backend
+git stash && git pull
+npm install
+cp .env.ece .env
+rm -rf wallet/*
+node src/importAdmin.js
+npm start
+
+# Step 3: Start frontend (new terminal)
+cd ~/Academic-Records-Blockchain-Frontend
+npm install
+npx ng serve
+```
+
+---
+
+## 💻 SYSTEM 10: Amit (ECE Faculty — DepartmentsMSP)
 
 ```bash
 # Step 1: Pull latest
