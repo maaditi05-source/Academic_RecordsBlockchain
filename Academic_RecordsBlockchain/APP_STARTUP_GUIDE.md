@@ -207,24 +207,26 @@ npx ng serve
 
 ---
 
-## � DEFAULT TEST CREDENTIALS
+## 🔑 DEFAULT TEST CREDENTIALS
 
 If you delete `backend/data/users.json` and restart the backend, it will auto-generate these mock testing accounts:
 
 | Role | Username | Password |
 |------|----------|----------|
 | **Admin** | `admin` | `admin123` |
-| **Faculty** | `faculty_demo` | `faculty123` |
-| **HOD** | `hod_demo` | `hod123` |
-| **Dean** | `dean_academic_demo`| `dean_academic123` |
-| **Exam Section** | `exam_section_demo`| `exam_section123` |
-| **DAC Member** | `dac_member_demo` | `dac_member123` |
+| **Faculty (CSE)** | `cse_faculty` | `csefaculty123` |
+| **HOD (CSE)** | `cse_hod` | `csehod123` |
+| **Faculty (ECE)** | `ece_faculty` | `ecefaculty123` |
+| **HOD (ECE)** | `ece_hod` | `ecehod123` |
+| **Dean** | `dean_academic` | `dean123` |
+| **Exam Section** | `exam_section` | `exam123` |
+| **Verifier** | `verifier_demo` | `verifier123` |
 
-*(Students do not have a default account — they must be created via the Admin or Dept portal. The default password for a new student is their roll number).*
+*(Students do not have a default account — they must click Register via the UI, and the Admin must approve them! The default password for a student is the password they pick during signup).*
 
 ---
 
-## �🔍 TROUBLESHOOTING
+## 🔍 TROUBLESHOOTING
 
 **"Failed to connect to remote gRPC server" warnings:**
 These are non-fatal. The SDK tries to connect to ALL peers discovered on the channel. As long as the anchor peer for your org is reachable, transactions will work.
