@@ -1,12 +1,7 @@
-version: '3.7'
-
 # Node 04 — NITWarangal Peer 0
 # Roles: Admin + ExamSection + Dean approvals
 # Machine IP: ${NITW_PEER0_HOST}
 
-networks:
-  fabric_net:
-    driver: bridge
 
 volumes:
   peer0.nitwarangal.nitw.edu:
@@ -24,34 +19,29 @@ services:
       - FABRIC_CA_SERVER_CA_NAME=ca-nitwarangal
       - FABRIC_CA_SERVER_TLS_ENABLED=true
       - FABRIC_CA_SERVER_PORT=${NITW_CA_PORT:-8054}
-    ports:
-      - "${NITW_CA_PORT:-8054}:${NITW_CA_PORT:-8054}"
     command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
     volumes:
       - ../organizations/fabric-ca/nitwarangal:/etc/hyperledger/fabric-ca-server
     container_name: ca_nitwarangal
-    networks:
-      - fabric_net
+    network_mode: host
 
   couchdb.nitw.peer0:
     container_name: couchdb.nitw.peer0
+    network_mode: host
     image: couchdb:3.3
     environment:
       - COUCHDB_USER=admin
       - COUCHDB_PASSWORD=adminpw
-    ports:
-      - "${NITW_COUCHDB0_PORT:-5984}:5984"
-    networks:
-      - fabric_net
 
   peer0.nitwarangal.nitw.edu:
     container_name: peer0.nitwarangal.nitw.edu
+    network_mode: host
     image: hyperledger/fabric-peer:2.5
     labels:
       service: hyperledger-fabric
     environment:
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
-      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_net
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=host
       - FABRIC_LOGGING_SPEC=INFO
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_PROFILE_ENABLED=false
@@ -70,7 +60,7 @@ services:
       - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
       - CORE_OPERATIONS_LISTENADDRESS=peer0.nitwarangal.nitw.edu:17051
       - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
-      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.nitw.peer0:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=localhost:5984
       - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
       - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
     volumes:
@@ -80,22 +70,5 @@ services:
       - peer0.nitwarangal.nitw.edu:/var/hyperledger/production
     working_dir: /root
     command: peer node start
-    ports:
-      - "${NITW_PEER0_PORT:-7051}:${NITW_PEER0_PORT:-7051}"
-      - "17051:17051"
     depends_on:
       - couchdb.nitw.peer0
-    networks:
-      - fabric_net
-    extra_hosts:
-      - "orderer1.nitw.edu:${ORDERER1_HOST:-host-gateway}"
-      - "orderer2.nitw.edu:${ORDERER2_HOST:-host-gateway}"
-      - "orderer3.nitw.edu:${ORDERER3_HOST:-host-gateway}"
-      - "peer1.nitwarangal.nitw.edu:${NITW_PEER1_HOST:-host-gateway}"
-      - "peer2.nitwarangal.nitw.edu:${NITW_PEER2_HOST:-host-gateway}"
-      - "peer0.cse.departments.nitw.edu:${DEPT_CSE_HOD_HOST:-host-gateway}"
-      - "peer1.cse.departments.nitw.edu:${DEPT_CSE_FAC_HOST:-host-gateway}"
-      - "peer0.ece.departments.nitw.edu:${DEPT_ECE_HOD_HOST:-host-gateway}"
-      - "peer1.ece.departments.nitw.edu:${DEPT_ECE_FAC_HOST:-host-gateway}"
-      - "peer0.verifiers.nitw.edu:${VERI_PEER0_HOST:-host-gateway}"
-      - "peer1.verifiers.nitw.edu:${VERI_PEER1_HOST:-host-gateway}"

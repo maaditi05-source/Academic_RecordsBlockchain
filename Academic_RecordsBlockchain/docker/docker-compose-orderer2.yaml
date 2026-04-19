@@ -1,11 +1,6 @@
-version: '3.7'
-
 # Node 02 — Orderer 2 (Raft Follower)
 # Machine IP: ${ORDERER2_HOST}
 
-networks:
-  fabric_net:
-    driver: bridge
 
 volumes:
   orderer2.nitw.edu:
@@ -15,6 +10,7 @@ services:
 
   orderer2.nitw.edu:
     container_name: orderer2.nitw.edu
+    network_mode: host
     image: hyperledger/fabric-orderer:2.5
     labels:
       service: hyperledger-fabric
@@ -46,14 +42,3 @@ services:
       - ../organizations/ordererOrganizations/nitw.edu/orderers/orderer2.nitw.edu/msp:/var/hyperledger/orderer/msp
       - ../organizations/ordererOrganizations/nitw.edu/orderers/orderer2.nitw.edu/tls:/var/hyperledger/orderer/tls
       - orderer2.nitw.edu:/var/hyperledger/production/orderer
-    ports:
-      - "${ORDERER2_PORT:-8050}:${ORDERER2_PORT:-8050}"
-      - "${ORDERER2_ADMIN_PORT:-8053}:${ORDERER2_ADMIN_PORT:-8053}"
-    networks:
-      - fabric_net
-    extra_hosts:
-      - "orderer1.nitw.edu:${ORDERER1_HOST:-host-gateway}"
-      - "orderer3.nitw.edu:${ORDERER3_HOST:-host-gateway}"
-      - "peer0.nitwarangal.nitw.edu:${NITW_PEER0_HOST:-host-gateway}"
-      - "peer0.cse.departments.nitw.edu:${DEPT_CSE_HOST:-host-gateway}"
-      - "peer0.verifiers.nitw.edu:${VERI_PEER0_HOST:-host-gateway}"

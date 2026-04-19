@@ -1,14 +1,6 @@
-version: '3.7'
-
 # Node 01 — Orderer 1 (Primary Raft Leader + CA Orderer)
 # Machine IP: ${ORDERER1_HOST}
 
-networks:
-  fabric_net:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 10.200.0.0/16
 
 volumes:
   orderer1.nitw.edu:
@@ -26,21 +18,15 @@ services:
       - FABRIC_CA_SERVER_TLS_ENABLED=true
       - FABRIC_CA_SERVER_PORT=${ORDERER1_CA_PORT:-7054}
       - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:17054
-    ports:
-      - "${ORDERER1_CA_PORT:-7054}:${ORDERER1_CA_PORT:-7054}"
-      - "17054:17054"
     command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
     volumes:
       - ../organizations/fabric-ca/ordererOrg:/etc/hyperledger/fabric-ca-server
     container_name: ca_orderer
-    networks:
-      - fabric_net
-    extra_hosts:
-      - "orderer2.nitw.edu:${ORDERER2_HOST:-host-gateway}"
-      - "orderer3.nitw.edu:${ORDERER3_HOST:-host-gateway}"
+    network_mode: host
 
   orderer1.nitw.edu:
     container_name: orderer1.nitw.edu
+    network_mode: host
     image: hyperledger/fabric-orderer:2.5
     labels:
       service: hyperledger-fabric
@@ -73,21 +59,3 @@ services:
       - ../organizations/ordererOrganizations/nitw.edu/orderers/orderer1.nitw.edu/msp:/var/hyperledger/orderer/msp
       - ../organizations/ordererOrganizations/nitw.edu/orderers/orderer1.nitw.edu/tls:/var/hyperledger/orderer/tls
       - orderer1.nitw.edu:/var/hyperledger/production/orderer
-    ports:
-      - "${ORDERER1_PORT:-7050}:${ORDERER1_PORT:-7050}"
-      - "${ORDERER1_ADMIN_PORT:-7053}:${ORDERER1_ADMIN_PORT:-7053}"
-      - "17050:17050"
-    networks:
-      - fabric_net
-    extra_hosts:
-      - "orderer2.nitw.edu:${ORDERER2_HOST:-host-gateway}"
-      - "orderer3.nitw.edu:${ORDERER3_HOST:-host-gateway}"
-      - "peer0.nitwarangal.nitw.edu:${NITW_PEER0_HOST:-host-gateway}"
-      - "peer1.nitwarangal.nitw.edu:${NITW_PEER1_HOST:-host-gateway}"
-      - "peer2.nitwarangal.nitw.edu:${NITW_PEER2_HOST:-host-gateway}"
-      - "peer0.cse.departments.nitw.edu:${DEPT_CSE_HOD_HOST:-host-gateway}"
-      - "peer1.cse.departments.nitw.edu:${DEPT_CSE_FAC_HOST:-host-gateway}"
-      - "peer0.ece.departments.nitw.edu:${DEPT_ECE_HOD_HOST:-host-gateway}"
-      - "peer1.ece.departments.nitw.edu:${DEPT_ECE_FAC_HOST:-host-gateway}"
-      - "peer0.verifiers.nitw.edu:${VERI_PEER0_HOST:-host-gateway}"
-      - "peer1.verifiers.nitw.edu:${VERI_PEER1_HOST:-host-gateway}"
