@@ -22,7 +22,7 @@ sudo bash -c "cat >> /etc/hosts << EOF
 172.20.238.52   peer1.nitwarangal.nitw.edu
 172.20.255.20   peer2.nitwarangal.nitw.edu
 172.20.247.9    peer0.cse.departments.nitw.edu
-\${DEPT_CSE_FAC_HOST}   peer1.cse.departments.nitw.edu
+172.20.252.35   peer1.cse.departments.nitw.edu
 172.20.244.81   peer0.ece.departments.nitw.edu
 172.20.235.77   peer1.ece.departments.nitw.edu
 172.20.254.157  peer0.verifiers.nitw.edu
