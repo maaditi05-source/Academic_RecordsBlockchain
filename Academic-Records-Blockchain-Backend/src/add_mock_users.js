@@ -8,20 +8,25 @@ let users = JSON.parse(fs.readFileSync(usersFile, 'utf8'));
 const SALT_ROUNDS = 10;
 const defaultPass = bcrypt.hashSync('password123', SALT_ROUNDS);
 
-const newRoles = ['faculty', 'hod', 'dac_member', 'exam_section', 'dean_academic'];
+const mockUsers = [
+    { username: 'cse_faculty', role: 'faculty', dept: 'CSE', pass: 'csefaculty123' },
+    { username: 'cse_hod', role: 'hod', dept: 'CSE', pass: 'csehod123' },
+    { username: 'ece_faculty', role: 'faculty', dept: 'ECE', pass: 'ecefaculty123' },
+    { username: 'ece_hod', role: 'hod', dept: 'ECE', pass: 'ecehod123' },
+    { username: 'verifier_demo', role: 'verifier', dept: null, pass: 'verifier123' },
+    { username: 'dean_academic', role: 'dean_academic', dept: null, pass: 'dean123' },
+    { username: 'exam_section', role: 'exam_section', dept: null, pass: 'exam123' }
+];
 
-newRoles.forEach(role => {
-    if (!users.find(u => u.role === role)) {
-        // e.g. for role 'faculty', the password is 'faculty123'
-        const rolePass = bcrypt.hashSync(`${role}123`, SALT_ROUNDS);
-
+mockUsers.forEach(u => {
+    if (!users.find(existing => existing.username === u.username)) {
         users.push({
-            id: `${role}-mock`,
-            username: `${role}_demo`,
-            email: `${role}@nitw.ac.in`,
-            passwordHash: rolePass,
-            role: role,
-            department: 'CSE',
+            id: `${u.username}-mock`,
+            username: u.username,
+            email: `${u.username}@nitw.ac.in`,
+            passwordHash: bcrypt.hashSync(u.pass, SALT_ROUNDS),
+            role: u.role,
+            department: u.dept,
             createdAt: new Date().toISOString(),
             isActive: true
         });
