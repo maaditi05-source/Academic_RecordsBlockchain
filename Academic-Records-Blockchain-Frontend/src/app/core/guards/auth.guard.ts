@@ -9,9 +9,10 @@ export const authGuard: CanActivateFn = (route, state) => {
   console.log('=== AUTH GUARD CHECK ===');
   console.log('Route:', state.url);
   console.log('isAuthenticated:', authService.isAuthenticated);
-  console.log('Token in localStorage:', !!localStorage.getItem('access_token'));
+  const hasToken = typeof window !== 'undefined' ? !!localStorage.getItem('access_token') : false;
+  console.log('Token in localStorage:', hasToken);
   console.log('Current user:', authService.currentUser);
-  
+
   if (authService.isAuthenticated) {
     console.log('✅ User is authenticated');
     // Check role-based access
