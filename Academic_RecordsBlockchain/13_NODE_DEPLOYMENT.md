@@ -15,15 +15,15 @@ Atul (Raft Follower 1): Run docker-compose -f docker/docker-compose-orderer2.yam
 Vindhya (Raft Follower 2): Run docker-compose -f docker/docker-compose-orderer3.yaml up -d
 
 Step 3: Start Peers and Backend Servers
-Aditi (Admin): Run ./recover-peer.sh, then cd Academic-Records-Blockchain-Backend and run npm start
-Sejal (ExamSection): Run ./recover-peer.sh, then cd Academic-Records-Blockchain-Backend and run npm start
-Shyamashree (Dean): Run ./recover-peer.sh, then cd Academic-Records-Blockchain-Backend and run npm start
-Shreya (CSE HOD): Run ./recover-peer.sh, then cd Academic-Records-Blockchain-Backend and run npm start
-Manasvi (CSE Faculty): Run ./recover-peer.sh, then cd Academic-Records-Blockchain-Backend and run npm start
-Saim (ECE HOD): Run ./recover-peer.sh, then cd Academic-Records-Blockchain-Backend and run npm start
-Amit (ECE Faculty): Run ./recover-peer.sh, then cd Academic-Records-Blockchain-Backend and run npm start
-Mousumi (Verifier 1): Run ./recover-peer.sh, then cd Academic-Records-Blockchain-Backend and run npm start
-Aakash (Verifier 2): Run ./recover-peer.sh, then cd Academic-Records-Blockchain-Backend and run npm start
+Aditi (Admin): Run `docker-compose -f docker/docker-compose-nitwarangal-peer0.yaml up -d` then `./recover-peer.sh peer0.nitwarangal.nitw.edu NITWarangalMSP` then `cd Academic-Records-Blockchain-Backend && npm start`
+Sejal (ExamSection): Run `docker-compose -f docker/docker-compose-nitwarangal-peer1.yaml up -d` then `./recover-peer.sh peer1.nitwarangal.nitw.edu NITWarangalMSP` then `cd Academic-Records-Blockchain-Backend && npm start`
+Shyamashree (Dean): Run `docker-compose -f docker/docker-compose-nitwarangal-peer2.yaml up -d` then `./recover-peer.sh peer2.nitwarangal.nitw.edu NITWarangalMSP` then `cd Academic-Records-Blockchain-Backend && npm start`
+Shreya (CSE HOD): Run `docker-compose -f docker/docker-compose-depts-cse.yaml up -d` then `./recover-peer.sh peer0.cse.departments.nitw.edu DepartmentsMSP` then `cd Academic-Records-Blockchain-Backend && npm start`
+Manasvi (CSE Faculty): Run `docker-compose -f docker/docker-compose-depts-cse-faculty.yaml up -d` then `./recover-peer.sh peer1.cse.departments.nitw.edu DepartmentsMSP` then `cd Academic-Records-Blockchain-Backend && npm start`
+Saim (ECE HOD): Run `docker-compose -f docker/docker-compose-depts-ece.yaml up -d` then `./recover-peer.sh peer0.ece.departments.nitw.edu DepartmentsMSP` then `cd Academic-Records-Blockchain-Backend && npm start`
+Amit (ECE Faculty): Run `docker-compose -f docker/docker-compose-depts-ece-faculty.yaml up -d` then `./recover-peer.sh peer1.ece.departments.nitw.edu DepartmentsMSP` then `cd Academic-Records-Blockchain-Backend && npm start`
+Mousumi (Verifier 1): Run `docker-compose -f docker/docker-compose-verifiers-peer0.yaml up -d` then `./recover-peer.sh peer0.verifiers.nitw.edu VerifiersMSP` then `cd Academic-Records-Blockchain-Backend && npm start`
+Aakash (Verifier 2): Run `docker-compose -f docker/docker-compose-verifiers-peer1.yaml up -d` then `./recover-peer.sh peer1.verifiers.nitw.edu VerifiersMSP` then `cd Academic-Records-Blockchain-Backend && npm start`
 
 Step 4: Deploy Chaincode (Only if updating to new version)
 Aditi: Run ./remote-upgrade-v4.sh
