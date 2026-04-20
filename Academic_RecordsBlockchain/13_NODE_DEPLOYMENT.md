@@ -9,9 +9,9 @@ Next, run: source ./env.sh
 Then run: ./update-hosts.sh
 
 Step 2: Start Orderers (Consensus Nodes)
-Bhargav (Primary Orderer): Run ./recover-peer.sh
-Atul (Raft Follower 1): Run ./recover-peer.sh
-Vindhya (Raft Follower 2): Run ./recover-peer.sh
+Bhargav (Primary Orderer): Run docker-compose -f docker/docker-compose-orderer1.yaml up -d
+Atul (Raft Follower 1): Run docker-compose -f docker/docker-compose-orderer2.yaml up -d
+Vindhya (Raft Follower 2): Run docker-compose -f docker/docker-compose-orderer3.yaml up -d
 
 Step 3: Start Peers and Backend Servers
 Aditi (Admin): Run ./recover-peer.sh, then cd Academic-Records-Blockchain-Backend and run npm start
