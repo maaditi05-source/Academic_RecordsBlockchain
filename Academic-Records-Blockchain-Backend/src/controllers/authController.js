@@ -1,11 +1,12 @@
 const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
-const { authenticateUser, createUser, findUserByUsername, changePassword } = require('../utils/userManager');
+const { authenticateUser, createUser, findUserByUsername, changePassword, loadUsers, saveUsers } = require('../utils/userManager');
 const { getMSPForRole } = require('../utils/mspMapper');
 const { Gateway, Wallets } = require('fabric-network');
 require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
 
 // JWT configuration
 const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-change-in-production';
@@ -14,6 +15,46 @@ const JWT_REFRESH_EXPIRY = process.env.JWT_REFRESH_EXPIRY || '7d';
 
 // Store for refresh tokens (in production, use Redis or database)
 const refreshTokens = new Map();
+
+// Admin node URL for user sync (from env.sh)
+const ADMIN_HOST = process.env.NITW_PEER0_HOST || process.env.ADMIN_HOST || 'localhost';
+const ADMIN_BACKEND_PORT = process.env.NITW_BACKEND_PORT || '3000';
+const ADMIN_URL = `http://${ADMIN_HOST}:${ADMIN_BACKEND_PORT}`;
+
+/**
+ * Sync a user from the admin node when not found locally.
+ * Makes an HTTP GET to admin's /api/auth/internal/user/:username
+ */
+const syncUserFromAdmin = (username) => {
+    return new Promise((resolve, reject) => {
+        const url = `${ADMIN_URL}/api/auth/internal/user/${encodeURIComponent(username)}`;
+        logger.info(`[UserSync] Trying to fetch user '${username}' from admin node: ${url}`);
+        http.get(url, { timeout: 3000 }, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try {
+                    const parsed = JSON.parse(data);
+                    if (parsed.success && parsed.user) {
+                        // Save user locally so future logins are instant
+                        const users = loadUsers();
+                        // Avoid duplicates
+                        if (!users.find(u => u.username === parsed.user.username)) {
+                            users.push(parsed.user);
+                            saveUsers(users);
+                            logger.info(`[UserSync] Cached user '${username}' locally from admin node`);
+                        }
+                        resolve(parsed.user);
+                    } else {
+                        reject(new Error('User not found on admin node'));
+                    }
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        }).on('error', reject).on('timeout', () => reject(new Error('Admin node timeout')));
+    });
+};
 
 /**
  * Generate JWT access token
@@ -86,6 +127,19 @@ const login = async (req, res) => {
             const userByUsername = await findUserByUsername(loginIdentifier);
             if (userByUsername) {
                 user = await authenticateUser(userByUsername.username, password);
+            }
+        }
+
+        // ── Distributed Sync: if user not found locally, try fetching from admin node ──
+        if (!user) {
+            try {
+                const synced = await syncUserFromAdmin(loginIdentifier);
+                if (synced) {
+                    // User is now cached locally, retry authentication
+                    user = await authenticateUser(loginIdentifier, password);
+                }
+            } catch (syncErr) {
+                logger.debug(`[UserSync] Could not sync '${loginIdentifier}': ${syncErr.message}`);
             }
         }
 
@@ -628,6 +682,25 @@ const getAllUsers = async (req, res) => {
     }
 };
 
+/**
+ * Internal endpoint for node-to-node user sync.
+ * Returns raw user data (including passwordHash) so remote nodes can cache it.
+ * GET /api/auth/internal/user/:username
+ */
+const getInternalUser = async (req, res) => {
+    try {
+        const { username } = req.params;
+        const user = findUserByUsername(username);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        // Return full user object including passwordHash for remote caching
+        res.json({ success: true, user });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
     login,
     register,
@@ -636,5 +709,6 @@ module.exports = {
     getProfile,
     changePasswordEndpoint,
     getAllUsers,
-    approveUser
+    approveUser,
+    getInternalUser
 };

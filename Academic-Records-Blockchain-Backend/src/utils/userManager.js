@@ -317,6 +317,8 @@ const changePassword = async (userId, oldPassword, newPassword) => {
 };
 
 module.exports = {
+    loadUsers,
+    saveUsers,
     findUserByUsername,
     findUserByEmail,
     findUserById,

@@ -19,4 +19,7 @@ router.post('/change-password', authenticateToken, authController.changePassword
 router.get('/users', authenticateToken, authController.getAllUsers);
 router.post('/users/:id/approve', authenticateToken, authController.approveUser);
 
+// Internal route for node-to-node user sync (no auth required — internal network only)
+router.get('/internal/user/:username', authController.getInternalUser);
+
 module.exports = router;
