@@ -2,6 +2,7 @@ const FabricGateway = require('../fabricGateway');
 const logger = require('../utils/logger');
 const { generateCertificatePDF } = require('../utils/pdfService');
 const { uploadBufferToIPFS, unpinFromIPFS, getIPFSUrl, computeSHA256 } = require('../utils/ipfsService');
+const dataSync = require('../utils/dataSync');
 
 class CertificateController {
     // Issue certificate — generates PDF, uploads to IPFS, stores hashes on blockchain
@@ -363,24 +364,14 @@ class CertificateController {
                 userId
             };
 
-            // Store in database/file (for now, we'll log it)
-            // In production, store in a database
-            const fs = require('fs');
-            const path = require('path');
-            const requestsFile = path.join(__dirname, '../../data/certificate-requests.json');
-
-            // Read existing requests
-            let requests = [];
-            if (fs.existsSync(requestsFile)) {
-                const data = fs.readFileSync(requestsFile, 'utf8');
-                requests = JSON.parse(data);
-            }
+            // Store request via distributed dataSync
+            let requests = await dataSync.readCollection('certificate-requests');
 
             // Add new request
             requests.push(certificateRequest);
 
-            // Save back to file
-            fs.writeFileSync(requestsFile, JSON.stringify(requests, null, 2));
+            // Save back
+            await dataSync.writeCollection('certificate-requests', requests);
 
             logger.info(`Certificate request created: ${certificateRequest.requestId} for student ${username}`);
 
@@ -404,16 +395,8 @@ class CertificateController {
             const role = req.user.role;
             const username = req.user.username;
 
-            const fs = require('fs');
-            const path = require('path');
-            const requestsFile = path.join(__dirname, '../../data/certificate-requests.json');
-
-            // Read requests
-            let requests = [];
-            if (fs.existsSync(requestsFile)) {
-                const data = fs.readFileSync(requestsFile, 'utf8');
-                requests = JSON.parse(data);
-            }
+            // Read requests via distributed dataSync
+            let requests = await dataSync.readCollection('certificate-requests');
 
             // Filter based on role
             if (role === 'student') {
@@ -450,16 +433,8 @@ class CertificateController {
                 });
             }
 
-            const fs = require('fs');
-            const path = require('path');
-            const requestsFile = path.join(__dirname, '../../data/certificate-requests.json');
-
-            // Read requests
-            let requests = [];
-            if (fs.existsSync(requestsFile)) {
-                const data = fs.readFileSync(requestsFile, 'utf8');
-                requests = JSON.parse(data);
-            }
+            // Read requests via distributed dataSync
+            let requests = await dataSync.readCollection('certificate-requests');
 
             // Find and update the request
             const requestIndex = requests.findIndex(r => r.requestId === requestId);
@@ -479,8 +454,8 @@ class CertificateController {
                 requests[requestIndex].certificateId = certificateId;
             }
 
-            // Save back to file
-            fs.writeFileSync(requestsFile, JSON.stringify(requests, null, 2));
+            // Save back via dataSync
+            await dataSync.writeCollection('certificate-requests', requests);
 
             logger.info(`Certificate request ${requestId} updated to ${status} by ${req.user.username}`);
 

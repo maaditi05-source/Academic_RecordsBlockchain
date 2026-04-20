@@ -4,24 +4,20 @@ const path = require('path');
 const fs = require('fs');
 const { authenticateToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
+const dataSync = require('../utils/dataSync');
 
-const COURSES_FILE = path.join(__dirname, '../../data/courses.json');
 const USERS_FILE = path.join(__dirname, '../../data/users.json');
 
-function loadJSON(file) {
-    try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
-    catch { return []; }
-}
-function saveJSON(file, data) {
-    fs.writeFileSync(file, JSON.stringify(data, null, 2));
-}
+async function loadCourses() { return await dataSync.readCollection('courses'); }
+async function saveCourses(data) { await dataSync.writeCollection('courses', data); }
+async function loadUsers() { return await dataSync.readCollection('users'); }
 
 router.use(authenticateToken);
 
 // ── GET /api/courses — All courses (query: ?department=&faculty=&semester=) ──
-router.get('/', (req, res) => {
-    const courses = loadJSON(COURSES_FILE);
-    const users = loadJSON(USERS_FILE);
+router.get('/', async (req, res) => {
+    const courses = await loadCourses();
+    const users = await loadUsers();
     const { department, faculty, semester } = req.query;
     let filtered = courses;
     if (department) filtered = filtered.filter(c => c.department === department);
@@ -37,9 +33,9 @@ router.get('/', (req, res) => {
 });
 
 // ── GET /api/courses/department/:dept — Courses by department ──────
-router.get('/department/:dept', (req, res) => {
-    const courses = loadJSON(COURSES_FILE);
-    const users = loadJSON(USERS_FILE);
+router.get('/department/:dept', async (req, res) => {
+    const courses = await loadCourses();
+    const users = await loadUsers();
     const filtered = courses.filter(c => c.department === req.params.dept);
     const enriched = filtered.map(c => {
         const f = users.find(u => u.username === c.faculty);
@@ -49,15 +45,15 @@ router.get('/department/:dept', (req, res) => {
 });
 
 // ── GET /api/courses/:code — Single course ────────────────────────
-router.get('/:code', (req, res) => {
-    const courses = loadJSON(COURSES_FILE);
+router.get('/:code', async (req, res) => {
+    const courses = await loadCourses();
     const course = courses.find(c => c.code === req.params.code || c.id === req.params.code);
     if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
     res.json({ success: true, data: course });
 });
 
 // ── POST /api/courses — Create course (HOD / admin) ───────────────
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const user = req.user;
         if (!['hod', 'department', 'admin'].includes(user.role)) {
@@ -69,7 +65,7 @@ router.post('/', (req, res) => {
             return res.status(400).json({ success: false, message: 'code, name, and department are required' });
         }
 
-        const courses = loadJSON(COURSES_FILE);
+        const courses = await loadCourses();
         const existing = courses.find(c => c.code === code);
         if (existing) {
             return res.status(409).json({ success: false, message: `Course ${code} already exists` });
@@ -90,7 +86,7 @@ router.post('/', (req, res) => {
         };
 
         courses.push(newCourse);
-        saveJSON(COURSES_FILE, courses);
+        await saveCourses(courses);
         logger.info(`Course ${code} created by ${user.username}`);
         res.status(201).json({ success: true, data: newCourse });
     } catch (err) {
@@ -99,14 +95,14 @@ router.post('/', (req, res) => {
 });
 
 // ── PUT /api/courses/:id — Update course ──────────────────────────
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
     try {
         const user = req.user;
         if (!['hod', 'department', 'admin'].includes(user.role)) {
             return res.status(403).json({ success: false, message: 'Not authorized' });
         }
 
-        const courses = loadJSON(COURSES_FILE);
+        const courses = await loadCourses();
         const idx = courses.findIndex(c => c.id === req.params.id || c.code === req.params.id);
         if (idx === -1) return res.status(404).json({ success: false, message: 'Course not found' });
 
@@ -116,7 +112,7 @@ router.put('/:id', (req, res) => {
         if (maxMarks) courses[idx].maxMarks = parseInt(maxMarks);
         if (semester) courses[idx].semester = parseInt(semester);
 
-        saveJSON(COURSES_FILE, courses);
+        await saveCourses(courses);
         res.json({ success: true, data: courses[idx] });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -124,19 +120,19 @@ router.put('/:id', (req, res) => {
 });
 
 // ── DELETE /api/courses/:id — Delete course ───────────────────────
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
     try {
         const user = req.user;
         if (!['hod', 'department', 'admin'].includes(user.role)) {
             return res.status(403).json({ success: false, message: 'Not authorized' });
         }
 
-        const courses = loadJSON(COURSES_FILE);
+        const courses = await loadCourses();
         const idx = courses.findIndex(c => c.id === req.params.id || c.code === req.params.id);
         if (idx === -1) return res.status(404).json({ success: false, message: 'Course not found' });
 
         const deleted = courses.splice(idx, 1);
-        saveJSON(COURSES_FILE, courses);
+        await saveCourses(courses);
         res.json({ success: true, message: `Course ${deleted[0].code} deleted` });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -144,7 +140,7 @@ router.delete('/:id', (req, res) => {
 });
 
 // ── PUT /api/courses/:id/assign — Assign faculty to course ────────
-router.put('/:id/assign', (req, res) => {
+router.put('/:id/assign', async (req, res) => {
     try {
         const user = req.user;
         if (!['hod', 'department', 'admin'].includes(user.role)) {
@@ -154,7 +150,7 @@ router.put('/:id/assign', (req, res) => {
         const { facultyUsername } = req.body;
         if (!facultyUsername) return res.status(400).json({ success: false, message: 'facultyUsername required' });
 
-        const courses = loadJSON(COURSES_FILE);
+        const courses = await loadCourses();
         const idx = courses.findIndex(c => c.id === req.params.id || c.code === req.params.id);
         if (idx === -1) return res.status(404).json({ success: false, message: 'Course not found' });
 
@@ -164,7 +160,7 @@ router.put('/:id/assign', (req, res) => {
             courses[idx].enrolledFaculty.push(facultyUsername);
         }
 
-        saveJSON(COURSES_FILE, courses);
+        await saveCourses(courses);
         res.json({ success: true, data: courses[idx] });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -172,14 +168,14 @@ router.put('/:id/assign', (req, res) => {
 });
 
 // ── PUT /api/courses/:id/enroll — Faculty self-enroll ─────────────
-router.put('/:id/enroll', (req, res) => {
+router.put('/:id/enroll', async (req, res) => {
     try {
         const user = req.user;
         if (!['faculty', 'hod', 'department', 'admin'].includes(user.role)) {
             return res.status(403).json({ success: false, message: 'Only faculty can self-enroll' });
         }
 
-        const courses = loadJSON(COURSES_FILE);
+        const courses = await loadCourses();
         const idx = courses.findIndex(c => c.id === req.params.id || c.code === req.params.id);
         if (idx === -1) return res.status(404).json({ success: false, message: 'Course not found' });
 
@@ -189,7 +185,7 @@ router.put('/:id/enroll', (req, res) => {
         }
 
         courses[idx].enrolledFaculty.push(user.username);
-        saveJSON(COURSES_FILE, courses);
+        await saveCourses(courses);
         res.json({ success: true, message: `Enrolled in ${courses[idx].code}`, data: courses[idx] });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -197,10 +193,10 @@ router.put('/:id/enroll', (req, res) => {
 });
 
 // ── PUT /api/courses/:id/unenroll — Faculty self-unenroll ─────────
-router.put('/:id/unenroll', (req, res) => {
+router.put('/:id/unenroll', async (req, res) => {
     try {
         const user = req.user;
-        const courses = loadJSON(COURSES_FILE);
+        const courses = await loadCourses();
         const idx = courses.findIndex(c => c.id === req.params.id || c.code === req.params.id);
         if (idx === -1) return res.status(404).json({ success: false, message: 'Course not found' });
 
@@ -208,7 +204,7 @@ router.put('/:id/unenroll', (req, res) => {
         courses[idx].enrolledFaculty = courses[idx].enrolledFaculty.filter(f => f !== user.username);
         if (courses[idx].faculty === user.username) courses[idx].faculty = null;
 
-        saveJSON(COURSES_FILE, courses);
+        await saveCourses(courses);
         res.json({ success: true, message: `Unenrolled from ${courses[idx].code}`, data: courses[idx] });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });

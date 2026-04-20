@@ -9,17 +9,15 @@
 const path = require('path');
 const fs = require('fs');
 const logger = require('../utils/logger');
+const dataSync = require('../utils/dataSync');
 
-const MARKS_FILE = path.join(__dirname, '../../data/marks.json');
-const COURSES_FILE = path.join(__dirname, '../../data/courses.json');
 const USERS_FILE = path.join(__dirname, '../../data/users.json');
 
-function loadJSON(file) {
-    try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
-    catch { return []; }
+async function loadJSON(collection) {
+    return await dataSync.readCollection(collection);
 }
-function saveJSON(file, data) {
-    fs.writeFileSync(file, JSON.stringify(data, null, 2));
+async function saveJSON(collection, data) {
+    await dataSync.writeCollection(collection, data);
 }
 
 class MarksController {
@@ -27,8 +25,8 @@ class MarksController {
     // ── GET /marks — All marks with query filters ───────────────────
     static async getAllMarks(req, res) {
         try {
-            let marks = loadJSON(MARKS_FILE);
-            const courses = loadJSON(COURSES_FILE);
+            let marks = await loadJSON('marks');
+            const courses = await loadJSON('courses');
             const { studentId, semester, courseCode, status, department } = req.query;
 
             if (studentId) marks = marks.filter(m => m.studentId === studentId);
@@ -61,8 +59,8 @@ class MarksController {
     static async getStudentMarks(req, res) {
         try {
             const { studentId } = req.params;
-            const marks = loadJSON(MARKS_FILE).filter(m => m.studentId === studentId);
-            const courses = loadJSON(COURSES_FILE);
+            const marks = await loadJSON('marks').filter(m => m.studentId === studentId);
+            const courses = await loadJSON('courses');
 
             const enriched = marks.map(m => {
                 const course = courses.find(c => c.code === m.courseCode) || {};
@@ -80,9 +78,9 @@ class MarksController {
     static async getStudentSemesterMarks(req, res) {
         try {
             const { studentId, semester } = req.params;
-            const marks = loadJSON(MARKS_FILE)
+            const marks = await loadJSON('marks')
                 .filter(m => m.studentId === studentId && m.semester === parseInt(semester));
-            const courses = loadJSON(COURSES_FILE);
+            const courses = await loadJSON('courses');
 
             const enriched = marks.map(m => {
                 const course = courses.find(c => c.code === m.courseCode) || {};
@@ -109,7 +107,7 @@ class MarksController {
     static async getStudentCGPA(req, res) {
         try {
             const { studentId } = req.params;
-            const marks = loadJSON(MARKS_FILE)
+            const marks = await loadJSON('marks')
                 .filter(m => m.studentId === studentId && (m.status === 'locked' || m.status === 'verified'));
 
             let totalCredits = 0, weightedSum = 0;
@@ -149,8 +147,8 @@ class MarksController {
             }
 
             const entries = Array.isArray(req.body) ? req.body : [req.body];
-            const marks = loadJSON(MARKS_FILE);
-            const courses = loadJSON(COURSES_FILE);
+            const marks = await loadJSON('marks');
+            const courses = await loadJSON('courses');
             const created = [];
             const errors = [];
 
@@ -247,7 +245,7 @@ class MarksController {
                 created.push(newMark);
             }
 
-            saveJSON(MARKS_FILE, marks);
+            await saveJSON('marks', marks);
 
             if (created.length === 0 && errors.length > 0) {
                 return res.status(400).json({ success: false, errors, message: errors.join('; ') });
@@ -263,7 +261,7 @@ class MarksController {
     // ── PUT /marks/:markId/submit — Faculty submits to HOD ─────────
     static async submitMarks(req, res) {
         try {
-            const marks = loadJSON(MARKS_FILE);
+            const marks = await loadJSON('marks');
             const idx = marks.findIndex(m => m.id === req.params.markId);
             if (idx === -1) return res.status(404).json({ success: false, message: 'Mark not found' });
             if (marks[idx].status !== 'draft') {
@@ -276,7 +274,7 @@ class MarksController {
             marks[idx].approvalChain = marks[idx].approvalChain || [];
             marks[idx].approvalChain.push({ role: 'faculty', user: req.user.username, action: 'submitted', at: new Date().toISOString() });
 
-            saveJSON(MARKS_FILE, marks);
+            await saveJSON('marks', marks);
             res.json({ success: true, message: 'Marks submitted to HOD for approval', data: marks[idx] });
         } catch (err) {
             res.status(500).json({ success: false, message: err.message });
@@ -291,7 +289,7 @@ class MarksController {
                 return res.status(403).json({ success: false, message: 'Only HOD or admin can approve at this stage' });
             }
 
-            const marks = loadJSON(MARKS_FILE);
+            const marks = await loadJSON('marks');
             const idx = marks.findIndex(m => m.id === req.params.markId);
             if (idx === -1) return res.status(404).json({ success: false, message: 'Mark not found' });
             if (marks[idx].status !== 'submitted') {
@@ -302,7 +300,7 @@ class MarksController {
             marks[idx].approvalChain = marks[idx].approvalChain || [];
             marks[idx].approvalChain.push({ role: 'hod', user: user.username, action: 'approved', at: new Date().toISOString() });
 
-            saveJSON(MARKS_FILE, marks);
+            await saveJSON('marks', marks);
             res.json({ success: true, message: 'Marks approved by HOD, forwarded to Exam Section', data: marks[idx] });
         } catch (err) {
             res.status(500).json({ success: false, message: err.message });
@@ -317,7 +315,7 @@ class MarksController {
                 return res.status(403).json({ success: false, message: 'Only Exam Section or admin can approve at this stage' });
             }
 
-            const marks = loadJSON(MARKS_FILE);
+            const marks = await loadJSON('marks');
             const idx = marks.findIndex(m => m.id === req.params.markId);
             if (idx === -1) return res.status(404).json({ success: false, message: 'Mark not found' });
             if (marks[idx].status !== 'hod_approved') {
@@ -328,7 +326,7 @@ class MarksController {
             marks[idx].approvalChain = marks[idx].approvalChain || [];
             marks[idx].approvalChain.push({ role: 'exam_section', user: user.username, action: 'approved', at: new Date().toISOString() });
 
-            saveJSON(MARKS_FILE, marks);
+            await saveJSON('marks', marks);
             res.json({ success: true, message: 'Marks approved by Exam Section, forwarded to Dean', data: marks[idx] });
         } catch (err) {
             res.status(500).json({ success: false, message: err.message });
@@ -343,7 +341,7 @@ class MarksController {
                 return res.status(403).json({ success: false, message: 'Only Dean or admin can approve at this stage' });
             }
 
-            const marks = loadJSON(MARKS_FILE);
+            const marks = await loadJSON('marks');
             const idx = marks.findIndex(m => m.id === req.params.markId);
             if (idx === -1) return res.status(404).json({ success: false, message: 'Mark not found' });
             if (marks[idx].status !== 'exam_approved') {
@@ -354,7 +352,7 @@ class MarksController {
             marks[idx].approvalChain = marks[idx].approvalChain || [];
             marks[idx].approvalChain.push({ role: 'dean', user: user.username, action: 'approved', at: new Date().toISOString() });
 
-            saveJSON(MARKS_FILE, marks);
+            await saveJSON('marks', marks);
             res.json({ success: true, message: 'Marks approved by Dean, forwarded to Admin for finalization', data: marks[idx] });
         } catch (err) {
             res.status(500).json({ success: false, message: err.message });
@@ -369,7 +367,7 @@ class MarksController {
                 return res.status(403).json({ success: false, message: 'Only admin can finalize marks' });
             }
 
-            const marks = loadJSON(MARKS_FILE);
+            const marks = await loadJSON('marks');
             const idx = marks.findIndex(m => m.id === req.params.markId);
             if (idx === -1) return res.status(404).json({ success: false, message: 'Mark not found' });
             if (marks[idx].status !== 'dean_approved') {
@@ -381,7 +379,7 @@ class MarksController {
             marks[idx].approvalChain.push({ role: 'admin', user: user.username, action: 'finalized', at: new Date().toISOString() });
             marks[idx].finalizedAt = new Date().toISOString();
 
-            saveJSON(MARKS_FILE, marks);
+            await saveJSON('marks', marks);
             res.json({ success: true, message: 'Marks finalized and locked', data: marks[idx] });
         } catch (err) {
             res.status(500).json({ success: false, message: err.message });
@@ -397,7 +395,7 @@ class MarksController {
                 return res.status(403).json({ success: false, message: 'Not authorized to reject marks' });
             }
 
-            const marks = loadJSON(MARKS_FILE);
+            const marks = await loadJSON('marks');
             const idx = marks.findIndex(m => m.id === req.params.markId);
             if (idx === -1) return res.status(404).json({ success: false, message: 'Mark not found' });
 
@@ -409,7 +407,7 @@ class MarksController {
             marks[idx].approvalChain = marks[idx].approvalChain || [];
             marks[idx].approvalChain.push({ role: user.role, user: user.username, action: 'rejected', reason: reason || '', at: new Date().toISOString() });
 
-            saveJSON(MARKS_FILE, marks);
+            await saveJSON('marks', marks);
             res.json({ success: true, message: 'Marks rejected', data: marks[idx] });
         } catch (err) {
             res.status(500).json({ success: false, message: err.message });
@@ -442,8 +440,8 @@ class MarksController {
             saveJSON(lockFile, locked);
 
             // Also lock all exam_approved marks for this dept+semester
-            const marks = loadJSON(MARKS_FILE);
-            const courses = loadJSON(COURSES_FILE);
+            const marks = await loadJSON('marks');
+            const courses = await loadJSON('courses');
             const deptCourses = courses.filter(c => c.department === dept).map(c => c.code);
             let lockedCount = 0;
             for (let i = 0; i < marks.length; i++) {
@@ -456,7 +454,7 @@ class MarksController {
                     lockedCount++;
                 }
             }
-            saveJSON(MARKS_FILE, marks);
+            await saveJSON('marks', marks);
 
             res.json({ success: true, message: `Semester ${semester} for ${dept} locked. ${lockedCount} marks auto-locked.` });
         } catch (err) {
@@ -473,7 +471,7 @@ class MarksController {
             }
 
             const { markId } = req.params;
-            const marks = loadJSON(MARKS_FILE);
+            const marks = await loadJSON('marks');
             const idx = marks.findIndex(m => m.id === markId);
             if (idx === -1) return res.status(404).json({ success: false, message: 'Mark record not found' });
             if (marks[idx].status === 'verified' || marks[idx].status === 'locked') {
@@ -484,7 +482,7 @@ class MarksController {
             marks[idx].verifiedBy = user.username || user.userId;
             marks[idx].verifiedAt = new Date().toISOString();
 
-            saveJSON(MARKS_FILE, marks);
+            await saveJSON('marks', marks);
             res.json({ success: true, message: 'Marks verified', data: marks[idx] });
         } catch (err) {
             res.status(500).json({ success: false, message: err.message });
@@ -495,8 +493,8 @@ class MarksController {
     static async getPendingMarks(req, res) {
         try {
             const user = req.user;
-            const marks = loadJSON(MARKS_FILE).filter(m => m.status === 'pending' || m.status === 'submitted');
-            const courses = loadJSON(COURSES_FILE);
+            const marks = await loadJSON('marks').filter(m => m.status === 'pending' || m.status === 'submitted');
+            const courses = await loadJSON('courses');
 
             let filtered = marks;
             if (user.role === 'exam_section' || user.role === 'admin') {
@@ -524,8 +522,8 @@ class MarksController {
     static async getCourseMarks(req, res) {
         try {
             const { courseCode } = req.params;
-            const marks = loadJSON(MARKS_FILE).filter(m => m.courseCode === courseCode);
-            const users = loadJSON(USERS_FILE);
+            const marks = await loadJSON('marks').filter(m => m.courseCode === courseCode);
+            const users = await loadJSON('users');
 
             const enriched = marks.map(m => {
                 const student = users.find(u => u.username === m.studentId);
