@@ -26,7 +26,7 @@ Mousumi (Verifier 1): Run `docker-compose -f docker/docker-compose-verifiers-pee
 Aakash (Verifier 2): Run `docker-compose -f docker/docker-compose-verifiers-peer1.yaml up -d` then `./recover-peer.sh peer1.verifiers.nitw.edu VerifiersMSP` then `cd Academic-Records-Blockchain-Backend && npm start`
 
 Step 4: Deploy Chaincode (Only if updating to new version)
-Aditi: Run ./remote-upgrade-v4.sh
+Aditi: Run ./scripts/remote-upgrade-v4.sh
 
 Step 5: Start Frontend Portal
 Students / General Users: cd Academic-Records-Blockchain-Backend and run npm start, then cd ../Academic-Records-Blockchain-Frontend and run npm run start -- --host 0.0.0.0
