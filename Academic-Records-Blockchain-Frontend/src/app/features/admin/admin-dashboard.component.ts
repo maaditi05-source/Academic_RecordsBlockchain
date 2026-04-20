@@ -296,13 +296,13 @@ import { AddCourseDialogComponent } from './add-course-dialog/add-course-dialog.
   styles: [`
     .dashboard-container { max-width:1200px;margin:0 auto;padding:24px;min-height:100vh; }
     .dash-header {
-      background:linear-gradient(135deg,#dc2626 0%,#ef4444 30%,#f97316 100%);
+      background:linear-gradient(135deg,#0f766e 0%,#0891b2 50%,#6366f1 100%);
       border-radius:20px;padding:32px;margin-bottom:24px;position:relative;overflow:hidden;
       &::before { content:'';position:absolute;inset:0;background:radial-gradient(circle at 85% 25%,rgba(255,255,255,0.12) 0%,transparent 50%); }
     }
     .header-content { display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1;flex-wrap:wrap;gap:16px; }
     .header-left { display:flex;align-items:center;gap:20px; }
-    .avatar-ring { width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#fbbf24,#fb923c);padding:3px; }
+    .avatar-ring { width:64px;height:64px;border-radius:50%;background:var(--gradient-primary);padding:3px; }
     .avatar { width:100%;height:100%;border-radius:50%;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center; mat-icon{color:#fff;font-size:28px;width:28px;height:28px;} }
     .header-info h1 { color:#fff;font-size:1.5rem;font-weight:700;margin:0; }
     .subtitle { display:flex;gap:8px;margin-top:8px; }
@@ -319,7 +319,7 @@ import { AddCourseDialogComponent } from './add-course-dialog/add-course-dialog.
     .marks-table-wrapper { overflow-x:auto;border-radius:12px; }
     .modern-table {
       width:100%;border-collapse:collapse;background:rgba(15,23,42,0.5);border-radius:12px;overflow:hidden;
-      thead tr { background:linear-gradient(135deg,rgba(220,38,38,0.4),rgba(249,115,22,0.4)); th{padding:14px 16px;color:#e2e8f0;font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;text-align:left;} }
+      thead tr { background:linear-gradient(135deg,rgba(15,118,110,0.5),rgba(8,145,178,0.5)); th{padding:14px 16px;color:#e2e8f0;font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;text-align:left;} }
       tbody tr { border-bottom:1px solid rgba(148,163,184,0.06);transition:background 0.2s; &:hover{background:rgba(251,191,36,0.04);} &:nth-child(even){background:rgba(17,24,39,0.3);} td{padding:12px 16px;color:var(--text-primary);font-size:14px;} }
     }
     .course-code { font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--accent-cyan);font-size:13px; }

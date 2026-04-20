@@ -14,7 +14,7 @@ router.get('/:departmentId/courses', authenticateToken, requireRole('department'
 router.post('/courses/create', authenticateToken, requireRole('department', 'admin'), DepartmentController.createCourseOffering);
 
 // Department students routes
-router.get('/:departmentId/students', authenticateToken, requireRole('department', 'admin'), DepartmentController.getStudentsByDepartment);
+router.get('/:departmentId/students', authenticateToken, requireRole('department', 'admin', 'hod', 'faculty'), DepartmentController.getStudentsByDepartment);
 
 // Department record management routes
 router.post('/records', authenticateToken, requireRole('department', 'admin'), RecordController.createAcademicRecord);

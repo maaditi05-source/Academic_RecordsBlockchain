@@ -33,6 +33,18 @@ $dark-theme: mat.define-dark-theme((color: (primary: $dark-primary,
 @tailwind components;
 @tailwind utilities;
 
+/* ── Angular Material vs Tailwind CSS Fixes ──────────────────────── */
+.cdk-overlay-container {
+  z-index: 99999 !important;
+  /* Ensure dropdowns overlay modern dashboards */
+}
+
+.mat-mdc-select-panel {
+  background: #1e293b !important;
+  /* Force solid dark background on dropdowns */
+  color: #e2e8f0 !important;
+}
+
 // ── CSS Variables ───────────────────────────────────────────────
 :root {
   --bg-primary: #0a0e1a;

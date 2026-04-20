@@ -141,17 +141,6 @@ import { LoginCredentials } from '../../core/models/user.model';
                 <span *ngIf="!loading">Sign In</span>
               </button>
 
-              <div class="divider">
-                <span>or</span>
-              </div>
-
-              <div class="register-section">
-                <p class="register-text">Don't have an account?</p>
-                <a routerLink="/auth/register" class="register-link">
-                  <mat-icon>person_add</mat-icon>
-                  <span>Create Account</span>
-                </a>
-              </div>
             </form>
           </mat-card-content>
         </mat-card>
