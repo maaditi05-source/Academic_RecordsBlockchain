@@ -144,6 +144,9 @@ app.use(`${APP_CONFIG.server.apiPrefix}/reports`, reportRoutes);
 app.use(`${APP_CONFIG.server.apiPrefix}/marks`, marksRoutes);
 app.use(`${APP_CONFIG.server.apiPrefix}/courses`, coursesRoutes);
 
+// Internal data sync routes (node-to-node, no auth)
+const internalDataRoutes = require('./routes/internalDataRoutes');
+app.use(`${APP_CONFIG.server.apiPrefix}/internal/data`, internalDataRoutes);
 
 // Serve uploaded files and generated certificates
 app.use('/uploads', express.static(require('path').join(__dirname, '../uploads')));

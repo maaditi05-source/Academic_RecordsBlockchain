@@ -78,19 +78,5 @@
     "department": null,
     "createdAt": "2026-04-19T13:26:45.456Z",
     "isActive": true
-  },
-  {
-    "id": "student-1776666943111",
-    "username": "25CSM2R10",
-    "email": "25csm2r10@student.nitw.ac.in",
-    "passwordHash": "$2a$10$fmXb0hL0UQLj6on4L0T5S.doB563.a/E31yJL10XpMcDLq2UOgpIm",
-    "name": "Jenish Shiroya",
-    "role": "student",
-    "department": "CSE",
-    "mspId": "NITWarangalMSP",
-    "createdAt": "2026-04-20T06:35:43.111Z",
-    "isActive": true,
-    "passwordChangeRequired": true,
-    "firstLogin": true
   }
 ]
