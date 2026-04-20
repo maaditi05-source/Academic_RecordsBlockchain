@@ -54,7 +54,7 @@ install_cc "${VERIFIERS_PEER1_HOST}:11151" "VerifiersMSP" "/tmp/verifier-admin-m
 
 # 3. Get Package ID
 echo "🔍 Getting package ID..."
-PACKAGE_ID=$(docker exec peer0.nitwarangal.nitw.edu peer lifecycle chaincode queryinstalled | grep "Package ID: ${CHAINCODE_LABEL}" | sed -n 's/Package ID: \(.*\), Label:.*/\1/p' | head -n 1)
+PACKAGE_ID=$(docker exec -e CORE_PEER_MSPCONFIGPATH=/tmp/admin-msp -e CORE_PEER_LOCALMSPID=NITWarangalMSP peer0.nitwarangal.nitw.edu peer lifecycle chaincode queryinstalled | grep "Package ID: ${CHAINCODE_LABEL}" | sed -n 's/Package ID: \(.*\), Label:.*/\1/p' | head -n 1)
 echo "✓ Package ID: ${PACKAGE_ID}"
 
 # 4. Approve & Commit for all organizations (using run-cli.sh)
