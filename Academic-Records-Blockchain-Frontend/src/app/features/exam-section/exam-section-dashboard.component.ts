@@ -7,10 +7,10 @@ import { BlockchainService } from '../../core/services/blockchain.service';
 type ExamTab = 'marks' | 'lock' | 'certs' | 'records';
 
 @Component({
-    selector: 'app-exam-section-dashboard',
-    standalone: true,
-    imports: [CommonModule, FormsModule],
-    template: `
+  selector: 'app-exam-section-dashboard',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
 <div class="min-h-screen bg-gray-50">
   <div *ngIf="toast.show" [class.bg-green-600]="toast.type==='success'" [class.bg-red-600]="toast.type==='error'"
        class="fixed top-4 right-4 z-50 text-white text-sm px-4 py-2.5 rounded-lg shadow-lg">{{ toast.msg }}</div>
@@ -143,96 +143,96 @@ type ExamTab = 'marks' | 'lock' | 'certs' | 'records';
 </div>`,
 })
 export class ExamSectionDashboardComponent implements OnInit {
-    user: any;
-    activeTab: ExamTab = 'marks';
-    loading = false;
-    pendingMarks: any[] = [];
-    certRequests: any[] = [];
-    allMarks: any[] = [];
-    lockForm = { dept: 'CSE', semester: 1 };
-    lockResult = '';
-    toast = { show: false, msg: '', type: 'success' as 'success' | 'error' };
+  user: any;
+  activeTab: ExamTab = 'marks';
+  loading = false;
+  pendingMarks: any[] = [];
+  certRequests: any[] = [];
+  allMarks: any[] = [];
+  lockForm = { dept: 'CSE', semester: 1 };
+  lockResult = '';
+  toast = { show: false, msg: '', type: 'success' as 'success' | 'error' };
 
-    constructor(private authService: AuthService, private blockchain: BlockchainService) { }
-    ngOnInit(): void { this.user = this.authService.currentUser; this.loadPendingMarks(); }
+  constructor(private authService: AuthService, private blockchain: BlockchainService) { }
+  ngOnInit(): void { this.user = this.authService.currentUser; this.loadPendingMarks(); }
 
-    setTab(tab: string): void {
-        this.activeTab = tab as ExamTab;
-        if (tab === 'marks') this.loadPendingMarks();
-        if (tab === 'certs') this.loadCertRequests();
-        if (tab === 'records') this.loadAllMarks();
-    }
+  setTab(tab: string): void {
+    this.activeTab = tab as ExamTab;
+    if (tab === 'marks') this.loadPendingMarks();
+    if (tab === 'certs') this.loadCertRequests();
+    if (tab === 'records') this.loadAllMarks();
+  }
 
-    loadPendingMarks(): void {
-        this.loading = true;
-        this.blockchain.getMarks({ status: 'hod_approved' }).subscribe({
-            next: (m: any) => { this.pendingMarks = Array.isArray(m) ? m : (m?.data || []); this.loading = false; },
-            error: () => { this.loading = false; },
-        });
-    }
+  loadPendingMarks(): void {
+    this.loading = true;
+    this.blockchain.getMarks({ status: 'hod_approved' }).subscribe({
+      next: (m: any) => { this.pendingMarks = Array.isArray(m) ? m : (m?.data || []); this.loading = false; },
+      error: () => { this.loading = false; },
+    });
+  }
 
-    approveMarks(id: string): void {
-        this.blockchain.examApproveMarks(id).subscribe({
-            next: () => { this.pendingMarks = this.pendingMarks.filter(m => m.id !== id); this.showToast('Approved → Dean'); },
-            error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
-        });
-    }
+  approveMarks(id: string): void {
+    this.blockchain.examApproveMarks(id).subscribe({
+      next: () => { this.pendingMarks = this.pendingMarks.filter(m => m.id !== id); this.showToast('Approved → Dean'); },
+      error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
+    });
+  }
 
-    rejectMarks(id: string): void {
-        const r = prompt('Rejection reason:'); if (!r) return;
-        this.blockchain.rejectMarks(id, r).subscribe({
-            next: () => { this.pendingMarks = this.pendingMarks.filter(m => m.id !== id); this.showToast('Rejected'); },
-            error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
-        });
-    }
+  rejectMarks(id: string): void {
+    const r = prompt('Rejection reason:'); if (!r) return;
+    this.blockchain.rejectMarks(id, r).subscribe({
+      next: () => { this.pendingMarks = this.pendingMarks.filter(m => m.id !== id); this.showToast('Rejected'); },
+      error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
+    });
+  }
 
-    lockSemester(): void {
-        if (!confirm(`Lock Sem ${this.lockForm.semester} for ${this.lockForm.dept}?`)) return;
-        this.blockchain.lockSemester(this.lockForm.dept, this.lockForm.semester).subscribe({
-            next: (r: any) => { this.lockResult = r?.message || 'Locked'; this.showToast('Semester locked'); },
-            error: (e: any) => this.showToast(e?.error?.message ?? 'Lock failed', 'error'),
-        });
-    }
+  lockSemester(): void {
+    if (!confirm(`Lock Sem ${this.lockForm.semester} for ${this.lockForm.dept}?`)) return;
+    this.blockchain.lockSemester(this.lockForm.dept, this.lockForm.semester).subscribe({
+      next: (r: any) => { this.lockResult = r?.message || 'Locked'; this.showToast('Semester locked'); },
+      error: (e: any) => this.showToast(e?.error?.message ?? 'Lock failed', 'error'),
+    });
+  }
 
-    loadCertRequests(): void {
-        this.loading = true;
-        const types = ['CONSOLIDATED_MARKSHEET', 'DEGREE_CERTIFICATE', 'TRANSFER_CERTIFICATE', 'MIGRATION_CERTIFICATE'];
-        this.blockchain.getDocumentRequests({ status: 'pending' }).subscribe({
-            next: (d: any) => {
-                const arr = Array.isArray(d) ? d : (d?.data || []);
-                this.certRequests = arr.filter((r: any) => types.includes(r.type));
-                this.loading = false;
-            },
-            error: () => { this.loading = false; },
-        });
-    }
+  loadCertRequests(): void {
+    this.loading = true;
+    const types = ['CONSOLIDATED_MARKSHEET', 'DEGREE_CERTIFICATE', 'MIGRATION_CERTIFICATE'];
+    this.blockchain.getDocumentRequests({ status: 'hod_approved' }).subscribe({
+      next: (d: any) => {
+        const arr = Array.isArray(d) ? d : (d?.data || []);
+        this.certRequests = arr.filter((r: any) => types.includes(r.type));
+        this.loading = false;
+      },
+      error: () => { this.loading = false; },
+    });
+  }
 
-    approveCert(id: string): void {
-        this.blockchain.approveDocumentRequest(id).subscribe({
-            next: () => { this.certRequests = this.certRequests.filter(r => r.id !== id); this.showToast('Issued'); },
-            error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
-        });
-    }
+  approveCert(id: string): void {
+    this.blockchain.approveDocumentRequest(id).subscribe({
+      next: () => { this.certRequests = this.certRequests.filter(r => r.id !== id); this.showToast('Issued'); },
+      error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
+    });
+  }
 
-    rejectCert(id: string): void {
-        const r = prompt('Reason:'); if (!r) return;
-        this.blockchain.rejectDocumentRequest(id, r).subscribe({
-            next: () => { this.certRequests = this.certRequests.filter(x => x.id !== id); this.showToast('Rejected'); },
-            error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
-        });
-    }
+  rejectCert(id: string): void {
+    const r = prompt('Reason:'); if (!r) return;
+    this.blockchain.rejectDocumentRequest(id, r).subscribe({
+      next: () => { this.certRequests = this.certRequests.filter(x => x.id !== id); this.showToast('Rejected'); },
+      error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
+    });
+  }
 
-    loadAllMarks(): void {
-        this.loading = true;
-        this.blockchain.getMarks({}).subscribe({
-            next: (m: any) => { this.allMarks = Array.isArray(m) ? m : (m?.data || []); this.loading = false; },
-            error: () => { this.loading = false; },
-        });
-    }
+  loadAllMarks(): void {
+    this.loading = true;
+    this.blockchain.getMarks({}).subscribe({
+      next: (m: any) => { this.allMarks = Array.isArray(m) ? m : (m?.data || []); this.loading = false; },
+      error: () => { this.loading = false; },
+    });
+  }
 
-    logout(): void { this.authService.logout(); }
-    showToast(msg: string, type: 'success' | 'error' = 'success'): void {
-        this.toast = { show: true, msg, type };
-        setTimeout(() => (this.toast.show = false), 3500);
-    }
+  logout(): void { this.authService.logout(); }
+  showToast(msg: string, type: 'success' | 'error' = 'success'): void {
+    this.toast = { show: true, msg, type };
+    setTimeout(() => (this.toast.show = false), 3500);
+  }
 }

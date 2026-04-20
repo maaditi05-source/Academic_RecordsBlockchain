@@ -5,10 +5,10 @@ import { AuthService } from '../../core/services/auth.service';
 import { BlockchainService } from '../../core/services/blockchain.service';
 
 @Component({
-    selector: 'app-dean-dashboard',
-    standalone: true,
-    imports: [CommonModule, FormsModule],
-    template: `
+  selector: 'app-dean-dashboard',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
 <div class="min-h-screen bg-gray-50">
   <div *ngIf="toast.show" [class.bg-green-600]="toast.type==='success'" [class.bg-red-600]="toast.type==='error'"
        class="fixed top-4 right-4 z-50 text-white text-sm px-4 py-2.5 rounded-lg shadow-lg">{{ toast.msg }}</div>
@@ -90,71 +90,81 @@ import { BlockchainService } from '../../core/services/blockchain.service';
 </div>`,
 })
 export class DeanDashboardComponent implements OnInit {
-    user: any;
-    activeTab = 'marks';
-    loading = false;
-    pendingMarks: any[] = [];
-    certRequests: any[] = [];
-    toast = { show: false, msg: '', type: 'success' as 'success' | 'error' };
+  user: any;
+  activeTab = 'marks';
+  loading = false;
+  pendingMarks: any[] = [];
+  certRequests: any[] = [];
+  toast = { show: false, msg: '', type: 'success' as 'success' | 'error' };
 
-    constructor(private authService: AuthService, private blockchain: BlockchainService) { }
-    ngOnInit(): void { this.user = this.authService.currentUser; this.loadPendingMarks(); }
+  constructor(private authService: AuthService, private blockchain: BlockchainService) { }
+  ngOnInit(): void { this.user = this.authService.currentUser; this.loadPendingMarks(); }
 
-    setTab(tab: string): void {
-        this.activeTab = tab;
-        if (tab === 'marks') this.loadPendingMarks();
-        if (tab === 'certs') this.loadCertRequests();
-    }
+  setTab(tab: string): void {
+    this.activeTab = tab;
+    if (tab === 'marks') this.loadPendingMarks();
+    if (tab === 'certs') this.loadCertRequests();
+  }
 
-    loadPendingMarks(): void {
-        this.loading = true;
-        this.blockchain.getMarks({ status: 'exam_approved' }).subscribe({
-            next: (m: any) => { this.pendingMarks = Array.isArray(m) ? m : (m?.data || []); this.loading = false; },
-            error: () => { this.loading = false; },
+  loadPendingMarks(): void {
+    this.loading = true;
+    this.blockchain.getMarks({ status: 'exam_approved' }).subscribe({
+      next: (m: any) => { this.pendingMarks = Array.isArray(m) ? m : (m?.data || []); this.loading = false; },
+      error: () => { this.loading = false; },
+    });
+  }
+
+  approveMarks(id: string): void {
+    this.blockchain.deanApproveMarks(id).subscribe({
+      next: () => { this.pendingMarks = this.pendingMarks.filter(m => m.id !== id); this.showToast('Approved → Admin'); },
+      error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
+    });
+  }
+
+  rejectMarks(id: string): void {
+    const r = prompt('Rejection reason:'); if (!r) return;
+    this.blockchain.rejectMarks(id, r).subscribe({
+      next: () => { this.pendingMarks = this.pendingMarks.filter(m => m.id !== id); this.showToast('Rejected'); },
+      error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
+    });
+  }
+
+  loadCertRequests(): void {
+    this.loading = true;
+    this.blockchain.getDocumentRequests({}).subscribe({
+      next: (d: any) => {
+        const arr = Array.isArray(d) ? d : (d?.data || []);
+        this.certRequests = arr.filter((r: any) => {
+          const isBonafideOrTransfer = r.type === 'BONAFIDE_CERTIFICATE' || r.type === 'TRANSFER_CERTIFICATE' || r.type === 'BONAFIDE' || r.type === 'TRANSFER';
+          const isDegreeOrMarksheet = ['CONSOLIDATED_MARKSHEET', 'DEGREE_CERTIFICATE', 'MIGRATION_CERTIFICATE', 'SEMESTER_MARKSHEET'].includes(r.type);
+          if (isBonafideOrTransfer) return r.status === 'hod_approved' || r.status === 'HOD_APPROVED';
+          if (isDegreeOrMarksheet) return r.status === 'exam_approved' || r.status === 'EXAM_APPROVED';
+          return r.status === 'exam_approved'; // Fallback
         });
-    }
+        this.loading = false;
+      },
+      error: () => { this.loading = false; },
+    });
+  }
 
-    approveMarks(id: string): void {
-        this.blockchain.deanApproveMarks(id).subscribe({
-            next: () => { this.pendingMarks = this.pendingMarks.filter(m => m.id !== id); this.showToast('Approved → Admin'); },
-            error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
-        });
-    }
+  approveCert(id: string): void {
+    this.blockchain.approveDocumentRequest(id).subscribe({
+      next: () => { this.certRequests = this.certRequests.filter(r => r.id !== id); this.showToast('Approved'); },
+      error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
+    });
+  }
 
-    rejectMarks(id: string): void {
-        const r = prompt('Rejection reason:'); if (!r) return;
-        this.blockchain.rejectMarks(id, r).subscribe({
-            next: () => { this.pendingMarks = this.pendingMarks.filter(m => m.id !== id); this.showToast('Rejected'); },
-            error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
-        });
-    }
+  rejectCert(id: string): void {
+    const r = prompt('Reason:'); if (!r) return;
+    this.blockchain.rejectDocumentRequest(id, r).subscribe({
+      next: () => { this.certRequests = this.certRequests.filter(x => x.id !== id); this.showToast('Rejected'); },
+      error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
+    });
+  }
 
-    loadCertRequests(): void {
-        this.loading = true;
-        this.blockchain.getDocumentRequests({ status: 'exam_approved' }).subscribe({
-            next: (d: any) => { this.certRequests = Array.isArray(d) ? d : (d?.data || []); this.loading = false; },
-            error: () => { this.loading = false; },
-        });
-    }
-
-    approveCert(id: string): void {
-        this.blockchain.approveDocumentRequest(id).subscribe({
-            next: () => { this.certRequests = this.certRequests.filter(r => r.id !== id); this.showToast('Approved'); },
-            error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
-        });
-    }
-
-    rejectCert(id: string): void {
-        const r = prompt('Reason:'); if (!r) return;
-        this.blockchain.rejectDocumentRequest(id, r).subscribe({
-            next: () => { this.certRequests = this.certRequests.filter(x => x.id !== id); this.showToast('Rejected'); },
-            error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
-        });
-    }
-
-    logout(): void { this.authService.logout(); }
-    showToast(msg: string, type: 'success' | 'error' = 'success'): void {
-        this.toast = { show: true, msg, type };
-        setTimeout(() => (this.toast.show = false), 3500);
-    }
+  logout(): void { this.authService.logout(); }
+  showToast(msg: string, type: 'success' | 'error' = 'success'): void {
+    this.toast = { show: true, msg, type };
+    setTimeout(() => (this.toast.show = false), 3500);
+  }
 }

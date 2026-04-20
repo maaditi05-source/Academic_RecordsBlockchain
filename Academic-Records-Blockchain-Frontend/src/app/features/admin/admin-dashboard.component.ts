@@ -138,7 +138,7 @@ import { AddCourseDialogComponent } from './add-course-dialog/add-course-dialog.
               <div class="approval-card glass-card" *ngFor="let c of pendingCerts">
                 <div class="approval-header">
                   <mat-icon>workspace_premium</mat-icon>
-                  <h4>{{ c.requestId }}</h4>
+                  <h4>{{ c.requestId || c.id }}</h4>
                 </div>
                 <p style="color: #e2e8f0; margin: 4px 0;">Student: <strong style="color: #38bdf8;">{{ c.studentId }}</strong></p>
                 <p style="color: #94a3b8; margin: 4px 0;">Type: {{ c.certificateType }}</p>
@@ -437,7 +437,7 @@ export class AdminDashboardComponent implements OnInit {
         next: (res: any) => {
           const docs = Array.isArray(res) ? res : (res?.data || []);
           this.allCerts = docs;
-          this.pendingCerts = docs.filter((c: any) => c.status === 'pending');
+          this.pendingCerts = docs.filter((c: any) => c.status === 'dean_approved');
           resolve();
         },
         error: () => resolve()
@@ -489,15 +489,11 @@ export class AdminDashboardComponent implements OnInit {
 
   approveCert(cert: any) {
     cert.processing = true;
-    this.http.put<any>(`${this.apiUrl}/certificates/requests/${cert.requestId}`, { status: 'APPROVED' }, this.authHeaders).subscribe({
+    this.blockchainService.approveDocumentRequest(cert.requestId || cert.id).subscribe({
       next: (res) => {
         cert.processing = false;
-        if (res.success) {
-          this.snackBar.open('Certificate approved!', 'Close', { duration: 2000 });
-          this.pendingCerts = this.pendingCerts.filter(c => c !== cert);
-        } else {
-          this.snackBar.open(res.message || 'Approval failed', 'Close', { duration: 3000 });
-        }
+        this.snackBar.open('Certificate approved!', 'Close', { duration: 2000 });
+        this.pendingCerts = this.pendingCerts.filter(c => c !== cert);
       },
       error: (err: any) => {
         cert.processing = false;
@@ -508,13 +504,11 @@ export class AdminDashboardComponent implements OnInit {
 
   rejectCert(cert: any) {
     cert.processing = true;
-    this.http.put<any>(`${this.apiUrl}/certificates/requests/${cert.requestId}`, { status: 'REJECTED' }, this.authHeaders).subscribe({
+    this.blockchainService.rejectDocumentRequest(cert.requestId || cert.id, 'Admin rejected').subscribe({
       next: (res) => {
         cert.processing = false;
-        if (res.success) {
-          this.snackBar.open('Certificate rejected', 'Close', { duration: 2000 });
-          this.pendingCerts = this.pendingCerts.filter(c => c !== cert);
-        }
+        this.snackBar.open('Certificate rejected', 'Close', { duration: 2000 });
+        this.pendingCerts = this.pendingCerts.filter(c => c !== cert);
       },
       error: (err: any) => {
         cert.processing = false;

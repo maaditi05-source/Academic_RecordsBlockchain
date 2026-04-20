@@ -1,1 +1,70 @@
-[]
+[
+  {
+    "id": "docreq-1776707932179-julyp",
+    "type": "SEMESTER_MARKSHEET",
+    "studentId": "25CSM2R06",
+    "semester": 3,
+    "reason": "E2E test",
+    "status": "hod_approved",
+    "approvalChain": [
+      {
+        "role": "hod",
+        "user": "cse_hod",
+        "action": "approved",
+        "resultStatus": "exam_approved",
+        "at": "2026-04-20T17:58:52.186Z"
+      }
+    ],
+    "requestedAt": "2026-04-20T17:58:52.179Z",
+    "requestedBy": "cse_hod"
+  },
+  {
+    "id": "docreq-1776708026044-6qi2b",
+    "type": "SEMESTER_MARKSHEET",
+    "studentId": "25CSM2R10",
+    "semester": 3,
+    "reason": "test",
+    "status": "hod_approved",
+    "approvalChain": [
+      {
+        "role": "hod",
+        "user": "cse_hod",
+        "action": "approved",
+        "resultStatus": "exam_approved",
+        "at": "2026-04-20T18:00:26.049Z"
+      }
+    ],
+    "requestedAt": "2026-04-20T18:00:26.044Z",
+    "requestedBy": "cse_hod"
+  },
+  {
+    "id": "docreq-1776708188066-w8mhj",
+    "type": "SEMESTER_MARKSHEET",
+    "studentId": "25CSM2R12",
+    "semester": 3,
+    "reason": "test",
+    "status": "hod_approved",
+    "approvalChain": [
+      {
+        "role": "hod",
+        "user": "cse_hod",
+        "action": "approved",
+        "resultStatus": "exam_approved",
+        "at": "2026-04-20T18:03:08.072Z"
+      }
+    ],
+    "requestedAt": "2026-04-20T18:03:08.066Z",
+    "requestedBy": "cse_hod"
+  },
+  {
+    "id": "docreq-1776709092428-u72c1",
+    "type": "BONAFIDE_CERTIFICATE",
+    "studentId": "25CSM2R26",
+    "semester": null,
+    "reason": "Higher Studies",
+    "status": "pending",
+    "approvalChain": [],
+    "requestedAt": "2026-04-20T18:18:12.428Z",
+    "requestedBy": "cse_hod"
+  }
+]

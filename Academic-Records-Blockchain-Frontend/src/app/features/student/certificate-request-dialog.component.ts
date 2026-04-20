@@ -82,15 +82,15 @@ interface Student {
           </div>
           <div class="info-row">
             <mat-icon>person</mat-icon>
-                <span><strong>Name:</strong> {{ data.student.name || 'N/A' }}</span>
+                <span><strong>Name:</strong> {{ data.student?.name || 'N/A' }}</span>
           </div>
           <div class="info-row">
             <mat-icon>badge</mat-icon>
-                <span><strong>Roll Number:</strong> {{ data.student.rollNumber || 'N/A' }}</span>
+                <span><strong>Roll Number:</strong> {{ data.student?.rollNumber || data.student?.studentId || 'N/A' }}</span>
           </div>
           <div class="info-row">
             <mat-icon>domain</mat-icon>
-                <span><strong>Department:</strong> {{ data.student.department || 'N/A' }}</span>
+                <span><strong>Department:</strong> {{ data.student?.department || 'N/A' }}</span>
           </div>
         </div>
 

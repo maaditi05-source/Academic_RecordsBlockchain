@@ -425,11 +425,11 @@ class CertificateController {
             const { status, processedDate, processedBy, certificateId } = req.body;
             const role = req.user.role;
 
-            // Only admin, HOD, department, and dac_member can update request status
-            if (!['admin', 'hod', 'department', 'dac_member'].includes(role)) {
+            // Only authorized roles can update request status
+            if (!['admin', 'hod', 'department', 'dac_member', 'dean_academic', 'exam_section'].includes(role)) {
                 return res.status(403).json({
                     success: false,
-                    message: 'Only HOD, admin, and DAC members can approve/reject certificate requests'
+                    message: 'Only HOD, admin, and authorized roles can approve/reject certificate requests'
                 });
             }
 
@@ -445,7 +445,30 @@ class CertificateController {
                 });
             }
 
-            requests[requestIndex].status = status;
+            if (status === 'APPROVED') {
+                const type = requests[requestIndex].certificateType || 'BONAFIDE';
+                const currentStatus = (requests[requestIndex].status || 'PENDING').toLowerCase();
+
+                const workflows = {
+                    'DEGREE_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'issued' },
+                    'CONSOLIDATED_MARKSHEET': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'issued' },
+                    'SEMESTER_MARKSHEET': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'issued' },
+                    'MIGRATION_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'issued' },
+                    'BONAFIDE': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'issued' },
+                    'BONAFIDE_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'issued' },
+                    'TRANSFER': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'issued' },
+                    'TRANSFER_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'issued' }
+                };
+
+                const wf = workflows[type] || workflows['BONAFIDE'];
+                if (wf && wf[currentStatus]) {
+                    requests[requestIndex].status = wf[currentStatus];
+                } else {
+                    requests[requestIndex].status = 'APPROVED';
+                }
+            } else {
+                requests[requestIndex].status = status;
+            }
             requests[requestIndex].processedDate = processedDate || new Date().toISOString();
             requests[requestIndex].processedBy = processedBy || req.user.username;
 

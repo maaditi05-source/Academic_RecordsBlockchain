@@ -89,6 +89,14 @@ app.use(bodyParser.urlencoded({
     limit: APP_CONFIG.performance.limits.urlEncodedBodySize
 }));
 
+// Prevent browser caching for all API routes (Fixes the 304 Not Modified bug)
+app.use((req, res, next) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    next();
+});
+
 // Logging
 if (APP_CONFIG.logging.requests.enabled) {
     app.use(morgan(APP_CONFIG.logging.requests.format, {

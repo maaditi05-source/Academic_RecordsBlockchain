@@ -297,7 +297,7 @@ class StudentController {
 
             res.status(200).json({
                 success: true,
-                data: result
+                data: Array.isArray(result) ? result : (result?.records || [])
             });
         } catch (error) {
             logger.error(`Error getting students by department: ${error.message}`);
@@ -416,7 +416,7 @@ class StudentController {
 
             res.status(200).json({
                 success: true,
-                data: result
+                data: Array.isArray(result) ? result : []
             });
         } catch (error) {
             logger.error(`Error getting all students: ${error.message}`);

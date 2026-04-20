@@ -1,0 +1,20 @@
+[
+  {
+    "departmentId": "CSE",
+    "name": "Computer Science and Engineering",
+    "hod": "Shreya Shukla",
+    "email": "shreya@cse.nitw.ac.in",
+    "phone": "0000000000",
+    "status": "ACTIVE",
+    "_offlineCreated": true
+  },
+  {
+    "departmentId": "ECE",
+    "name": "Electronics and Communication Engineering",
+    "hod": "Saim Tanweer",
+    "email": "saim@case.nitw.ac.in",
+    "phone": "0000000000",
+    "status": "ACTIVE",
+    "_offlineCreated": true
+  }
+]

@@ -306,8 +306,8 @@ import jsPDF from 'jspdf';
             <div class="cert-grid" *ngIf="certificates.length > 0">
               <div class="cert-card glass-card" *ngFor="let cert of certificates">
                 <div class="cert-top">
-                  <mat-icon class="cert-icon" [style.color]="cert.status === 'APPROVED' || cert.status === 'ISSUED' ? '#4ade80' : cert.status === 'REJECTED' ? '#f87171' : '#fbbf24'">
-                    {{ cert.status === 'APPROVED' || cert.status === 'ISSUED' ? 'verified' : cert.status === 'REJECTED' ? 'cancel' : 'pending_actions' }}
+                  <mat-icon class="cert-icon" [style.color]="['APPROVED','ISSUED','HOD_APPROVED','HOD_ISSUED','EXAM_APPROVED','DEAN_APPROVED','LOCKED'].includes(cert.status) ? '#4ade80' : cert.status === 'REJECTED' ? '#f87171' : '#fbbf24'">
+                    {{ ['APPROVED','ISSUED','HOD_APPROVED','HOD_ISSUED','EXAM_APPROVED','DEAN_APPROVED','LOCKED'].includes(cert.status) ? 'verified' : cert.status === 'REJECTED' ? 'cancel' : 'pending_actions' }}
                   </mat-icon>
                   <span class="cert-type">{{ cert.certificateType || 'Academic' }}</span>
                 </div>
@@ -324,7 +324,7 @@ import jsPDF from 'jspdf';
                 </div>
 
                 <button mat-raised-button color="primary"
-                  *ngIf="cert.status === 'ISSUED' || cert.status === 'APPROVED'"
+                  *ngIf="['ISSUED','APPROVED','HOD_APPROVED','HOD_ISSUED','EXAM_APPROVED','DEAN_APPROVED','LOCKED'].includes(cert.status)"
                   (click)="downloadCertificate(cert)" class="cert-dl-btn" style="margin-top: 8px; width: 100%;">
                   <mat-icon>download</mat-icon> Download Certificate PDF
                 </button>
@@ -699,17 +699,15 @@ export class StudentProfileComponent implements OnInit {
         next: (res) => {
           const blockchainCerts = res.success && Array.isArray(res.data) ? res.data : [];
 
-          // Also load certificate requests to show pending/approved status
+          // Load certificate requests from /certificates/requests
           this.http.get<any>(`${this.apiUrl}/certificates/requests`, { headers }).subscribe({
             next: (reqRes) => {
               const requests = reqRes.success && Array.isArray(reqRes.data) ? reqRes.data : [];
-              // Filter only this student's requests
               const myRequests = requests.filter((r: any) => r.studentId === this.rollNumber);
-              // Convert requests to cert-like objects for display
               const requestCerts = myRequests.map((r: any) => ({
                 certificateId: r.requestId,
                 certificateType: r.certificateType,
-                status: r.status,
+                status: r.status?.toUpperCase(),
                 requestDate: r.requestDate,
                 purpose: r.purpose,
                 processedBy: r.processedBy,
@@ -717,9 +715,41 @@ export class StudentProfileComponent implements OnInit {
                 isRequest: true
               }));
 
-              // Merge: blockchain certs first, then requests not already on blockchain
-              this.certificates = [...blockchainCerts, ...requestCerts];
-              resolve();
+              // Also load document requests (HOD approval pipeline uses /documents/requests)
+              this.http.get<any>(`${this.apiUrl}/documents/requests`, { headers }).subscribe({
+                next: (docRes) => {
+                  const docRequests = Array.isArray(docRes) ? docRes : (docRes?.data || []);
+                  const myDocRequests = docRequests.filter((r: any) => r.studentId === this.rollNumber);
+                  const docRequestCerts = myDocRequests.map((r: any) => ({
+                    certificateId: r.id,
+                    certificateType: r.type,
+                    status: r.status?.toUpperCase(),
+                    requestDate: r.requestedAt,
+                    purpose: r.reason,
+                    processedBy: r.approvalChain?.length ? r.approvalChain[r.approvalChain.length - 1].user : null,
+                    processedDate: r.approvalChain?.length ? r.approvalChain[r.approvalChain.length - 1].at : null,
+                    isRequest: true,
+                    isDocRequest: true,
+                    ipfsCid: r.ipfsCid || null
+                  }));
+
+                  // Merge all: blockchain certs + cert requests + doc requests (dedup by id)
+                  const seen = new Set(blockchainCerts.map((c: any) => c.certificateId));
+                  const allCerts = [...blockchainCerts];
+                  for (const c of [...requestCerts, ...docRequestCerts]) {
+                    if (!seen.has(c.certificateId)) {
+                      seen.add(c.certificateId);
+                      allCerts.push(c);
+                    }
+                  }
+                  this.certificates = allCerts;
+                  resolve();
+                },
+                error: () => {
+                  this.certificates = [...blockchainCerts, ...requestCerts];
+                  resolve();
+                }
+              });
             },
             error: () => { this.certificates = blockchainCerts; resolve(); }
           });
@@ -780,7 +810,7 @@ export class StudentProfileComponent implements OnInit {
       // Calculate SGPA for selected semester
       let totalCredits = 0, weighted = 0;
       for (const m of this.filteredMarks) {
-        if (m.status === 'verified') {
+        if (['verified', 'locked', 'dean_approved', 'admin_finalized', 'hod_approved', 'exam_approved', 'submitted'].includes(m.status)) {
           totalCredits += m.credits;
           weighted += m.gradePoint * m.credits;
         }
@@ -801,7 +831,7 @@ export class StudentProfileComponent implements OnInit {
   }
 
   getSemSGPA(sem: number): any {
-    const semMarks = this.marks.filter(m => m.semester === sem && m.status === 'verified');
+    const semMarks = this.marks.filter(m => m.semester === sem && ['verified', 'locked', 'dean_approved', 'admin_finalized', 'hod_approved', 'exam_approved', 'submitted'].includes(m.status));
     let totalCredits = 0, weighted = 0;
     for (const m of semMarks) {
       totalCredits += m.credits;
@@ -822,9 +852,9 @@ export class StudentProfileComponent implements OnInit {
 
   // ── PDF Downloads ─────────────────────────────────────────────
   downloadGradeSheet(semester: number) {
-    const semMarks = this.marks.filter(m => m.semester === semester && m.status === 'verified');
+    const semMarks = this.marks.filter(m => m.semester === semester && ['verified', 'locked', 'dean_approved', 'admin_finalized', 'hod_approved', 'exam_approved', 'submitted'].includes(m.status));
     if (!semMarks.length) {
-      this.snackBar.open('No verified marks for this semester', 'Close', { duration: 3000 });
+      this.snackBar.open('No approved marks for this semester', 'Close', { duration: 3000 });
       return;
     }
 
@@ -892,9 +922,9 @@ export class StudentProfileComponent implements OnInit {
   }
 
   downloadConsolidated() {
-    const verified = this.marks.filter(m => m.status === 'verified');
+    const verified = this.marks.filter(m => ['verified', 'locked', 'dean_approved', 'admin_finalized', 'hod_approved', 'exam_approved', 'submitted'].includes(m.status));
     if (!verified.length) {
-      this.snackBar.open('No verified marks available', 'Close', { duration: 3000 });
+      this.snackBar.open('No approved marks available', 'Close', { duration: 3000 });
       return;
     }
 

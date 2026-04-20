@@ -1,1 +1,80 @@
-[]
+[
+  {
+    "id": "course-1776695046741-pm94r",
+    "code": "CS301",
+    "name": "Test Course",
+    "department": "CSE",
+    "semester": 3,
+    "credits": 3,
+    "maxMarks": 100,
+    "faculty": null,
+    "enrolledFaculty": [],
+    "createdBy": "cse_hod",
+    "createdAt": "2026-04-20T14:24:06.741Z"
+  },
+  {
+    "id": "course-1776697671936-nhefx",
+    "code": "CS401",
+    "name": "Machine Learning",
+    "department": "CSE",
+    "semester": 4,
+    "credits": 4,
+    "maxMarks": 100,
+    "faculty": null,
+    "enrolledFaculty": [],
+    "createdBy": "cse_hod",
+    "createdAt": "2026-04-20T15:07:51.936Z"
+  },
+  {
+    "id": "course-1776698373031-9nyea",
+    "code": "CS502",
+    "name": "Deep Learning",
+    "department": "CSE",
+    "semester": 5,
+    "credits": 4,
+    "maxMarks": 100,
+    "faculty": null,
+    "enrolledFaculty": [],
+    "createdBy": "cse_hod",
+    "createdAt": "2026-04-20T15:19:33.031Z"
+  },
+  {
+    "id": "course-1776698756224-xzg4i",
+    "code": "CS701",
+    "name": "Blockchain",
+    "department": "CSE",
+    "semester": 7,
+    "credits": 3,
+    "maxMarks": 100,
+    "faculty": null,
+    "enrolledFaculty": [],
+    "createdBy": "cse_hod",
+    "createdAt": "2026-04-20T15:25:56.224Z"
+  },
+  {
+    "id": "course-1776700268428-lwzc3",
+    "code": "CS801",
+    "name": "Quantum Computing",
+    "department": "CSE",
+    "semester": 8,
+    "credits": 3,
+    "maxMarks": 100,
+    "faculty": null,
+    "enrolledFaculty": [],
+    "createdBy": "cse_hod",
+    "createdAt": "2026-04-20T15:51:08.428Z"
+  },
+  {
+    "id": "course-1776702856854-9ctic",
+    "code": "CS901",
+    "name": "Quantum ML",
+    "department": "CSE",
+    "semester": 8,
+    "credits": 3,
+    "maxMarks": 100,
+    "faculty": null,
+    "enrolledFaculty": [],
+    "createdBy": "cse_hod",
+    "createdAt": "2026-04-20T16:34:16.854Z"
+  }
+]

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, of, forkJoin } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import {
   Student,
@@ -315,14 +315,39 @@ export class BlockchainService {
     const params = new URLSearchParams();
     if (filters) Object.entries(filters).forEach(([k, v]) => { if (v) params.set(k, String(v)); });
     const q = params.toString() ? `?${params.toString()}` : '';
-    return this.http.get<any>(`${this.apiUrl}/documents/requests${q}`);
+
+    // Fetch both pipelines and merge natively
+    return forkJoin({
+      docs: this.http.get<any>(`${this.apiUrl}/documents/requests${q}`).pipe(catchError(() => of([]))),
+      certs: this.http.get<any>(`${this.apiUrl}/certificates/requests`).pipe(catchError(() => of([])))
+    }).pipe(
+      map(results => {
+        const d = Array.isArray(results.docs) ? results.docs : (results.docs?.data || []);
+        let c = Array.isArray(results.certs) ? results.certs : (results.certs?.data || []);
+
+        // Manual filter for legacy certs since backend doesn't support query params stringently
+        if (filters?.status) c = c.filter((x: any) => x.status?.toLowerCase() === filters.status?.toLowerCase());
+        if (filters?.studentId) c = c.filter((x: any) => x.studentId === filters.studentId);
+
+        return [
+          ...d,
+          ...c.map((r: any) => ({ ...r, id: r.requestId || r.id, type: r.certificateType || r.type, reason: r.purpose || r.reason }))
+        ];
+      })
+    );
   }
 
   approveDocumentRequest(requestId: string): Observable<any> {
+    if (requestId.startsWith('REQ-')) {
+      return this.http.put<any>(`${this.apiUrl}/certificates/requests/${requestId}`, { status: 'APPROVED' });
+    }
     return this.http.put<any>(`${this.apiUrl}/documents/requests/${requestId}/approve`, {});
   }
 
   rejectDocumentRequest(requestId: string, reason: string): Observable<any> {
+    if (requestId.startsWith('REQ-')) {
+      return this.http.put<any>(`${this.apiUrl}/certificates/requests/${requestId}`, { status: 'REJECTED' });
+    }
     return this.http.put<any>(`${this.apiUrl}/documents/requests/${requestId}/reject`, { reason });
   }
 

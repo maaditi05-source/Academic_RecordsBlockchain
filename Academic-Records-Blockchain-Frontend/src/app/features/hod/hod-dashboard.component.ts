@@ -3,14 +3,16 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { BlockchainService } from '../../core/services/blockchain.service';
+import { HttpClient } from '@angular/common/http';
+import { APP_CONFIG } from '../../core/config/app.config';
 
 type Tab = 'overview' | 'courses' | 'marks' | 'students' | 'certificates' | 'bonafide';
 
 @Component({
-    selector: 'app-hod-dashboard',
-    standalone: true,
-    imports: [CommonModule, FormsModule],
-    template: `
+  selector: 'app-hod-dashboard',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
 <div class="min-h-screen bg-gray-50">
   <div *ngIf="toast.show" [class.bg-green-600]="toast.type==='success'" [class.bg-red-600]="toast.type==='error'"
        class="fixed top-4 right-4 z-50 text-white text-sm px-4 py-2.5 rounded-lg shadow-lg">{{ toast.msg }}</div>
@@ -141,7 +143,7 @@ type Tab = 'overview' | 'courses' | 'marks' | 'students' | 'certificates' | 'bon
           </thead>
           <tbody class="divide-y divide-gray-50">
             <tr *ngFor="let s of studentList" class="hover:bg-gray-50">
-              <td class="px-4 py-3 font-medium">{{ s.rollNumber || s.id }}</td>
+              <td class="px-4 py-3 font-medium">{{ s.rollNumber || s.studentId || s.id }}</td>
               <td class="px-4 py-3 text-gray-600">{{ s.name }}</td>
               <td class="px-4 py-3">
                 <span class="text-xs px-2 py-0.5 rounded-full font-medium"
@@ -157,7 +159,7 @@ type Tab = 'overview' | 'courses' | 'marks' | 'students' | 'certificates' | 'bon
 
     <!-- Certificate Approvals -->
     <div *ngIf="activeTab==='certificates'">
-      <h2 class="text-sm font-medium text-gray-700 mb-4">Bonafide Certificate Requests</h2>
+      <h2 class="text-sm font-medium text-gray-700 mb-4">Document & Certificate Requests</h2>
       <div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
         <div *ngIf="loading" class="p-6 text-center text-sm text-gray-400">Loading…</div>
         <table *ngIf="!loading && pendingCertRequests.length" class="w-full text-sm">
@@ -203,183 +205,220 @@ type Tab = 'overview' | 'courses' | 'marks' | 'students' | 'certificates' | 'bon
 </div>`,
 })
 export class HodDashboardComponent implements OnInit {
-    user: any;
-    department = '';
-    activeTab: Tab = 'overview';
+  user: any;
+  department = '';
+  activeTab: Tab = 'overview';
 
-    tabs = [
-        { id: 'overview', label: 'Overview' },
-        { id: 'courses', label: 'Courses' },
-        { id: 'marks', label: 'Marks Approval' },
-        { id: 'students', label: 'Students' },
-        { id: 'certificates', label: 'Certificate Approvals' },
-        { id: 'bonafide', label: 'Issue Bonafide' },
-    ];
+  tabs = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'courses', label: 'Courses' },
+    { id: 'marks', label: 'Marks Approval' },
+    { id: 'students', label: 'Students' },
+    { id: 'certificates', label: 'Document Approvals' },
+    { id: 'bonafide', label: 'Issue Bonafide' },
+  ];
 
-    stats = { totalStudents: 0, totalFaculty: 0, pendingMarks: 0, pendingCerts: 0 };
-    courses: any[] = [];
-    showAddCourse = false;
-    newCourse = { code: '', name: '', semester: 1, credits: 3 };
-    assigningCourse: any = null;
-    assignFacultyUsername = '';
-    pendingMarksList: any[] = [];
-    studentList: any[] = [];
-    pendingCertRequests: any[] = [];
-    bonafideForm = { studentId: '', purpose: '' };
-    loading = false;
-    toast = { show: false, msg: '', type: 'success' as 'success' | 'error' };
+  stats = { totalStudents: 0, totalFaculty: 0, pendingMarks: 0, pendingCerts: 0 };
+  courses: any[] = [];
+  showAddCourse = false;
+  newCourse = { code: '', name: '', semester: 1, credits: 3 };
+  assigningCourse: any = null;
+  assignFacultyUsername = '';
+  pendingMarksList: any[] = [];
+  studentList: any[] = [];
+  pendingCertRequests: any[] = [];
+  bonafideForm = { studentId: '', purpose: '' };
+  loading = false;
+  toast = { show: false, msg: '', type: 'success' as 'success' | 'error' };
+  private apiUrl = APP_CONFIG.api.baseUrl;
 
-    constructor(private authService: AuthService, private blockchain: BlockchainService) { }
+  constructor(
+    private authService: AuthService,
+    private blockchain: BlockchainService,
+    private http: HttpClient
+  ) { }
 
-    ngOnInit(): void {
-        this.user = this.authService.currentUser;
-        this.department = this.user?.department ?? '';
-        this.loadOverview();
-        this.loadCourses();
-    }
+  ngOnInit(): void {
+    this.user = this.authService.currentUser;
+    this.department = this.user?.department ?? '';
+    this.loadOverview();
+    this.loadCourses();
+  }
 
-    setTab(tab: string): void {
-        this.activeTab = tab as Tab;
-        if (tab === 'overview') this.loadOverview();
-        if (tab === 'courses') this.loadCourses();
-        if (tab === 'marks') this.loadPendingMarks();
-        if (tab === 'students') this.loadStudents();
-        if (tab === 'certificates') this.loadCertificates();
-    }
+  setTab(tab: string): void {
+    this.activeTab = tab as Tab;
+    if (tab === 'overview') this.loadOverview();
+    if (tab === 'courses') this.loadCourses();
+    if (tab === 'marks') this.loadPendingMarks();
+    if (tab === 'students') this.loadStudents();
+    if (tab === 'certificates') this.loadCertificates();
+  }
 
-    loadOverview(): void {
-        this.blockchain.getStudentsByDepartment(this.department).subscribe({
-            next: (r: any) => { const d = r?.data || r; this.stats.totalStudents = Array.isArray(d) ? d.length : 0; },
-            error: () => { },
-        });
-        this.blockchain.getMarks({ status: 'submitted', department: this.department }).subscribe({
-            next: (m: any) => { const d = Array.isArray(m) ? m : (m?.data || []); this.stats.pendingMarks = d.length; },
-            error: () => { },
-        });
+  loadOverview(): void {
+    this.blockchain.getStudentsByDepartment(this.department).subscribe({
+      next: (r: any) => { const d = r?.data || r; this.stats.totalStudents = Array.isArray(d) ? d.length : 0; },
+      error: () => { },
+    });
+    this.blockchain.getMarks({ status: 'submitted', department: this.department }).subscribe({
+      next: (m: any) => { const d = Array.isArray(m) ? m : (m?.data || []); this.stats.pendingMarks = d.length; },
+      error: () => { },
+    });
+    this.blockchain.getDocumentRequests({ status: 'pending' }).subscribe({
+      next: (d: any) => { const arr = Array.isArray(d) ? d : (d?.data || []); this.stats.pendingCerts = arr.length; },
+      error: () => { },
+    });
+  }
+
+  loadCourses(): void {
+    this.loading = true;
+    this.blockchain.getCoursesByDepartment(this.department).subscribe({
+      next: (c: any) => { this.courses = c?.data || c || []; this.loading = false; },
+      error: () => { this.loading = false; },
+    });
+  }
+
+  addCourse(): void {
+    if (!this.newCourse.code || !this.newCourse.name) return;
+    this.blockchain.createCourse({ ...this.newCourse, department: this.department }).subscribe({
+      next: (c: any) => {
+        this.courses.push(c?.data || c);
+        this.showAddCourse = false;
+        this.newCourse = { code: '', name: '', semester: 1, credits: 3 };
+        this.showToast('Course created');
+      },
+      error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
+    });
+  }
+
+  deleteCourse(id: string): void {
+    if (!confirm('Delete this course?')) return;
+    this.blockchain.deleteCourse(id).subscribe({
+      next: () => { this.courses = this.courses.filter(c => (c.id || c.code) !== id); this.showToast('Deleted'); },
+      error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
+    });
+  }
+
+  openAssign(course: any): void {
+    this.assigningCourse = course;
+    this.assignFacultyUsername = course.faculty ?? '';
+  }
+
+  saveAssign(): void {
+    if (!this.assigningCourse || !this.assignFacultyUsername) return;
+    this.blockchain.assignFacultyToCourse(this.assigningCourse.id || this.assigningCourse.code, this.assignFacultyUsername).subscribe({
+      next: (c: any) => {
+        const data = c?.data || c;
+        const idx = this.courses.findIndex(x => (x.id || x.code) === (data.id || data.code));
+        if (idx !== -1) this.courses[idx] = data;
+        this.assigningCourse = null;
+        this.showToast('Faculty assigned');
+      },
+      error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
+    });
+  }
+
+  loadPendingMarks(): void {
+    this.loading = true;
+    this.blockchain.getMarks({ status: 'submitted', department: this.department }).subscribe({
+      next: (m: any) => { this.pendingMarksList = Array.isArray(m) ? m : (m?.data || []); this.loading = false; },
+      error: () => { this.loading = false; },
+    });
+  }
+
+  approveMarks(id: string): void {
+    this.blockchain.hodApproveMarks(id).subscribe({
+      next: () => { this.pendingMarksList = this.pendingMarksList.filter(m => m.id !== id); this.showToast('Approved → Exam Section'); },
+      error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
+    });
+  }
+
+  rejectMarks(id: string): void {
+    const reason = prompt('Rejection reason:'); if (!reason) return;
+    this.blockchain.rejectMarks(id, reason).subscribe({
+      next: () => { this.pendingMarksList = this.pendingMarksList.filter(m => m.id !== id); this.showToast('Rejected'); },
+      error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
+    });
+  }
+
+  loadStudents(): void {
+    this.loading = true;
+    this.blockchain.getStudentsByDepartment(this.department).subscribe({
+      next: (s: any) => { this.studentList = s?.data || s || []; this.loading = false; },
+      error: () => { this.loading = false; },
+    });
+  }
+
+  loadCertificates(): void {
+    this.loading = true;
+    const headers = { headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` } };
+
+    Promise.all([
+      new Promise<any[]>((resolve) => {
         this.blockchain.getDocumentRequests({ status: 'pending' }).subscribe({
-            next: (d: any) => { const arr = Array.isArray(d) ? d : (d?.data || []); this.stats.pendingCerts = arr.length; },
-            error: () => { },
+          next: (d: any) => resolve(Array.isArray(d) ? d : (d?.data || [])),
+          error: () => resolve([])
         });
-    }
-
-    loadCourses(): void {
-        this.loading = true;
-        this.blockchain.getCoursesByDepartment(this.department).subscribe({
-            next: (c: any) => { this.courses = c?.data || c || []; this.loading = false; },
-            error: () => { this.loading = false; },
+      }),
+      new Promise<any[]>((resolve) => {
+        this.http.get<any>(`${this.apiUrl}/certificates/requests`, headers).subscribe({
+          next: (d: any) => resolve((d?.data || d || []).filter((r: any) => r.status === 'PENDING' || r.status === 'pending')),
+          error: () => resolve([])
         });
-    }
+      })
+    ]).then(([docs, certs]) => {
+      // Merge, normalize ID and type properties
+      const all = [
+        ...docs,
+        ...certs.map(c => ({ ...c, id: c.requestId || c.id, type: c.certificateType || c.type }))
+      ];
+      this.pendingCertRequests = all;
+      this.loading = false;
+    });
+  }
 
-    addCourse(): void {
-        if (!this.newCourse.code || !this.newCourse.name) return;
-        this.blockchain.createCourse({ ...this.newCourse, department: this.department }).subscribe({
-            next: (c: any) => {
-                this.courses.push(c?.data || c);
-                this.showAddCourse = false;
-                this.newCourse = { code: '', name: '', semester: 1, credits: 3 };
-                this.showToast('Course created');
-            },
-            error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
-        });
-    }
+  approveCertRequest(id: string): void {
+    const headers = { headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` } };
+    const isLegacy = id.startsWith('REQ-');
+    const req$ = isLegacy ?
+      this.http.put<any>(`${this.apiUrl}/certificates/requests/${id}`, { status: 'APPROVED' }, headers) :
+      this.blockchain.approveDocumentRequest(id);
 
-    deleteCourse(id: string): void {
-        if (!confirm('Delete this course?')) return;
-        this.blockchain.deleteCourse(id).subscribe({
-            next: () => { this.courses = this.courses.filter(c => (c.id || c.code) !== id); this.showToast('Deleted'); },
-            error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
-        });
-    }
+    req$.subscribe({
+      next: () => { this.pendingCertRequests = this.pendingCertRequests.filter(r => r.id !== id); this.showToast('Approved'); },
+      error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
+    });
+  }
 
-    openAssign(course: any): void {
-        this.assigningCourse = course;
-        this.assignFacultyUsername = course.faculty ?? '';
-    }
+  rejectCertRequest(id: string): void {
+    const reason = prompt('Reason:'); if (!reason) return;
+    const headers = { headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` } };
+    const isLegacy = id.startsWith('REQ-');
+    const req$ = isLegacy ?
+      this.http.put<any>(`${this.apiUrl}/certificates/requests/${id}`, { status: 'REJECTED' }, headers) :
+      this.blockchain.rejectDocumentRequest(id, reason);
 
-    saveAssign(): void {
-        if (!this.assigningCourse || !this.assignFacultyUsername) return;
-        this.blockchain.assignFacultyToCourse(this.assigningCourse.id || this.assigningCourse.code, this.assignFacultyUsername).subscribe({
-            next: (c: any) => {
-                const data = c?.data || c;
-                const idx = this.courses.findIndex(x => (x.id || x.code) === (data.id || data.code));
-                if (idx !== -1) this.courses[idx] = data;
-                this.assigningCourse = null;
-                this.showToast('Faculty assigned');
-            },
-            error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
-        });
-    }
+    req$.subscribe({
+      next: () => { this.pendingCertRequests = this.pendingCertRequests.filter(r => r.id !== id); this.showToast('Rejected'); },
+      error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
+    });
+  }
 
-    loadPendingMarks(): void {
-        this.loading = true;
-        this.blockchain.getMarks({ status: 'submitted', department: this.department }).subscribe({
-            next: (m: any) => { this.pendingMarksList = Array.isArray(m) ? m : (m?.data || []); this.loading = false; },
-            error: () => { this.loading = false; },
-        });
+  issueBonafide(): void {
+    if (!this.bonafideForm.studentId || !this.bonafideForm.purpose) {
+      this.showToast('Student ID and purpose required', 'error'); return;
     }
+    this.blockchain.requestDocument({
+      type: 'BONAFIDE_CERTIFICATE', studentId: this.bonafideForm.studentId, reason: this.bonafideForm.purpose,
+    }).subscribe({
+      next: () => { this.bonafideForm = { studentId: '', purpose: '' }; this.showToast('Bonafide issued → Dean'); },
+      error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
+    });
+  }
 
-    approveMarks(id: string): void {
-        this.blockchain.hodApproveMarks(id).subscribe({
-            next: () => { this.pendingMarksList = this.pendingMarksList.filter(m => m.id !== id); this.showToast('Approved → Exam Section'); },
-            error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
-        });
-    }
-
-    rejectMarks(id: string): void {
-        const reason = prompt('Rejection reason:'); if (!reason) return;
-        this.blockchain.rejectMarks(id, reason).subscribe({
-            next: () => { this.pendingMarksList = this.pendingMarksList.filter(m => m.id !== id); this.showToast('Rejected'); },
-            error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
-        });
-    }
-
-    loadStudents(): void {
-        this.loading = true;
-        this.blockchain.getStudentsByDepartment(this.department).subscribe({
-            next: (s: any) => { this.studentList = s?.data || s || []; this.loading = false; },
-            error: () => { this.loading = false; },
-        });
-    }
-
-    loadCertificates(): void {
-        this.loading = true;
-        this.blockchain.getDocumentRequests({ type: 'BONAFIDE_CERTIFICATE', status: 'pending' }).subscribe({
-            next: (d: any) => { this.pendingCertRequests = Array.isArray(d) ? d : (d?.data || []); this.loading = false; },
-            error: () => { this.loading = false; },
-        });
-    }
-
-    approveCertRequest(id: string): void {
-        this.blockchain.approveDocumentRequest(id).subscribe({
-            next: () => { this.pendingCertRequests = this.pendingCertRequests.filter(r => r.id !== id); this.showToast('Approved'); },
-            error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
-        });
-    }
-
-    rejectCertRequest(id: string): void {
-        const reason = prompt('Reason:'); if (!reason) return;
-        this.blockchain.rejectDocumentRequest(id, reason).subscribe({
-            next: () => { this.pendingCertRequests = this.pendingCertRequests.filter(r => r.id !== id); this.showToast('Rejected'); },
-            error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
-        });
-    }
-
-    issueBonafide(): void {
-        if (!this.bonafideForm.studentId || !this.bonafideForm.purpose) {
-            this.showToast('Student ID and purpose required', 'error'); return;
-        }
-        this.blockchain.requestDocument({
-            type: 'BONAFIDE_CERTIFICATE', studentId: this.bonafideForm.studentId, reason: this.bonafideForm.purpose,
-        }).subscribe({
-            next: () => { this.bonafideForm = { studentId: '', purpose: '' }; this.showToast('Bonafide issued → Dean'); },
-            error: (e: any) => this.showToast(e?.error?.message ?? 'Failed', 'error'),
-        });
-    }
-
-    logout(): void { this.authService.logout(); }
-    showToast(msg: string, type: 'success' | 'error' = 'success'): void {
-        this.toast = { show: true, msg, type };
-        setTimeout(() => (this.toast.show = false), 3500);
-    }
-    get semesters(): number[] { return [1, 2, 3, 4, 5, 6, 7, 8]; }
+  logout(): void { this.authService.logout(); }
+  showToast(msg: string, type: 'success' | 'error' = 'success'): void {
+    this.toast = { show: true, msg, type };
+    setTimeout(() => (this.toast.show = false), 3500);
+  }
+  get semesters(): number[] { return [1, 2, 3, 4, 5, 6, 7, 8]; }
 }

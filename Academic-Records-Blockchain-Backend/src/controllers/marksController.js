@@ -59,7 +59,8 @@ class MarksController {
     static async getStudentMarks(req, res) {
         try {
             const { studentId } = req.params;
-            const marks = await loadJSON('marks').filter(m => m.studentId === studentId);
+            const allMarks = await loadJSON('marks');
+            const marks = allMarks.filter(m => m.studentId === studentId);
             const courses = await loadJSON('courses');
 
             const enriched = marks.map(m => {
@@ -78,7 +79,8 @@ class MarksController {
     static async getStudentSemesterMarks(req, res) {
         try {
             const { studentId, semester } = req.params;
-            const marks = await loadJSON('marks')
+            const allMarks = await loadJSON('marks');
+            const marks = allMarks
                 .filter(m => m.studentId === studentId && m.semester === parseInt(semester));
             const courses = await loadJSON('courses');
 
@@ -89,7 +91,7 @@ class MarksController {
 
             let totalCredits = 0, weightedSum = 0;
             for (const m of enriched) {
-                if (m.status === 'locked' || m.status === 'verified') {
+                if (['locked', 'verified', 'dean_approved', 'admin_finalized', 'hod_approved', 'exam_approved', 'submitted'].includes(m.status)) {
                     totalCredits += m.credits;
                     weightedSum += m.gradePoint * m.credits;
                 }
@@ -107,8 +109,9 @@ class MarksController {
     static async getStudentCGPA(req, res) {
         try {
             const { studentId } = req.params;
-            const marks = await loadJSON('marks')
-                .filter(m => m.studentId === studentId && (m.status === 'locked' || m.status === 'verified'));
+            const allMarks = await loadJSON('marks');
+            const marks = allMarks
+                .filter(m => m.studentId === studentId && ['locked', 'verified', 'dean_approved', 'admin_finalized', 'hod_approved', 'exam_approved', 'submitted'].includes(m.status));
 
             let totalCredits = 0, weightedSum = 0;
             const semesters = {};
@@ -208,8 +211,8 @@ class MarksController {
                 const semester = course.semester;
 
                 // Check if semester is locked
-                const lockedSems = loadJSON(path.join(__dirname, '../../data/locked_semesters.json'));
-                const isLocked = lockedSems.some(l => l.department === course.department && l.semester === parseInt(semester));
+                const lockedSems = await loadJSON('locked_semesters');
+                const isLocked = Array.isArray(lockedSems) && lockedSems.some(l => l.department === course.department && l.semester === parseInt(semester));
                 if (isLocked) {
                     errors.push(`${courseCode}: Semester ${semester} for ${course.department} is locked`);
                     continue;
@@ -235,10 +238,12 @@ class MarksController {
                     gradePoint: grade.point,
                     proposedGrade: proposedGrade || null,
                     credits: course.credits || 3,
-                    status: 'draft',
-                    approvalChain: [],
+                    status: 'submitted',
+                    approvalChain: [{ role: user.role || 'faculty', user: user.username || user.userId, action: 'submitted', at: new Date().toISOString() }],
                     uploadedBy: user.username || user.userId,
                     uploadedAt: new Date().toISOString(),
+                    submittedAt: new Date().toISOString(),
+                    submittedBy: user.username || user.userId,
                 };
 
                 marks.push(newMark);
@@ -493,7 +498,8 @@ class MarksController {
     static async getPendingMarks(req, res) {
         try {
             const user = req.user;
-            const marks = await loadJSON('marks').filter(m => m.status === 'pending' || m.status === 'submitted');
+            const allMarks = await loadJSON('marks');
+            const marks = allMarks.filter(m => m.status === 'submitted' || m.status === 'draft');
             const courses = await loadJSON('courses');
 
             let filtered = marks;
@@ -522,7 +528,8 @@ class MarksController {
     static async getCourseMarks(req, res) {
         try {
             const { courseCode } = req.params;
-            const marks = await loadJSON('marks').filter(m => m.courseCode === courseCode);
+            const allMarks = await loadJSON('marks');
+            const marks = allMarks.filter(m => m.courseCode === courseCode);
             const users = await loadJSON('users');
 
             const enriched = marks.map(m => {

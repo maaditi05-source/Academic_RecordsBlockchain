@@ -83,12 +83,15 @@ import { MatStepperModule } from '@angular/material/stepper';
                 <input matInput type="email" formControlName="email" 
                        placeholder="cs21b001@student.nitw.ac.in">
                 <mat-icon matPrefix>email</mat-icon>
-                <mat-hint>Use official student email</mat-hint>
+                <mat-hint>Must end with &#64;student.nitw.ac.in</mat-hint>
                 <mat-error *ngIf="contactInfoForm.get('email')?.hasError('required')">
                   Email is required
                 </mat-error>
                 <mat-error *ngIf="contactInfoForm.get('email')?.hasError('email')">
                   Invalid email format
+                </mat-error>
+                <mat-error *ngIf="contactInfoForm.get('email')?.hasError('pattern')">
+                  Must use &#64;student.nitw.ac.in domain
                 </mat-error>
               </mat-form-field>
 
@@ -459,7 +462,9 @@ export class AddStudentDialogComponent {
     private dialogRef: MatDialogRef<AddStudentDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any
   ) {
-    this.departments = data.departments || ['CSE', 'ECE', 'EE', 'MECH', 'CIVIL', 'CHEM', 'MME', 'BIO'];
+    this.departments = (data.departments && data.departments.length > 0)
+      ? data.departments
+      : ['CSE', 'ECE', 'EE', 'MECH', 'CIVIL', 'CHEM', 'MME', 'BIO'];
 
     this.basicInfoForm = this.fb.group({
       rollNumber: ['', Validators.required],
@@ -467,7 +472,7 @@ export class AddStudentDialogComponent {
     });
 
     this.contactInfoForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]]
+      email: ['', Validators.required]
     });
 
     this.academicInfoForm = this.fb.group({
@@ -479,15 +484,20 @@ export class AddStudentDialogComponent {
 
   onSubmit(): void {
     if (this.basicInfoForm.valid && this.contactInfoForm.valid && this.academicInfoForm.valid) {
+      let email = this.contactInfoForm.value.email.toLowerCase().trim();
+      // Auto-append domain if user only typed the username part
+      if (!email.includes('@')) {
+        email = email + '@student.nitw.ac.in';
+      }
       const studentData = {
         ...this.basicInfoForm.value,
         ...this.contactInfoForm.value,
         ...this.academicInfoForm.value,
         rollNumber: this.basicInfoForm.value.rollNumber.toUpperCase(),
-        email: this.contactInfoForm.value.email.toLowerCase(),
+        email: email,
         department: this.academicInfoForm.value.department.toUpperCase()
       };
-      
+
       this.dialogRef.close(studentData);
     }
   }

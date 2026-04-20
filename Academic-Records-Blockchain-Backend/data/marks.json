@@ -1,1 +1,173 @@
-[]
+[
+  {
+    "id": "mark-1776707932138-1cs5j",
+    "studentId": "25CSM2R06",
+    "courseCode": "CS301",
+    "semester": 3,
+    "department": "CSE",
+    "year": 2026,
+    "marksData": {
+      "internal": null,
+      "external": null,
+      "total": 85
+    },
+    "marksObtained": 85,
+    "maxMarks": 100,
+    "grade": "A",
+    "gradePoint": 9,
+    "proposedGrade": null,
+    "credits": 3,
+    "status": "locked",
+    "approvalChain": [
+      {
+        "role": "faculty",
+        "user": "cse_faculty",
+        "action": "submitted",
+        "at": "2026-04-20T17:58:52.139Z"
+      },
+      {
+        "role": "hod",
+        "user": "cse_hod",
+        "action": "approved",
+        "at": "2026-04-20T17:58:52.145Z"
+      },
+      {
+        "role": "exam_section",
+        "user": "admin",
+        "action": "approved",
+        "at": "2026-04-20T17:58:52.151Z"
+      },
+      {
+        "role": "dean",
+        "user": "admin",
+        "action": "approved",
+        "at": "2026-04-20T17:58:52.157Z"
+      },
+      {
+        "role": "admin",
+        "user": "admin",
+        "action": "finalized",
+        "at": "2026-04-20T17:58:52.162Z"
+      }
+    ],
+    "uploadedBy": "cse_faculty",
+    "uploadedAt": "2026-04-20T17:58:52.139Z",
+    "submittedAt": "2026-04-20T17:58:52.139Z",
+    "submittedBy": "cse_faculty",
+    "finalizedAt": "2026-04-20T17:58:52.162Z"
+  },
+  {
+    "id": "mark-1776708026011-ofgrg",
+    "studentId": "25CSM2R10",
+    "courseCode": "CS301",
+    "semester": 3,
+    "department": "CSE",
+    "year": 2026,
+    "marksData": {
+      "internal": null,
+      "external": null,
+      "total": 90
+    },
+    "marksObtained": 90,
+    "maxMarks": 100,
+    "grade": "A+",
+    "gradePoint": 10,
+    "proposedGrade": null,
+    "credits": 3,
+    "status": "locked",
+    "approvalChain": [
+      {
+        "role": "faculty",
+        "user": "cse_faculty",
+        "action": "submitted",
+        "at": "2026-04-20T18:00:26.011Z"
+      },
+      {
+        "role": "hod",
+        "user": "cse_hod",
+        "action": "approved",
+        "at": "2026-04-20T18:00:26.015Z"
+      },
+      {
+        "role": "exam_section",
+        "user": "admin",
+        "action": "approved",
+        "at": "2026-04-20T18:00:26.021Z"
+      },
+      {
+        "role": "dean",
+        "user": "admin",
+        "action": "approved",
+        "at": "2026-04-20T18:00:26.025Z"
+      },
+      {
+        "role": "admin",
+        "user": "admin",
+        "action": "finalized",
+        "at": "2026-04-20T18:00:26.030Z"
+      }
+    ],
+    "uploadedBy": "cse_faculty",
+    "uploadedAt": "2026-04-20T18:00:26.011Z",
+    "submittedAt": "2026-04-20T18:00:26.011Z",
+    "submittedBy": "cse_faculty",
+    "finalizedAt": "2026-04-20T18:00:26.030Z"
+  },
+  {
+    "id": "mark-1776708188027-7njzi",
+    "studentId": "25CSM2R12",
+    "courseCode": "CS301",
+    "semester": 3,
+    "department": "CSE",
+    "year": 2026,
+    "marksData": {
+      "internal": null,
+      "external": null,
+      "total": 92
+    },
+    "marksObtained": 92,
+    "maxMarks": 100,
+    "grade": "A+",
+    "gradePoint": 10,
+    "proposedGrade": null,
+    "credits": 3,
+    "status": "locked",
+    "approvalChain": [
+      {
+        "role": "faculty",
+        "user": "cse_faculty",
+        "action": "submitted",
+        "at": "2026-04-20T18:03:08.027Z"
+      },
+      {
+        "role": "hod",
+        "user": "cse_hod",
+        "action": "approved",
+        "at": "2026-04-20T18:03:08.032Z"
+      },
+      {
+        "role": "exam_section",
+        "user": "admin",
+        "action": "approved",
+        "at": "2026-04-20T18:03:08.037Z"
+      },
+      {
+        "role": "dean",
+        "user": "admin",
+        "action": "approved",
+        "at": "2026-04-20T18:03:08.042Z"
+      },
+      {
+        "role": "admin",
+        "user": "admin",
+        "action": "finalized",
+        "at": "2026-04-20T18:03:08.048Z"
+      }
+    ],
+    "uploadedBy": "cse_faculty",
+    "uploadedAt": "2026-04-20T18:03:08.027Z",
+    "submittedAt": "2026-04-20T18:03:08.027Z",
+    "submittedBy": "cse_faculty",
+    "finalizedAt": "2026-04-20T18:03:08.048Z"
+  }
+]
