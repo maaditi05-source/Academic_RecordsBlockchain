@@ -1,12 +1,1 @@
-[
-    {
-        "departmentId": "CSE",
-        "name": "Computer Science and Engineering",
-        "hodId": "hod_demo"
-    },
-    {
-        "departmentId": "MECH",
-        "name": "Mechanical Engineering",
-        "hodId": ""
-    }
-]
+[]

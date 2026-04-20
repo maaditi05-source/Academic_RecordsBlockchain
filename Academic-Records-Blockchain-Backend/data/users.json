@@ -78,19 +78,5 @@
     "department": null,
     "createdAt": "2026-04-19T13:26:45.456Z",
     "isActive": true
-  },
-  {
-    "id": "student-1776605406260",
-    "username": "25CSM2R25",
-    "email": "25csm2r25@student.nitw.ac.in",
-    "passwordHash": "$2a$10$mTL0lJWcPuiAUaM1lyAk9.bXzCf/vYgRiF5xMRwCBuhf7iBhfXT2i",
-    "name": "Raj",
-    "role": "student",
-    "department": "ECE",
-    "mspId": "NITWarangalMSP",
-    "createdAt": "2026-04-19T13:30:06.260Z",
-    "isActive": true,
-    "passwordChangeRequired": true,
-    "firstLogin": true
   }
 ]

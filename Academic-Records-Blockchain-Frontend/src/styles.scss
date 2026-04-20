@@ -28,6 +28,11 @@ $dark-theme: mat.define-dark-theme((color: (primary: $dark-primary,
 
 @include mat.all-component-themes($dark-theme);
 
+/* ── Tailwind CSS ─────────────────────────────────────────────── */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 // ── CSS Variables ───────────────────────────────────────────────
 :root {
   --bg-primary: #0a0e1a;

@@ -2,7 +2,7 @@
 set -e
 
 NEW_VERSION="4.0"
-SEQUENCE="4"
+SEQUENCE="3"
 CHAINCODE_NAME="academic-records"
 CHAINCODE_LABEL="academic_records_${NEW_VERSION}"
 CHANNEL_NAME="academic-records-channel"

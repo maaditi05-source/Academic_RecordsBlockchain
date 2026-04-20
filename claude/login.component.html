@@ -1,0 +1,231 @@
+<!-- ============================================================
+     login.component.html  — FULL REPLACEMENT
+     CHANGED: added enroll tab/form alongside login form (Req #15)
+              shows "pending approval" state after enrollment
+     ============================================================ -->
+
+<div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+
+    <!-- Header -->
+    <div class="text-center mb-6">
+      <div class="inline-flex items-center justify-center w-14 h-14 bg-blue-700 rounded-xl mb-3">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+          <path d="M2 17l10 5 10-5"/>
+          <path d="M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <h1 class="text-xl font-semibold text-gray-900">ARMS – NIT Warangal</h1>
+      <p class="text-sm text-gray-500 mt-1">Academic Records Management System</p>
+    </div>
+
+    <!-- ── PENDING APPROVAL state (Req #15) ── -->
+    <div *ngIf="enrollPending" class="bg-white rounded-2xl shadow p-8 text-center">
+      <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2">
+          <path d="M20 6L9 17l-5-5"/>
+        </svg>
+      </div>
+      <h2 class="text-lg font-medium text-gray-900 mb-2">Enrollment Submitted</h2>
+      <p class="text-sm text-gray-500 mb-6">{{ successMsg }}</p>
+      <button
+        (click)="switchMode('login')"
+        class="text-sm text-blue-600 hover:underline">
+        Back to Login
+      </button>
+    </div>
+
+    <!-- ── Main card ── -->
+    <div *ngIf="!enrollPending" class="bg-white rounded-2xl shadow overflow-hidden">
+
+      <!-- Mode tabs -->
+      <div class="flex border-b border-gray-100">
+        <button
+          (click)="switchMode('login')"
+          [class.border-b-2]="mode === 'login'"
+          [class.border-blue-700]="mode === 'login'"
+          [class.text-blue-700]="mode === 'login'"
+          [class.text-gray-400]="mode !== 'login'"
+          class="flex-1 py-3 text-sm font-medium transition-colors">
+          Sign In
+        </button>
+        <!-- NEW: Enroll tab (Req #15) -->
+        <button
+          (click)="switchMode('signup')"
+          [class.border-b-2]="mode === 'signup'"
+          [class.border-blue-700]="mode === 'signup'"
+          [class.text-blue-700]="mode === 'signup'"
+          [class.text-gray-400]="mode !== 'signup'"
+          class="flex-1 py-3 text-sm font-medium transition-colors">
+          Student Enroll
+        </button>
+      </div>
+
+      <div class="p-6">
+
+        <!-- Error / Success messages -->
+        <div *ngIf="errorMsg"
+             class="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 text-sm mb-4">
+          {{ errorMsg }}
+        </div>
+        <div *ngIf="successMsg && !enrollPending"
+             class="bg-green-50 border border-green-200 text-green-700 rounded-lg p-3 text-sm mb-4">
+          {{ successMsg }}
+        </div>
+
+        <!-- ── LOGIN FORM ── -->
+        <form *ngIf="mode === 'login'" (ngSubmit)="onLogin()" class="space-y-4">
+
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">Username</label>
+            <input
+              [(ngModel)]="loginForm.username"
+              name="username"
+              type="text"
+              required
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-blue-200"
+              placeholder="Enter username" />
+          </div>
+
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">Password</label>
+            <input
+              [(ngModel)]="loginForm.password"
+              name="password"
+              type="password"
+              required
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-blue-200"
+              placeholder="Enter password" />
+          </div>
+
+          <button
+            type="submit"
+            [disabled]="loading"
+            class="w-full bg-blue-700 hover:bg-blue-800 disabled:opacity-50
+                   text-white rounded-lg py-2.5 text-sm font-medium transition-colors">
+            {{ loading ? 'Signing in…' : 'Sign In' }}
+          </button>
+        </form>
+
+        <!-- ── ENROLL FORM (NEW — Req #15) ── -->
+        <form *ngIf="mode === 'signup'" (ngSubmit)="onEnroll()" class="space-y-3">
+
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">Roll Number</label>
+            <input
+              [(ngModel)]="enrollForm.rollNumber"
+              name="rollNumber"
+              type="text"
+              required
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-blue-200"
+              placeholder="e.g. 22CS001" />
+          </div>
+
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">Full Name</label>
+            <input
+              [(ngModel)]="enrollForm.fullName"
+              name="fullName"
+              type="text"
+              required
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-blue-200"
+              placeholder="Your full name" />
+          </div>
+
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">Email</label>
+            <input
+              [(ngModel)]="enrollForm.email"
+              name="email"
+              type="email"
+              required
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-blue-200"
+              placeholder="student@nitw.ac.in" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">Department</label>
+              <select
+                [(ngModel)]="enrollForm.department"
+                name="department"
+                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-blue-200">
+                <option *ngFor="let d of departments" [value]="d">{{ d }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">Semester</label>
+              <select
+                [(ngModel)]="enrollForm.semester"
+                name="semester"
+                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-blue-200">
+                <option *ngFor="let s of [1,2,3,4,5,6,7,8]" [value]="s">{{ s }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">Password</label>
+            <input
+              [(ngModel)]="enrollForm.password"
+              name="password"
+              type="password"
+              required
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-blue-200"
+              placeholder="Min 6 characters" />
+          </div>
+
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">Confirm Password</label>
+            <input
+              [(ngModel)]="enrollForm.confirmPassword"
+              name="confirmPassword"
+              type="password"
+              required
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-blue-200"
+              placeholder="Repeat password" />
+          </div>
+
+          <p class="text-xs text-gray-400">
+            After enrollment, an admin will review and activate your account before you can log in.
+          </p>
+
+          <button
+            type="submit"
+            [disabled]="loading"
+            class="w-full bg-blue-700 hover:bg-blue-800 disabled:opacity-50
+                   text-white rounded-lg py-2.5 text-sm font-medium transition-colors">
+            {{ loading ? 'Submitting…' : 'Submit Enrollment' }}
+          </button>
+        </form>
+
+        <!-- ── Demo credentials (login mode only) ── -->
+        <div *ngIf="mode === 'login'" class="mt-5 pt-4 border-t border-gray-100">
+          <p class="text-xs text-gray-400 mb-2">Quick fill demo credentials:</p>
+          <div class="grid grid-cols-2 gap-1.5">
+            <button
+              *ngFor="let cred of demoCredentials"
+              (click)="fillDemo(cred)"
+              class="text-left px-2 py-1.5 text-xs bg-gray-50 hover:bg-blue-50
+                     border border-gray-100 hover:border-blue-200 rounded-lg
+                     text-gray-600 hover:text-blue-700 transition-colors">
+              {{ cred.role }}
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /p-6 -->
+    </div><!-- /card -->
+
+  </div>
+</div>

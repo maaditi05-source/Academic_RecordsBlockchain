@@ -1,0 +1,284 @@
+<!-- hod-dashboard.component.html  — NEW FILE -->
+<div class="min-h-screen bg-gray-50">
+
+  <!-- Toast -->
+  <div *ngIf="toast.show"
+       [class.bg-green-600]="toast.type==='success'"
+       [class.bg-red-600]="toast.type==='error'"
+       class="fixed top-4 right-4 z-50 text-white text-sm px-4 py-2.5 rounded-lg shadow-lg">
+    {{ toast.msg }}
+  </div>
+
+  <!-- Top bar -->
+  <header class="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+    <div>
+      <h1 class="text-base font-semibold text-gray-900">HOD Dashboard — {{ department }}</h1>
+      <p class="text-xs text-gray-400 mt-0.5">{{ user?.username }}</p>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <nav class="bg-white border-b border-gray-100 px-6 flex gap-1">
+    <button *ngFor="let t of [
+      {id:'overview',     label:'Overview'},
+      {id:'courses',      label:'Courses'},
+      {id:'marks',        label:'Marks Approval'},
+      {id:'students',     label:'Students'},
+      {id:'certificates', label:'Certificate Requests'},
+      {id:'bonafide',     label:'Issue Bonafide'}
+    ]"
+    (click)="setTab(t.id)"
+    [class.border-b-2]="activeTab===t.id"
+    [class.border-blue-700]="activeTab===t.id"
+    [class.text-blue-700]="activeTab===t.id"
+    [class.text-gray-500]="activeTab!==t.id"
+    class="px-3 py-3 text-sm font-medium whitespace-nowrap transition-colors">
+      {{ t.label }}
+    </button>
+  </nav>
+
+  <main class="max-w-6xl mx-auto p-6">
+
+    <!-- ── Overview ── -->
+    <div *ngIf="activeTab==='overview'" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div *ngFor="let s of [
+        {label:'Students',      value:stats.totalStudents, color:'blue'},
+        {label:'Faculty',       value:stats.totalFaculty,  color:'teal'},
+        {label:'Pending Marks', value:stats.pendingMarks,  color:'amber'},
+        {label:'Pending Certs', value:stats.pendingCerts,  color:'purple'}
+      ]"
+      class="bg-white rounded-xl border border-gray-100 p-5">
+        <p class="text-2xl font-semibold text-gray-900">{{ s.value }}</p>
+        <p class="text-sm text-gray-400 mt-1">{{ s.label }}</p>
+      </div>
+    </div>
+
+    <!-- ── Courses ── -->
+    <div *ngIf="activeTab==='courses'">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-sm font-medium text-gray-700">{{ department }} Courses</h2>
+        <button (click)="showAddCourse=!showAddCourse"
+                class="bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg">
+          + Add Course
+        </button>
+      </div>
+
+      <!-- Add course form -->
+      <div *ngIf="showAddCourse" class="bg-white border border-gray-100 rounded-xl p-5 mb-4">
+        <h3 class="text-sm font-medium text-gray-700 mb-3">New Course</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+          <input [(ngModel)]="newCourse.code"    placeholder="Code (e.g. CS301)"
+                 class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+          <input [(ngModel)]="newCourse.name"    placeholder="Course name"
+                 class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+          <select [(ngModel)]="newCourse.semester"
+                  class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+            <option *ngFor="let s of semesters" [value]="s">Sem {{ s }}</option>
+          </select>
+          <input [(ngModel)]="newCourse.credits" type="number" placeholder="Credits"
+                 class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+        </div>
+        <div class="flex gap-2">
+          <button (click)="addCourse()"
+                  class="bg-blue-700 text-white text-xs px-4 py-2 rounded-lg">Save</button>
+          <button (click)="showAddCourse=false"
+                  class="bg-gray-100 text-gray-600 text-xs px-4 py-2 rounded-lg">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Assign modal -->
+      <div *ngIf="assigningCourse"
+           class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-40">
+        <div class="bg-white rounded-2xl p-6 w-80">
+          <h3 class="text-sm font-medium text-gray-900 mb-3">
+            Assign Faculty to {{ assigningCourse.code }}
+          </h3>
+          <input [(ngModel)]="assignFacultyUsername"
+                 placeholder="Faculty username"
+                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-3" />
+          <div class="flex gap-2">
+            <button (click)="saveAssign()"
+                    class="flex-1 bg-blue-700 text-white text-xs py-2 rounded-lg">Assign</button>
+            <button (click)="assigningCourse=null"
+                    class="flex-1 bg-gray-100 text-gray-600 text-xs py-2 rounded-lg">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Course table -->
+      <div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div *ngIf="loading" class="p-6 text-center text-sm text-gray-400">Loading…</div>
+        <table *ngIf="!loading && courses.length" class="w-full text-sm">
+          <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
+            <tr>
+              <th class="px-4 py-3 text-left">Code</th>
+              <th class="px-4 py-3 text-left">Name</th>
+              <th class="px-4 py-3 text-left">Sem</th>
+              <th class="px-4 py-3 text-left">Credits</th>
+              <th class="px-4 py-3 text-left">Assigned Faculty</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50">
+            <tr *ngFor="let c of courses" class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-medium">{{ c.code }}</td>
+              <td class="px-4 py-3 text-gray-600">{{ c.name }}</td>
+              <td class="px-4 py-3 text-gray-500">{{ c.semester }}</td>
+              <td class="px-4 py-3 text-gray-500">{{ c.credits }}</td>
+              <td class="px-4 py-3 text-gray-500">{{ c.assignedFaculty || '—' }}</td>
+              <td class="px-4 py-3 text-right space-x-2">
+                <button (click)="openAssign(c)"
+                        class="text-xs text-blue-600 hover:underline">Assign</button>
+                <button (click)="deleteCourse(c.id)"
+                        class="text-xs text-red-500 hover:underline">Delete</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p *ngIf="!loading && !courses.length"
+           class="p-6 text-sm text-gray-400 text-center">No courses yet.</p>
+      </div>
+    </div>
+
+    <!-- ── Marks Approval ── -->
+    <div *ngIf="activeTab==='marks'">
+      <div class="flex items-center gap-3 mb-4">
+        <h2 class="text-sm font-medium text-gray-700">Pending Marks Approval</h2>
+        <select [(ngModel)]="selectedSemesterFilter" (change)="loadPendingMarks()"
+                class="border border-gray-200 rounded-lg px-2 py-1.5 text-xs">
+          <option [value]="null">All semesters</option>
+          <option *ngFor="let s of semesters" [value]="s">Sem {{ s }}</option>
+        </select>
+      </div>
+
+      <div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div *ngIf="loading" class="p-6 text-center text-sm text-gray-400">Loading…</div>
+        <table *ngIf="!loading && pendingMarksList.length" class="w-full text-sm">
+          <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
+            <tr>
+              <th class="px-4 py-3 text-left">Student</th>
+              <th class="px-4 py-3 text-left">Course</th>
+              <th class="px-4 py-3 text-left">Sem</th>
+              <th class="px-4 py-3 text-left">Internal</th>
+              <th class="px-4 py-3 text-left">External</th>
+              <th class="px-4 py-3 text-left">Total</th>
+              <th class="px-4 py-3 text-left">Grade</th>
+              <th class="px-4 py-3 text-left">Submitted By</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50">
+            <tr *ngFor="let m of pendingMarksList" class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-medium">{{ m.studentId }}</td>
+              <td class="px-4 py-3 text-gray-600">{{ m.courseCode }}</td>
+              <td class="px-4 py-3 text-gray-500">{{ m.semester }}</td>
+              <td class="px-4 py-3">{{ m.marksData?.internal }}</td>
+              <td class="px-4 py-3">{{ m.marksData?.external ?? '—' }}</td>
+              <td class="px-4 py-3 font-medium">{{ m.marksData?.total }}</td>
+              <td class="px-4 py-3">{{ m.proposedGrade || '—' }}</td>
+              <td class="px-4 py-3 text-gray-500 text-xs">{{ m.submittedBy }}</td>
+              <td class="px-4 py-3 text-right space-x-2">
+                <button (click)="approveMarks(m.id)"
+                        class="text-xs text-green-600 font-medium hover:underline">Approve</button>
+                <button (click)="rejectMarks(m.id)"
+                        class="text-xs text-red-500 hover:underline">Reject</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p *ngIf="!loading && !pendingMarksList.length"
+           class="p-6 text-sm text-gray-400 text-center">No pending marks.</p>
+      </div>
+    </div>
+
+    <!-- ── Students ── -->
+    <div *ngIf="activeTab==='students'">
+      <h2 class="text-sm font-medium text-gray-700 mb-4">{{ department }} Students</h2>
+      <div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div *ngIf="loading" class="p-6 text-center text-sm text-gray-400">Loading…</div>
+        <table *ngIf="!loading && studentList.length" class="w-full text-sm">
+          <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
+            <tr>
+              <th class="px-4 py-3 text-left">Student ID</th>
+              <th class="px-4 py-3 text-left">Name</th>
+              <th class="px-4 py-3 text-left">Semester</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50">
+            <tr *ngFor="let s of studentList" class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-medium">{{ s.studentId || s.id }}</td>
+              <td class="px-4 py-3 text-gray-600">{{ s.name || s.fullName }}</td>
+              <td class="px-4 py-3 text-gray-500">{{ s.semester }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p *ngIf="!loading && !studentList.length"
+           class="p-6 text-sm text-gray-400 text-center">No students found.</p>
+      </div>
+    </div>
+
+    <!-- ── Certificate Requests (Req #4) ── -->
+    <div *ngIf="activeTab==='certificates'">
+      <h2 class="text-sm font-medium text-gray-700 mb-4">Bonafide Certificate Requests</h2>
+      <div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div *ngIf="loading" class="p-6 text-center text-sm text-gray-400">Loading…</div>
+        <table *ngIf="!loading && pendingCertRequests.length" class="w-full text-sm">
+          <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
+            <tr>
+              <th class="px-4 py-3 text-left">Student</th>
+              <th class="px-4 py-3 text-left">Type</th>
+              <th class="px-4 py-3 text-left">Reason</th>
+              <th class="px-4 py-3 text-left">Requested</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50">
+            <tr *ngFor="let r of pendingCertRequests" class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-medium">{{ r.studentId }}</td>
+              <td class="px-4 py-3 text-gray-600">{{ r.type }}</td>
+              <td class="px-4 py-3 text-gray-500">{{ r.reason || '—' }}</td>
+              <td class="px-4 py-3 text-gray-400 text-xs">{{ r.requestedAt | date:'mediumDate' }}</td>
+              <td class="px-4 py-3 text-right space-x-2">
+                <button (click)="approveCertRequest(r.id)"
+                        class="text-xs text-green-600 font-medium hover:underline">Approve</button>
+                <button (click)="rejectCertRequest(r.id)"
+                        class="text-xs text-red-500 hover:underline">Reject</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p *ngIf="!loading && !pendingCertRequests.length"
+           class="p-6 text-sm text-gray-400 text-center">No pending certificate requests.</p>
+      </div>
+    </div>
+
+    <!-- ── Issue Bonafide (Req #11) ── -->
+    <div *ngIf="activeTab==='bonafide'" class="max-w-md">
+      <h2 class="text-sm font-medium text-gray-700 mb-4">Issue Bonafide Certificate</h2>
+      <div class="bg-white rounded-xl border border-gray-100 p-5 space-y-3">
+        <div>
+          <label class="block text-xs text-gray-500 mb-1">Student Roll Number</label>
+          <input [(ngModel)]="bonafideForm.studentId" type="text"
+                 placeholder="e.g. 22CS001"
+                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1">Purpose</label>
+          <textarea [(ngModel)]="bonafideForm.purpose" rows="3"
+                    placeholder="e.g. Bank account opening, Visa application…"
+                    class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none"></textarea>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1">Validity (days)</label>
+          <input [(ngModel)]="bonafideForm.validityDays" type="number"
+                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+        </div>
+        <button (click)="issueBonafide()"
+                class="w-full bg-blue-700 text-white text-sm py-2.5 rounded-lg font-medium">
+          Issue & Forward to Dean
+        </button>
+      </div>
+    </div>
+
+  </main>
+</div>
