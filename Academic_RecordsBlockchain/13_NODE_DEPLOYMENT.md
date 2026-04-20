@@ -5,8 +5,9 @@ Before starting, the env.sh file is our source of truth for all IP addresses.
 Step 1: Setup Environment (Everyone)
 Bhargav, Atul, Vindhya, Aditi, Sejal, Shyamashree, Shreya, Manasvi, Saim, Amit, Mousumi, Aakash:
 First, download the latest updates: git pull
-Next, run: source ./env.sh
-Then run: ./update-hosts.sh
+Next, go to the blockchain folder: cd Academic_RecordsBlockchain
+Then run: source ./env.sh
+And run: ./update-hosts.sh
 
 Step 2: Start Orderers (Consensus Nodes)
 Bhargav (Primary Orderer): Run docker-compose -f docker/docker-compose-orderer1.yaml up -d
