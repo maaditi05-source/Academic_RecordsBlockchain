@@ -119,12 +119,12 @@ router.put('/requests/:id/approve', authenticateToken, async (req, res) => {
 
         // Determine next status based on document type and current status
         const workflows = {
-            'SEMESTER_MARKSHEET': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'issued' },
-            'CONSOLIDATED_MARKSHEET': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'issued' },
-            'DEGREE_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'issued' },
-            'TRANSFER_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'issued' },
-            'MIGRATION_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'issued' },
-            'BONAFIDE_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'issued' },
+            'SEMESTER_MARKSHEET': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
+            'CONSOLIDATED_MARKSHEET': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
+            'DEGREE_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
+            'TRANSFER_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
+            'MIGRATION_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
+            'BONAFIDE_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
         };
 
         const wf = workflows[r.type];

@@ -130,5 +130,41 @@
     "userId": "student-1776705344931",
     "processedDate": "2026-04-20T19:25:05.182Z",
     "processedBy": "admin"
+  },
+  {
+    "requestId": "REQ-1776771547593",
+    "studentId": "25CSM2R02",
+    "certificateType": "DEGREE",
+    "purpose": "HIGHER_STUDIES",
+    "additionalDetails": "",
+    "requestDate": "2026-04-21T11:39:07.593Z",
+    "status": "hod_approved",
+    "userId": "student-1776771090406",
+    "processedDate": "2026-04-21T11:40:58.550Z",
+    "processedBy": "cse_hod"
+  },
+  {
+    "requestId": "REQ-1776771568665",
+    "studentId": "25CSM2R02",
+    "certificateType": "BONAFIDE",
+    "purpose": "VISA",
+    "additionalDetails": "",
+    "requestDate": "2026-04-21T11:39:28.665Z",
+    "status": "issued",
+    "userId": "student-1776771090406",
+    "processedDate": "2026-04-21T11:41:21.074Z",
+    "processedBy": "dean_academic"
+  },
+  {
+    "requestId": "REQ-1776771751853",
+    "studentId": "25CSM2R02",
+    "certificateType": "CONSOLIDATED_MARKSHEET",
+    "purpose": "HIGHER_STUDIES",
+    "additionalDetails": "",
+    "requestDate": "2026-04-21T11:42:31.853Z",
+    "status": "issued",
+    "userId": "student-1776771090406",
+    "processedDate": "2026-04-21T11:45:18.837Z",
+    "processedBy": "admin"
   }
 ]

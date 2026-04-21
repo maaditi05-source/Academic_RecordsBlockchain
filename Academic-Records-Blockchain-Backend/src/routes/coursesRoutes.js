@@ -20,7 +20,16 @@ router.get('/', async (req, res) => {
     const users = await loadUsers();
     const { department, faculty, semester } = req.query;
     let filtered = courses;
-    if (department) filtered = filtered.filter(c => c.department === department);
+
+    // Faculty and HOD should only see their own department's courses
+    const userRole = req.user.role;
+    const userDept = (req.user.department || '').toUpperCase();
+    if (department) {
+        filtered = filtered.filter(c => (c.department || '').toUpperCase() === department.toUpperCase());
+    } else if (['faculty', 'hod', 'department'].includes(userRole) && userDept) {
+        filtered = filtered.filter(c => (c.department || '').toUpperCase() === userDept);
+    }
+
     if (faculty) filtered = filtered.filter(c => c.faculty === faculty || (c.enrolledFaculty && c.enrolledFaculty.includes(faculty)));
     if (semester) filtered = filtered.filter(c => c.semester === parseInt(semester));
 

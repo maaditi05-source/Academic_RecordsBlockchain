@@ -418,5 +418,29 @@
     "currentCGPA": 0,
     "createdAt": "2026-04-21T10:52:21.401Z",
     "_offlineCreated": true
+  },
+  {
+    "studentId": "25CSMS01",
+    "rollNumber": "25CSMS01",
+    "name": "Ramesh Patel",
+    "department": "ECE",
+    "enrollmentYear": 2026,
+    "email": "25csms01@student.nitw.ac.in",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-21T11:25:54.558Z"
+  },
+  {
+    "studentId": "25CSM2R02",
+    "rollNumber": "25CSM2R02",
+    "name": "Ankit Kumar",
+    "department": "CSE",
+    "enrollmentYear": 2026,
+    "email": "25csm2r02@student.nitw.ac.in",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-21T11:31:30.407Z"
   }
 ]

@@ -422,5 +422,33 @@
     "isActive": true,
     "passwordChangeRequired": true,
     "firstLogin": true
+  },
+  {
+    "id": "student-1776770754557",
+    "username": "25CSMS01",
+    "email": "25csms01@student.nitw.ac.in",
+    "passwordHash": "$2a$10$8rMD0d8OhVTCa0UTgkXoJukni.j0EwUnNuwZkMAhs8ltZstxYj2EK",
+    "name": "Ramesh Patel",
+    "role": "student",
+    "department": "ECE",
+    "mspId": "NITWarangalMSP",
+    "createdAt": "2026-04-21T11:25:54.557Z",
+    "isActive": true,
+    "passwordChangeRequired": true,
+    "firstLogin": true
+  },
+  {
+    "id": "student-1776771090406",
+    "username": "25CSM2R02",
+    "email": "25csm2r02@student.nitw.ac.in",
+    "passwordHash": "$2a$10$Mt06IIrqn8KWLLnhesXNn.lENjt2qTBJsB9pp2t/jtOUo8mUhEaku",
+    "name": "Ankit Kumar",
+    "role": "student",
+    "department": "CSE",
+    "mspId": "NITWarangalMSP",
+    "createdAt": "2026-04-21T11:31:30.406Z",
+    "isActive": true,
+    "passwordChangeRequired": true,
+    "firstLogin": true
   }
 ]

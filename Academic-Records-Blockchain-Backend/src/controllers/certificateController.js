@@ -174,6 +174,14 @@ class CertificateController {
             const result = await gateway.evaluateTransaction('GetCertificate', certificateID);
             const cert = typeof result === 'string' ? JSON.parse(result) : result;
 
+            // Block download if certificate is revoked
+            if (cert && cert.revoked) {
+                return res.status(403).json({
+                    success: false,
+                    message: `Certificate ${certificateID} has been REVOKED. Reason: ${cert.revocationReason || 'Not specified'}. Download is not available.`
+                });
+            }
+
             if (!cert || !cert.ipfsHash) {
                 return res.status(404).json({ success: false, message: 'No IPFS file linked to this certificate' });
             }
@@ -181,6 +189,21 @@ class CertificateController {
             // Redirect browser to IPFS gateway — PDF downloads automatically
             res.redirect(getIPFSUrl(cert.ipfsHash));
         } catch (error) {
+            // Also check dataSync for revoked status
+            try {
+                const certRequests = await dataSync.readCollection('certificate-requests');
+                const found = certRequests.find(r =>
+                    r.requestId === req.params.certificateID ||
+                    (r.requestId && r.requestId.toLowerCase() === req.params.certificateID.toLowerCase())
+                );
+                if (found && found.status === 'REVOKED') {
+                    return res.status(403).json({
+                        success: false,
+                        message: `Certificate has been REVOKED. Download is not available.`
+                    });
+                }
+            } catch (e) { /* ignore sync errors */ }
+
             logger.error(`Error downloading certificate: ${error.message}`);
             res.status(500).json({ success: false, message: error.message });
         } finally {
@@ -276,11 +299,51 @@ class CertificateController {
             await gateway.connect(userId);
 
             // Call the correct chaincode function: GetCertificatesByStudent
-            const result = await gateway.evaluateTransaction('GetCertificatesByStudent', studentID);
+            let certs = [];
+            try {
+                const result = await gateway.evaluateTransaction('GetCertificatesByStudent', studentID);
+                certs = Array.isArray(result) ? result : [];
+            } catch (e) {
+                logger.warn(`Blockchain certs lookup failed for ${studentID}: ${e.message}`);
+            }
+
+            // Merge with certificate-requests from dataSync (offline-issued certs)
+            try {
+                const certRequests = await dataSync.readCollection('certificate-requests');
+                const studentReqs = certRequests.filter(r =>
+                    r.studentId === studentID && (r.status === 'issued' || r.status === 'REVOKED')
+                );
+                const existingIds = new Set(certs.map(c => c.certificateId || c.certificateID));
+                for (const r of studentReqs) {
+                    if (!existingIds.has(r.requestId)) {
+                        certs.push({
+                            certificateId: r.requestId,
+                            studentId: r.studentId,
+                            type: r.certificateType,
+                            purpose: r.purpose,
+                            status: r.status === 'REVOKED' ? 'revoked' : 'active',
+                            isValid: r.status !== 'REVOKED',
+                            revoked: r.status === 'REVOKED',
+                            revocationReason: r.revocationReason || '',
+                            issuedAt: r.processedDate || r.issuedAt,
+                            requestedAt: r.requestDate,
+                            _source: 'dataSync'
+                        });
+                    }
+                }
+            } catch (e) { /* dataSync unavailable */ }
+
+            // Ensure all certificates have explicit active/revoked status
+            certs = certs.map(c => ({
+                ...c,
+                status: c.revoked ? 'revoked' : (c.status || 'active'),
+                revoked: !!c.revoked,
+                isValid: !c.revoked
+            }));
 
             res.status(200).json({
                 success: true,
-                data: result
+                data: certs
             });
         } catch (error) {
             logger.error(`Error getting student certificates: ${error.message}`);
@@ -479,14 +542,14 @@ class CertificateController {
                 const currentStatus = (requests[requestIndex].status || 'PENDING').toLowerCase();
 
                 const workflows = {
-                    'DEGREE_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'issued' },
-                    'CONSOLIDATED_MARKSHEET': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'issued' },
-                    'SEMESTER_MARKSHEET': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'issued' },
-                    'MIGRATION_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'issued' },
-                    'BONAFIDE': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'issued' },
-                    'BONAFIDE_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'issued' },
-                    'TRANSFER': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'issued' },
-                    'TRANSFER_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'issued' }
+                    'DEGREE_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
+                    'CONSOLIDATED_MARKSHEET': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
+                    'SEMESTER_MARKSHEET': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
+                    'MIGRATION_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
+                    'BONAFIDE': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
+                    'BONAFIDE_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
+                    'TRANSFER': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
+                    'TRANSFER_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' }
                 };
 
                 const wf = workflows[type] || workflows['BONAFIDE'];
