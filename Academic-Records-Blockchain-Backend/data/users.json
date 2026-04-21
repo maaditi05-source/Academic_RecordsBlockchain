@@ -464,5 +464,19 @@
     "isActive": true,
     "passwordChangeRequired": true,
     "firstLogin": true
+  },
+  {
+    "id": "student-1776780772467",
+    "username": "25ECM2R06",
+    "email": "25ecm2r06@student.nit.ac.in",
+    "passwordHash": "$2a$10$BIuPgu7jQlrDezSIVEoV9eMsHPQU5kEEk2uYOOrZ2ViGLY0eJ4cRu",
+    "name": "Mousumi Das",
+    "role": "student",
+    "department": "ECE",
+    "mspId": "NITWarangalMSP",
+    "createdAt": "2026-04-21T14:12:52.467Z",
+    "isActive": true,
+    "passwordChangeRequired": true,
+    "firstLogin": true
   }
 ]

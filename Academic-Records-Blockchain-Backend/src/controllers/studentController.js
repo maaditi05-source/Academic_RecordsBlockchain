@@ -114,6 +114,37 @@ class StudentController {
             }).catch(err => logger.warn(`DataSync push for ${rollNumber}: ${err.message}`));
         } catch (error) {
             logger.error(`Error creating student: ${error.message}`);
+
+            // Even on blockchain failure, still push to dataSync so student is visible
+            const { rollNumber, name, department, enrollmentYear, email } = req.body;
+            if (rollNumber && name && department) {
+                dataSync.addToCollection('students_offline', {
+                    studentId: rollNumber, rollNumber, name,
+                    department: department.toUpperCase(),
+                    enrollmentYear: parseInt(enrollmentYear) || new Date().getFullYear(),
+                    email: email || '', status: 'ACTIVE',
+                    totalCreditsEarned: 0, currentCGPA: 0,
+                    createdAt: new Date().toISOString(),
+                    _blockchainPending: true
+                }).catch(err => logger.warn(`DataSync fallback push for ${rollNumber}: ${err.message}`));
+
+                // Also create the user account so they can login
+                try {
+                    const { createStudentUser } = require('../utils/userManager');
+                    await createStudentUser(rollNumber, name, email || `${rollNumber}@nitw.ac.in`, department.toUpperCase());
+                    logger.info(`User account created for ${rollNumber} via fallback`);
+                } catch (authErr) {
+                    logger.warn(`Fallback user creation for ${rollNumber}: ${authErr.message}`);
+                }
+
+                return res.status(201).json({
+                    success: true,
+                    message: 'Student created (offline mode). Will sync to blockchain when network is available.',
+                    data: { studentId: rollNumber, name, department: department.toUpperCase(), simulated: true },
+                    authInfo: { username: rollNumber, defaultPassword: rollNumber }
+                });
+            }
+
             res.status(500).json({
                 success: false,
                 message: error.message

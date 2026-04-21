@@ -7,8 +7,10 @@
     "semester": 3,
     "credits": 3,
     "maxMarks": 100,
-    "faculty": null,
-    "enrolledFaculty": [],
+    "faculty": "cse_faculty",
+    "enrolledFaculty": [
+      "cse_faculty"
+    ],
     "createdBy": "cse_hod",
     "createdAt": "2026-04-20T14:24:06.741Z"
   },

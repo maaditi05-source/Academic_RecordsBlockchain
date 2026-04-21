@@ -454,5 +454,31 @@
     "totalCreditsEarned": 0,
     "currentCGPA": 0,
     "createdAt": "2026-04-21T12:12:11.674Z"
+  },
+  {
+    "studentId": "25ECM2R06",
+    "name": "Mousumi Das",
+    "department": "ECE",
+    "enrollmentYear": 2026,
+    "rollNumber": "25ECM2R06",
+    "email": "25ecm2r06@student.nit.ac.in",
+    "admissionCategory": "GENERAL",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-21T14:12:51.731Z",
+    "_offlineCreated": true
+  },
+  {
+    "studentId": "25ECM2R06",
+    "rollNumber": "25ECM2R06",
+    "name": "Mousumi Das",
+    "department": "ECE",
+    "enrollmentYear": 2026,
+    "email": "25ecm2r06@student.nit.ac.in",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-21T14:12:52.468Z"
   }
 ]
