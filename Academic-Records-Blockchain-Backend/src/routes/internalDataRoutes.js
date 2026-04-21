@@ -15,7 +15,8 @@ const { localRead, localWrite } = require('../utils/dataSync');
 const ALLOWED = [
     'users', 'departments', 'courses', 'marks',
     'certificate-requests', 'correction_requests',
-    'document_requests', 'locked_semesters'
+    'document_requests', 'locked_semesters',
+    'students_offline'
 ];
 
 router.get('/:collection', (req, res) => {

@@ -124,11 +124,40 @@ class CertificateController {
                 data: cert
             });
         } catch (error) {
-            logger.error(`Error getting certificate: ${error.message}`);
-            res.status(404).json({
-                success: false,
-                message: error.message
-            });
+            logger.warn(`Blockchain lookup failed for certificate ${req.params.certificateID}: ${error.message}`);
+
+            // Fallback: check certificate-requests via dataSync (cross-node)
+            try {
+                const certRequests = await dataSync.readCollection('certificate-requests');
+                const id = req.params.certificateID;
+                const found = certRequests.find(r =>
+                    r.requestId === id || r.certificateId === id ||
+                    (r.requestId && r.requestId.toLowerCase() === id.toLowerCase())
+                );
+                if (found) {
+                    const isIssued = found.status === 'issued';
+                    return res.status(200).json({
+                        success: true,
+                        data: {
+                            certificateId: found.requestId,
+                            studentId: found.studentId,
+                            type: found.certificateType,
+                            purpose: found.purpose,
+                            status: isIssued ? 'valid' : found.status,
+                            isValid: isIssued,
+                            revoked: false,
+                            issuedAt: found.processedDate || found.issuedAt,
+                            requestedAt: found.requestDate,
+                            processedBy: found.processedBy,
+                            _source: 'dataSync'
+                        }
+                    });
+                }
+            } catch (syncErr) {
+                logger.warn(`DataSync fallback failed: ${syncErr.message}`);
+            }
+
+            res.status(404).json({ success: false, message: `Certificate ${req.params.certificateID} not found` });
         } finally {
             await gateway.disconnect();
         }

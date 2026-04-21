@@ -49,20 +49,13 @@ router.get('/:docId', authenticateToken, DocumentController.getDocument);
 // ══════════════════════════════════════════════════════════════════
 // Document Request Workflow (Req #17, #19)
 // ══════════════════════════════════════════════════════════════════
-const fs = require('fs');
-const docReqFile = path.join(__dirname, '../../data/document_requests.json');
-const corrReqFile = path.join(__dirname, '../../data/correction_requests.json');
+const dataSync = require('../utils/dataSync');
 
-function loadJSON(file) {
-    try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
-    catch { return []; }
-}
-function saveJSON(file, data) {
-    fs.writeFileSync(file, JSON.stringify(data, null, 2));
-}
+async function loadJSON(collection) { return await dataSync.readCollection(collection); }
+async function saveJSON(collection, data) { await dataSync.writeCollection(collection, data); }
 
 // POST /api/documents/request — Student requests a document
-router.post('/request', authenticateToken, (req, res) => {
+router.post('/request', authenticateToken, async (req, res) => {
     try {
         const { type, studentId, semester, reason } = req.body;
         const validTypes = ['SEMESTER_MARKSHEET', 'CONSOLIDATED_MARKSHEET', 'DEGREE_CERTIFICATE',
@@ -71,7 +64,7 @@ router.post('/request', authenticateToken, (req, res) => {
             return res.status(400).json({ success: false, message: `Invalid type. Must be one of: ${validTypes.join(', ')}` });
         }
 
-        const requests = loadJSON(docReqFile);
+        const requests = await loadJSON('document_requests');
 
         // Req #23: no duplicate certificate
         const dup = requests.find(r => r.type === type && r.studentId === studentId && r.status !== 'rejected');
@@ -92,7 +85,7 @@ router.post('/request', authenticateToken, (req, res) => {
         };
 
         requests.push(newReq);
-        saveJSON(docReqFile, requests);
+        await saveJSON('document_requests', requests);
         res.status(201).json({ success: true, data: newReq });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -100,9 +93,9 @@ router.post('/request', authenticateToken, (req, res) => {
 });
 
 // GET /api/documents/requests — Get document requests (filtered)
-router.get('/requests', authenticateToken, (req, res) => {
+router.get('/requests', authenticateToken, async (req, res) => {
     try {
-        let requests = loadJSON(docReqFile);
+        let requests = await loadJSON('document_requests');
         const { studentId, type, status } = req.query;
         if (studentId) requests = requests.filter(r => r.studentId === studentId);
         if (type) requests = requests.filter(r => r.type === type);
@@ -114,10 +107,10 @@ router.get('/requests', authenticateToken, (req, res) => {
 });
 
 // PUT /api/documents/requests/:id/approve — Role-aware approval
-router.put('/requests/:id/approve', authenticateToken, (req, res) => {
+router.put('/requests/:id/approve', authenticateToken, async (req, res) => {
     try {
         const user = req.user;
-        const requests = loadJSON(docReqFile);
+        const requests = await loadJSON('document_requests');
         const idx = requests.findIndex(r => r.id === req.params.id);
         if (idx === -1) return res.status(404).json({ success: false, message: 'Request not found' });
 
@@ -150,7 +143,7 @@ router.put('/requests/:id/approve', authenticateToken, (req, res) => {
             requests[idx].issuedAt = new Date().toISOString();
         }
 
-        saveJSON(docReqFile, requests);
+        await saveJSON('document_requests', requests);
         res.json({ success: true, data: requests[idx] });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -158,9 +151,9 @@ router.put('/requests/:id/approve', authenticateToken, (req, res) => {
 });
 
 // PUT /api/documents/requests/:id/reject
-router.put('/requests/:id/reject', authenticateToken, (req, res) => {
+router.put('/requests/:id/reject', authenticateToken, async (req, res) => {
     try {
-        const requests = loadJSON(docReqFile);
+        const requests = await loadJSON('document_requests');
         const idx = requests.findIndex(r => r.id === req.params.id);
         if (idx === -1) return res.status(404).json({ success: false, message: 'Request not found' });
 
@@ -174,7 +167,7 @@ router.put('/requests/:id/reject', authenticateToken, (req, res) => {
             action: 'rejected', reason: req.body.reason || '', at: new Date().toISOString()
         });
 
-        saveJSON(docReqFile, requests);
+        await saveJSON('document_requests', requests);
         res.json({ success: true, data: requests[idx] });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -182,14 +175,14 @@ router.put('/requests/:id/reject', authenticateToken, (req, res) => {
 });
 
 // POST /api/documents/corrections — Student raises correction request
-router.post('/corrections', authenticateToken, (req, res) => {
+router.post('/corrections', authenticateToken, async (req, res) => {
     try {
         const { recordId, recordType, description } = req.body;
         if (!recordId || !description) {
             return res.status(400).json({ success: false, message: 'recordId and description required' });
         }
 
-        const corrections = loadJSON(corrReqFile);
+        const corrections = await loadJSON('correction_requests');
         const newCorr = {
             id: `corr-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
             recordId,
@@ -201,7 +194,7 @@ router.post('/corrections', authenticateToken, (req, res) => {
         };
 
         corrections.push(newCorr);
-        saveJSON(corrReqFile, corrections);
+        await saveJSON('correction_requests', corrections);
         res.status(201).json({ success: true, data: newCorr });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -209,9 +202,9 @@ router.post('/corrections', authenticateToken, (req, res) => {
 });
 
 // GET /api/documents/corrections — Get correction requests
-router.get('/corrections', authenticateToken, (req, res) => {
+router.get('/corrections', authenticateToken, async (req, res) => {
     try {
-        let corrections = loadJSON(corrReqFile);
+        let corrections = await loadJSON('correction_requests');
         const { status } = req.query;
         if (status) corrections = corrections.filter(c => c.status === status);
         res.json(corrections);
