@@ -113,6 +113,13 @@ export class BlockchainService {
     return this.http.get<ApiResponse<Certificate>>(`${this.apiUrl}/certificates/${certificateID}`);
   }
 
+  verifyCertificateByFile(file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<any>(`${this.apiUrl}/certificates/verify`, formData);
+  }
+
+
   getStudentCertificates(studentID: string): Observable<ApiResponse<Certificate[]>> {
     return this.http.get<ApiResponse<Certificate[]>>(`${this.apiUrl}/certificates/student/${studentID}`);
   }

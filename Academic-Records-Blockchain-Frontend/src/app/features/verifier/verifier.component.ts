@@ -75,10 +75,11 @@ import jsPDF from 'jspdf';
               <mat-icon>badge</mat-icon>
             </div>
             <h2>Verify Certificate</h2>
-            <p>Enter the certificate ID to verify authenticity</p>
+            <p>Verify by certificate ID or upload a PDF to check authenticity</p>
           </div>
 
           <div class="upload-section">
+            <!-- Method 1: Certificate ID -->
             <div class="input-section">
               <mat-form-field appearance="outline" class="cert-id-field">
                 <mat-label>Certificate ID</mat-label>
@@ -95,7 +96,45 @@ import jsPDF from 'jspdf';
               (click)="verifyCertificate()">
               <mat-icon *ngIf="!isVerifying">verified_user</mat-icon>
               <mat-spinner *ngIf="isVerifying" diameter="24" class="spinner"></mat-spinner>
-              <span>{{isVerifying ? 'Verifying on Blockchain...' : 'Verify Certificate'}}</span>
+              <span>{{isVerifying ? 'Verifying on Blockchain...' : 'Verify by ID'}}</span>
+            </button>
+
+            <!-- OR divider -->
+            <div class="divider-section">
+              <div class="divider-line"></div>
+              <span class="divider-text">OR</span>
+              <div class="divider-line"></div>
+            </div>
+
+            <!-- Method 2: PDF Upload -->
+            <div class="upload-zone" 
+                 [class.has-file]="selectedFile"
+                 (click)="fileInput.click()"
+                 (dragover)="onDragOver($event)"
+                 (drop)="onDrop($event)">
+              <input #fileInput type="file" accept=".pdf" (change)="onFileSelected($event)" style="display:none">
+              <div class="upload-icon">
+                <mat-icon>{{selectedFile ? 'check_circle' : 'cloud_upload'}}</mat-icon>
+              </div>
+              <div *ngIf="!selectedFile">
+                <p class="upload-text"><strong>Click to upload</strong> or drag & drop a PDF</p>
+                <p class="upload-hint">Only PDF files are supported</p>
+              </div>
+              <div *ngIf="selectedFile" class="file-info">
+                <mat-icon>description</mat-icon>
+                <span>{{selectedFile.name}}</span>
+              </div>
+            </div>
+
+            <button 
+              mat-raised-button 
+              color="accent" 
+              class="verify-btn upload-verify-btn"
+              [disabled]="isVerifying || !selectedFile"
+              (click)="verifyByFile()">
+              <mat-icon *ngIf="!isVerifying">fingerprint</mat-icon>
+              <mat-spinner *ngIf="isVerifying" diameter="24" class="spinner"></mat-spinner>
+              <span>{{isVerifying ? 'Verifying PDF on Blockchain...' : 'Verify Uploaded PDF'}}</span>
             </button>
           </div>
         </mat-card>
@@ -604,6 +643,12 @@ import jsPDF from 'jspdf';
     .verify-btn:hover:not(:disabled) {
       box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4) !important;
       transform: translateY(-2px);
+    }
+
+    .upload-verify-btn {
+      margin-top: 16px;
+      background: linear-gradient(135deg, #764ba2, #667eea) !important;
+      color: white !important;
     }
 
     .spinner {
@@ -1120,7 +1165,7 @@ export class VerifierComponent {
   isVerifying: boolean = false;
   verificationResult: any = null;
 
-  constructor(private blockchainService: BlockchainService) {}
+  constructor(private blockchainService: BlockchainService) { }
 
   onFileSelected(event: any): void {
     const file = event.target.files[0];
@@ -1131,9 +1176,62 @@ export class VerifierComponent {
     }
   }
 
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const file = event.dataTransfer?.files[0];
+    if (file && file.type === 'application/pdf') {
+      this.selectedFile = file;
+    } else {
+      alert('Please drop a valid PDF file');
+    }
+  }
+
   verifyCertificate(): void {
     this.isVerifying = true;
     this.verifyById();
+  }
+
+  verifyByFile(): void {
+    if (!this.selectedFile) return;
+    this.isVerifying = true;
+
+    this.blockchainService.verifyCertificateByFile(this.selectedFile).subscribe({
+      next: (response) => {
+        this.isVerifying = false;
+        if (response.data?.status === 'VALID') {
+          this.verificationResult = {
+            valid: true,
+            certificate: response.data.certificate || {},
+            txId: 'TX-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+            timestamp: new Date().toISOString(),
+            method: 'PDF Upload'
+          };
+        } else if (response.data?.status === 'REVOKED') {
+          this.verificationResult = {
+            valid: false,
+            message: response.message || 'Document is Authentic but REVOKED'
+          };
+        } else {
+          this.verificationResult = {
+            valid: false,
+            message: response.message || 'Document is Fake or has been Modified'
+          };
+        }
+      },
+      error: (err) => {
+        this.isVerifying = false;
+        this.verificationResult = {
+          valid: false,
+          message: err.error?.message || 'Failed to verify the uploaded PDF'
+        };
+      }
+    });
   }
 
   private verifyById(): void {
@@ -1143,7 +1241,7 @@ export class VerifierComponent {
         this.isVerifying = false;
         if (certResponse.success && certResponse.data) {
           const cert = certResponse.data;
-          
+
           // Check if certificate is revoked
           if (cert.revoked) {
             this.verificationResult = {
@@ -1176,7 +1274,7 @@ export class VerifierComponent {
                   (cert as any).rollNumber = student.rollNumber;
                   (cert as any).department = student.department;
                 }
-                
+
                 // Certificate is valid - set result with enriched data
                 this.verificationResult = {
                   valid: true,
@@ -1205,7 +1303,7 @@ export class VerifierComponent {
             };
           }
         } else {
-          this.verificationResult = { 
+          this.verificationResult = {
             valid: false,
             message: 'Certificate not found in the blockchain'
           };
@@ -1213,7 +1311,7 @@ export class VerifierComponent {
       },
       error: (err) => {
         this.isVerifying = false;
-        this.verificationResult = { 
+        this.verificationResult = {
           valid: false,
           message: err.error?.message || 'Certificate not found or invalid'
         };
@@ -1234,30 +1332,30 @@ export class VerifierComponent {
 
     const cert = this.verificationResult.certificate;
     const doc = new jsPDF();
-    
+
     // Set up colors
     const primaryColor: [number, number, number] = [102, 126, 234]; // #667eea
     const darkColor: [number, number, number] = [51, 51, 51];
     const lightGray: [number, number, number] = [128, 128, 128];
-    
+
     let yPosition = 20;
-    
+
     // Header with logo background
     doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.rect(0, 0, 210, 40, 'F');
-    
+
     // Title
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');
     doc.text('CERTIFICATE VERIFICATION REPORT', 105, 20, { align: 'center' });
-    
+
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
     doc.text('NIT Warangal - Blockchain Academic Records', 105, 30, { align: 'center' });
-    
+
     yPosition = 50;
-    
+
     // Verification Status Badge
     doc.setFillColor(76, 175, 80); // Green
     doc.roundedRect(15, yPosition, 180, 12, 3, 3, 'F');
@@ -1265,9 +1363,9 @@ export class VerifierComponent {
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.text('✓ VERIFIED - This certificate is authentic and valid', 105, yPosition + 8, { align: 'center' });
-    
+
     yPosition += 25;
-    
+
     // Certificate ID Section
     doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
     doc.setFontSize(10);
@@ -1275,19 +1373,19 @@ export class VerifierComponent {
     doc.text('Certificate ID:', 15, yPosition);
     doc.setFont('helvetica', 'normal');
     doc.text(cert.certificateId, 60, yPosition);
-    
+
     yPosition += 15;
-    
+
     // Student Information Section
     this.addSectionHeader(doc, 'STUDENT INFORMATION', yPosition, primaryColor);
     yPosition += 10;
-    
+
     const studentInfo = [
       { label: 'Name:', value: cert.studentName || 'N/A' },
       { label: 'Roll Number:', value: cert.rollNumber || cert.studentId },
       { label: 'Department:', value: cert.department || 'N/A' }
     ];
-    
+
     studentInfo.forEach(item => {
       doc.setFont('helvetica', 'bold');
       doc.text(item.label, 20, yPosition);
@@ -1295,17 +1393,17 @@ export class VerifierComponent {
       doc.text(item.value, 60, yPosition);
       yPosition += 7;
     });
-    
+
     yPosition += 5;
-    
+
     // Certificate Details Section
     this.addSectionHeader(doc, 'CERTIFICATE DETAILS', yPosition, primaryColor);
     yPosition += 10;
-    
+
     const certDetails = [
       { label: 'Type:', value: cert.type }
     ];
-    
+
     if (cert.degreeAwarded) {
       certDetails.push({ label: 'Degree:', value: cert.degreeAwarded });
     }
@@ -1316,7 +1414,7 @@ export class VerifierComponent {
       { label: 'Issue Date:', value: this.formatDate(cert.issueDate) },
       { label: 'Issued By:', value: this.getIssuedByName(cert.issuedBy) }
     );
-    
+
     certDetails.forEach(item => {
       doc.setFont('helvetica', 'bold');
       doc.text(item.label, 20, yPosition);
@@ -1324,20 +1422,20 @@ export class VerifierComponent {
       doc.text(item.value, 60, yPosition);
       yPosition += 7;
     });
-    
+
     yPosition += 5;
-    
+
     // Blockchain Verification Section
     this.addSectionHeader(doc, 'BLOCKCHAIN VERIFICATION', yPosition, primaryColor);
     yPosition += 10;
-    
+
     const blockchainInfo = [
       { label: 'Transaction ID:', value: this.verificationResult.txId },
       { label: 'Verification Time:', value: this.formatDate(this.verificationResult.timestamp) },
       { label: 'Blockchain:', value: 'Hyperledger Fabric' },
       { label: 'Network:', value: 'NIT Warangal Academic Records' }
     ];
-    
+
     blockchainInfo.forEach(item => {
       doc.setFont('helvetica', 'bold');
       doc.text(item.label, 20, yPosition);
@@ -1345,18 +1443,18 @@ export class VerifierComponent {
       doc.text(item.value, 60, yPosition);
       yPosition += 7;
     });
-    
+
     yPosition += 10;
-    
+
     // Authenticity Notice Box
     doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.setLineWidth(0.5);
     doc.rect(15, yPosition, 180, 35);
-    
+
     doc.setFontSize(9);
     doc.setTextColor(lightGray[0], lightGray[1], lightGray[2]);
     doc.text('AUTHENTICITY CONFIRMATION', 105, yPosition + 5, { align: 'center' });
-    
+
     doc.setFontSize(8);
     doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
     const noticeText = doc.splitTextToSize(
@@ -1364,27 +1462,27 @@ export class VerifierComponent {
       170
     );
     doc.text(noticeText, 20, yPosition + 12);
-    
+
     yPosition += 45;
-    
+
     // Footer
     doc.setDrawColor(200, 200, 200);
     doc.line(15, yPosition, 195, yPosition);
     yPosition += 5;
-    
+
     doc.setFontSize(8);
     doc.setTextColor(lightGray[0], lightGray[1], lightGray[2]);
     doc.text(`Generated on: ${new Date().toLocaleString()}`, 15, yPosition);
     doc.text('Page 1 of 1', 195, yPosition, { align: 'right' });
-    
+
     yPosition += 5;
     doc.text('This is an electronically generated verification report.', 105, yPosition, { align: 'center' });
     doc.text('For queries, contact NIT Warangal Academic Section.', 105, yPosition + 4, { align: 'center' });
-    
+
     // Save the PDF
     doc.save(`Certificate_Verification_${cert.certificateId}.pdf`);
   }
-  
+
   private addSectionHeader(doc: jsPDF, title: string, y: number, color: [number, number, number]): void {
     doc.setFillColor(color[0], color[1], color[2]);
     doc.rect(15, y - 5, 180, 8, 'F');
@@ -1406,23 +1504,23 @@ export class VerifierComponent {
 
   getIssuedByName(issuedBy: string | undefined): string {
     if (!issuedBy) return 'N/A';
-    
+
     // Extract CN (Common Name) from X.509 DN string
     // Example: "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=admin::/C=US/ST=North Carolina/L=Durham/O=org1.example.com/CN=ca.org1.example.com"
     const cnMatch = issuedBy.match(/CN=([^:/]+)/);
     if (cnMatch && cnMatch[1]) {
       const cn = cnMatch[1];
-      
+
       // Map common names to friendly display names
       const nameMap: { [key: string]: string } = {
         'admin': 'NIT Warangal Administration',
         'registrar': 'NIT Warangal Registrar',
         'dean': 'Dean of Academics'
       };
-      
+
       return nameMap[cn.toLowerCase()] || cn;
     }
-    
+
     // If no CN found, return first 50 characters
     return issuedBy.length > 50 ? issuedBy.substring(0, 50) + '...' : issuedBy;
   }

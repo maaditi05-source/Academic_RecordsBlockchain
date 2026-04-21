@@ -277,10 +277,14 @@
     "purpose": "EMPLOYMENT",
     "additionalDetails": "",
     "requestDate": "2026-04-21T15:13:27.310Z",
-    "status": "hod_approved",
+    "status": "REVOKED",
     "userId": "student-1776784056446",
     "processedDate": "2026-04-21T15:13:50.837Z",
-    "processedBy": "cse_hod"
+    "processedBy": "cse_hod",
+    "revoked": true,
+    "revocationReason": "xyz",
+    "revokedAt": "2026-04-21T15:18:41.557Z",
+    "revokedBy": "admin"
   },
   {
     "requestId": "REQ-1776784458399",
@@ -290,9 +294,13 @@
     "purpose": "VISA",
     "additionalDetails": "",
     "requestDate": "2026-04-21T15:14:18.399Z",
-    "status": "hod_approved",
+    "status": "REVOKED",
     "userId": "student-1776784056446",
     "processedDate": "2026-04-21T15:14:45.214Z",
-    "processedBy": "cse_hod"
+    "processedBy": "cse_hod",
+    "revoked": true,
+    "revocationReason": "xyz",
+    "revokedAt": "2026-04-21T15:17:44.417Z",
+    "revokedBy": "admin"
   }
 ]
