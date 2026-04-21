@@ -130,8 +130,12 @@ class StudentController {
 
                 // Also create the user account so they can login
                 try {
-                    const { createStudentUser } = require('../utils/userManager');
-                    await createStudentUser(rollNumber, name, email || `${rollNumber}@nitw.ac.in`, department.toUpperCase());
+                    await createStudentUser({
+                        rollNumber,
+                        name,
+                        email: email || `${rollNumber}@nitw.ac.in`,
+                        department: department.toUpperCase()
+                    });
                     logger.info(`User account created for ${rollNumber} via fallback`);
                 } catch (authErr) {
                     logger.warn(`Fallback user creation for ${rollNumber}: ${authErr.message}`);
