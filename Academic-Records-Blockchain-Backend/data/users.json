@@ -408,5 +408,19 @@
     "isActive": true,
     "passwordChangeRequired": true,
     "firstLogin": true
+  },
+  {
+    "id": "student-1776769776512",
+    "username": "25CSB2R26",
+    "email": "25csb2r26@student.nitw.ac.in",
+    "passwordHash": "$2a$10$ArxdBhOw4KDA/jUCEjIsc.gX1V6J4yFM00KhpdTL9osufhmDbMaeu",
+    "name": "Jay Nepal",
+    "role": "student",
+    "department": "CSE",
+    "mspId": "NITWarangalMSP",
+    "createdAt": "2026-04-21T11:09:36.512Z",
+    "isActive": true,
+    "passwordChangeRequired": true,
+    "firstLogin": true
   }
 ]

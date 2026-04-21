@@ -2,6 +2,7 @@ const FabricGateway = require('../fabricGateway');
 const FabricCAClient = require('../fabricCAClient');
 const logger = require('../utils/logger');
 const { createStudentUser } = require('../scripts/createStudentFromBlockchain');
+const dataSync = require('../utils/dataSync');
 
 class StudentController {
     // Create a new student
@@ -101,6 +102,16 @@ class StudentController {
                     note: 'Student must change password after first login'
                 }
             });
+
+            // Push to dataSync for cross-node visibility (fire-and-forget, after response sent)
+            dataSync.addToCollection('students_offline', {
+                studentId: rollNumber, rollNumber, name,
+                department: department.toUpperCase(),
+                enrollmentYear: parseInt(enrollmentYear),
+                email, status: 'ACTIVE',
+                totalCreditsEarned: 0, currentCGPA: 0,
+                createdAt: new Date().toISOString()
+            }).catch(err => logger.warn(`DataSync push for ${rollNumber}: ${err.message}`));
         } catch (error) {
             logger.error(`Error creating student: ${error.message}`);
             res.status(500).json({
@@ -295,9 +306,25 @@ class StudentController {
                 pageSize.toString()
             );
 
+            let students = Array.isArray(result) ? result : (result?.records || []);
+
+            // Merge dataSync students for cross-node visibility
+            try {
+                const syncStudents = await dataSync.readCollection('students_offline');
+                const deptStudents = syncStudents.filter(s =>
+                    (s.department || '').toUpperCase() === department.toUpperCase()
+                );
+                const existingIds = new Set(students.map(s => s.rollNumber || s.studentId));
+                for (const s of deptStudents) {
+                    if (!existingIds.has(s.rollNumber) && !existingIds.has(s.studentId)) {
+                        students.push(s);
+                    }
+                }
+            } catch (e) { /* dataSync unavailable, use blockchain-only results */ }
+
             res.status(200).json({
                 success: true,
-                data: Array.isArray(result) ? result : (result?.records || [])
+                data: students
             });
         } catch (error) {
             logger.error(`Error getting students by department: ${error.message}`);
@@ -414,9 +441,22 @@ class StudentController {
 
             const result = await gateway.evaluateTransaction('GetAllStudents');
 
+            let students = Array.isArray(result) ? result : [];
+
+            // Merge dataSync students for cross-node visibility
+            try {
+                const syncStudents = await dataSync.readCollection('students_offline');
+                const existingIds = new Set(students.map(s => s.rollNumber || s.studentId));
+                for (const s of syncStudents) {
+                    if (!existingIds.has(s.rollNumber) && !existingIds.has(s.studentId)) {
+                        students.push(s);
+                    }
+                }
+            } catch (e) { /* dataSync unavailable, use blockchain-only results */ }
+
             res.status(200).json({
                 success: true,
-                data: Array.isArray(result) ? result : []
+                data: students
             });
         } catch (error) {
             logger.error(`Error getting all students: ${error.message}`);
