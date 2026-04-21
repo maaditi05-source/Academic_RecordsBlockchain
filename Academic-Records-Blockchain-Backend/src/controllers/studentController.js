@@ -463,41 +463,57 @@ class StudentController {
 
     // Get all students
     static async getAllStudents(req, res) {
-        const gateway = new FabricGateway();
+        const role = req.user.role;
+        const userDept = (req.user.department || '').toUpperCase();
 
+        // ── FAST PATH: dataSync first ──
+        let students = [];
         try {
-            const userId = req.user.userId;
-
-            await gateway.connect(req.user);
-
-            const result = await gateway.evaluateTransaction('GetAllStudents');
-
-            let students = Array.isArray(result) ? result : [];
-
-            // Merge dataSync students for cross-node visibility
-            try {
-                const syncStudents = await dataSync.readCollection('students_offline');
-                const existingIds = new Set(students.map(s => s.rollNumber || s.studentId));
-                for (const s of syncStudents) {
-                    if (!existingIds.has(s.rollNumber) && !existingIds.has(s.studentId)) {
-                        students.push(s);
-                    }
-                }
-            } catch (e) { /* dataSync unavailable, use blockchain-only results */ }
-
-            res.status(200).json({
-                success: true,
-                data: students
-            });
-        } catch (error) {
-            logger.error(`Error getting all students: ${error.message}`);
-            res.status(500).json({
-                success: false,
-                message: error.message
-            });
-        } finally {
-            await gateway.disconnect();
+            const syncStudents = await dataSync.readCollection('students_offline');
+            if (syncStudents && syncStudents.length > 0) {
+                students = syncStudents;
+            }
+        } catch (e) {
+            logger.warn(`DataSync read failed: ${e.message}`);
         }
+
+        // ── SLOW PATH: try blockchain if dataSync is empty ──
+        if (students.length === 0) {
+            const gateway = new FabricGateway();
+            try {
+                await gateway.connect(req.user);
+                const result = await gateway.evaluateTransaction('GetAllStudents');
+                students = Array.isArray(result) ? result : [];
+
+                // Merge dataSync for any that blockchain missed
+                try {
+                    const syncStudents = await dataSync.readCollection('students_offline');
+                    const existingIds = new Set(students.map(s => s.rollNumber || s.studentId));
+                    for (const s of syncStudents) {
+                        if (!existingIds.has(s.rollNumber) && !existingIds.has(s.studentId)) {
+                            students.push(s);
+                        }
+                    }
+                } catch (e) { /* ignore */ }
+            } catch (error) {
+                logger.warn(`Blockchain GetAllStudents failed: ${error.message}`);
+                // Already have dataSync students (may be empty), continue with those
+            } finally {
+                await gateway.disconnect();
+            }
+        }
+
+        // ── Department filtering for HOD/faculty ──
+        if ((role === 'hod' || role === 'faculty') && userDept) {
+            students = students.filter(s =>
+                (s.department || '').toUpperCase() === userDept
+            );
+        }
+
+        res.status(200).json({
+            success: true,
+            data: students
+        });
     }
 }
 

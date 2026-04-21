@@ -480,5 +480,31 @@
     "totalCreditsEarned": 0,
     "currentCGPA": 0,
     "createdAt": "2026-04-21T14:12:52.468Z"
+  },
+  {
+    "studentId": "24CSM2R26",
+    "rollNumber": "24CSM2R26",
+    "name": "Test Student 123",
+    "department": "CSE",
+    "enrollmentYear": 2026,
+    "email": "24csm2r26@student.nitw.ac.in",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-21T14:37:49.957Z",
+    "_blockchainPending": true
+  },
+  {
+    "studentId": "24ECM2R06",
+    "rollNumber": "24ECM2R06",
+    "name": "Test Student 123",
+    "department": "ECE",
+    "enrollmentYear": 2026,
+    "email": "24ecm2r06@student.nitw.ac.in",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-21T14:40:14.722Z",
+    "_blockchainPending": true
   }
 ]

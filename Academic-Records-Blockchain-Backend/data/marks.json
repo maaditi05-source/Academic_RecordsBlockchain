@@ -593,5 +593,37 @@
     "uploadedAt": "2026-04-21T14:25:15.397Z",
     "submittedAt": "2026-04-21T14:25:15.397Z",
     "submittedBy": "cse_faculty"
+  },
+  {
+    "id": "mark-1776782423916-wriso",
+    "studentId": "24CSM2R26",
+    "courseCode": "CS601",
+    "semester": 6,
+    "department": "CSE",
+    "year": 2026,
+    "marksData": {
+      "internal": null,
+      "external": null,
+      "total": 88
+    },
+    "marksObtained": 88,
+    "maxMarks": 100,
+    "grade": "A",
+    "gradePoint": 9,
+    "proposedGrade": null,
+    "credits": 3,
+    "status": "submitted",
+    "approvalChain": [
+      {
+        "role": "faculty",
+        "user": "cse_faculty",
+        "action": "submitted",
+        "at": "2026-04-21T14:40:23.916Z"
+      }
+    ],
+    "uploadedBy": "cse_faculty",
+    "uploadedAt": "2026-04-21T14:40:23.916Z",
+    "submittedAt": "2026-04-21T14:40:23.916Z",
+    "submittedBy": "cse_faculty"
   }
 ]
