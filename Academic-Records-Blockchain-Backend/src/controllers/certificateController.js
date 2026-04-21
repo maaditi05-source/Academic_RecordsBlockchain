@@ -603,14 +603,18 @@ class CertificateController {
                 const currentStatus = (requests[requestIndex].status || 'PENDING').toLowerCase();
 
                 const workflows = {
+                    // Long-form keys (from documentRoutes)
                     'DEGREE_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
                     'CONSOLIDATED_MARKSHEET': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
                     'SEMESTER_MARKSHEET': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
                     'MIGRATION_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
-                    'BONAFIDE': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
                     'BONAFIDE_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
+                    'TRANSFER_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
+                    // Short-form keys (from frontend certificate request form)
+                    'DEGREE': { pending: 'hod_approved', hod_approved: 'exam_approved', exam_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
+                    'MIGRATION': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
+                    'BONAFIDE': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
                     'TRANSFER': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' },
-                    'TRANSFER_CERTIFICATE': { pending: 'hod_approved', hod_approved: 'dean_approved', dean_approved: 'admin_approved', admin_approved: 'issued' }
                 };
 
                 const wf = workflows[type] || workflows['BONAFIDE'];

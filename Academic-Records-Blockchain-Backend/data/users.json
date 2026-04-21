@@ -478,5 +478,33 @@
     "isActive": true,
     "passwordChangeRequired": true,
     "firstLogin": true
+  },
+  {
+    "id": "student-1776784056446",
+    "username": "23CSM2R26",
+    "email": "23csm2r26@student.nitw.ac.in",
+    "passwordHash": "$2a$10$65PJw5nekp.j/lN.x7GYj.OLkuUGhTv1oDtHevLG0hy4/voHXgDke",
+    "name": "Bhargavi Sai",
+    "role": "student",
+    "department": "CSE",
+    "mspId": "NITWarangalMSP",
+    "createdAt": "2026-04-21T15:07:36.446Z",
+    "isActive": true,
+    "passwordChangeRequired": true,
+    "firstLogin": true
+  },
+  {
+    "id": "student-1776784122486",
+    "username": "23ECM2R26",
+    "email": "23ecm2r26@student.nitw.ac.in",
+    "passwordHash": "$2a$10$u.IHWa5l6fvtJhkp2CZo7e59VdoYO35Y0ig1A3LMf.KDQIgVM84x.",
+    "name": "Sai Bhargavi",
+    "role": "student",
+    "department": "ECE",
+    "mspId": "NITWarangalMSP",
+    "createdAt": "2026-04-21T15:08:42.486Z",
+    "isActive": true,
+    "passwordChangeRequired": true,
+    "firstLogin": true
   }
 ]

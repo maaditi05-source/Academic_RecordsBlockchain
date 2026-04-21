@@ -359,7 +359,7 @@
     "gradePoint": 7,
     "proposedGrade": null,
     "credits": 3,
-    "status": "exam_approved",
+    "status": "dean_approved",
     "approvalChain": [
       {
         "role": "faculty",
@@ -378,6 +378,12 @@
         "user": "exam_section",
         "action": "approved",
         "at": "2026-04-21T14:22:43.628Z"
+      },
+      {
+        "role": "dean",
+        "user": "dean_academic",
+        "action": "approved",
+        "at": "2026-04-21T15:13:16.940Z"
       }
     ],
     "uploadedBy": "cse_faculty",
@@ -625,5 +631,157 @@
     "uploadedAt": "2026-04-21T14:40:23.916Z",
     "submittedAt": "2026-04-21T14:40:23.916Z",
     "submittedBy": "cse_faculty"
+  },
+  {
+    "id": "mark-1776784085546-7rh3n",
+    "studentId": "TEST2001",
+    "courseCode": "ece601",
+    "semester": 2,
+    "department": "ECE",
+    "year": 2026,
+    "marksData": {
+      "internal": null,
+      "external": null,
+      "total": 100
+    },
+    "marksObtained": 100,
+    "maxMarks": 100,
+    "grade": "A+",
+    "gradePoint": 10,
+    "proposedGrade": null,
+    "credits": 3,
+    "status": "hod_approved",
+    "approvalChain": [
+      {
+        "role": "faculty",
+        "user": "ece_faculty",
+        "action": "submitted",
+        "at": "2026-04-21T15:08:05.546Z"
+      },
+      {
+        "role": "hod",
+        "user": "ece_hod",
+        "action": "approved",
+        "at": "2026-04-21T15:07:43.218Z"
+      }
+    ],
+    "uploadedBy": "ece_faculty",
+    "uploadedAt": "2026-04-21T15:08:05.546Z",
+    "submittedAt": "2026-04-21T15:08:05.546Z",
+    "submittedBy": "ece_faculty"
+  },
+  {
+    "id": "mark-1776784113118-uo0pb",
+    "studentId": "23CSM2R26",
+    "courseCode": "CS301",
+    "semester": 3,
+    "department": "CSE",
+    "year": 2026,
+    "marksData": {
+      "internal": null,
+      "external": null,
+      "total": 78
+    },
+    "marksObtained": 78,
+    "maxMarks": 100,
+    "grade": "B+",
+    "gradePoint": 8,
+    "proposedGrade": null,
+    "credits": 3,
+    "status": "locked",
+    "approvalChain": [
+      {
+        "role": "faculty",
+        "user": "cse_faculty",
+        "action": "submitted",
+        "at": "2026-04-21T15:08:33.118Z"
+      },
+      {
+        "role": "hod",
+        "user": "cse_hod",
+        "action": "approved",
+        "at": "2026-04-21T15:08:43.023Z"
+      },
+      {
+        "role": "exam_section",
+        "user": "exam_section",
+        "action": "approved",
+        "at": "2026-04-21T15:09:06.406Z"
+      },
+      {
+        "role": "dean",
+        "user": "dean_academic",
+        "action": "approved",
+        "at": "2026-04-21T15:10:44.223Z"
+      },
+      {
+        "role": "admin",
+        "user": "admin",
+        "action": "finalized",
+        "at": "2026-04-21T15:11:06.154Z"
+      }
+    ],
+    "uploadedBy": "cse_faculty",
+    "uploadedAt": "2026-04-21T15:08:33.118Z",
+    "submittedAt": "2026-04-21T15:08:33.118Z",
+    "submittedBy": "cse_faculty",
+    "finalizedAt": "2026-04-21T15:11:06.154Z"
+  },
+  {
+    "id": "mark-1776784189651-3pg27",
+    "studentId": "23ECM2R26",
+    "courseCode": "ece601",
+    "semester": 2,
+    "department": "ECE",
+    "year": 2026,
+    "marksData": {
+      "internal": null,
+      "external": null,
+      "total": 80
+    },
+    "marksObtained": 80,
+    "maxMarks": 100,
+    "grade": "A",
+    "gradePoint": 9,
+    "proposedGrade": null,
+    "credits": 3,
+    "status": "locked",
+    "approvalChain": [
+      {
+        "role": "faculty",
+        "user": "ece_faculty",
+        "action": "submitted",
+        "at": "2026-04-21T15:09:49.651Z"
+      },
+      {
+        "role": "hod",
+        "user": "ece_hod",
+        "action": "approved",
+        "at": "2026-04-21T15:09:26.388Z"
+      },
+      {
+        "role": "exam_section",
+        "user": "exam_section",
+        "action": "approved",
+        "at": "2026-04-21T15:10:19.552Z"
+      },
+      {
+        "role": "dean",
+        "user": "dean_academic",
+        "action": "approved",
+        "at": "2026-04-21T15:10:45.146Z"
+      },
+      {
+        "role": "admin",
+        "user": "admin",
+        "action": "finalized",
+        "at": "2026-04-21T15:11:09.069Z"
+      }
+    ],
+    "uploadedBy": "ece_faculty",
+    "uploadedAt": "2026-04-21T15:09:49.651Z",
+    "submittedAt": "2026-04-21T15:09:49.651Z",
+    "submittedBy": "ece_faculty",
+    "finalizedAt": "2026-04-21T15:11:09.069Z"
   }
 ]

@@ -225,10 +225,10 @@
     "purpose": "LOAN",
     "additionalDetails": "",
     "requestDate": "2026-04-21T14:18:40.173Z",
-    "status": "dean_approved",
+    "status": "REJECTED",
     "userId": "student-1776780772467",
-    "processedDate": "2026-04-21T14:20:28.832Z",
-    "processedBy": "ece_hod"
+    "processedDate": "2026-04-21T15:12:10.993Z",
+    "processedBy": "admin"
   },
   {
     "requestId": "REQ-1776781502692",
@@ -241,6 +241,58 @@
     "status": "hod_approved",
     "userId": "student-1776705344931",
     "processedDate": "2026-04-21T14:25:37.891Z",
+    "processedBy": "cse_hod"
+  },
+  {
+    "requestId": "REQ-1776784294370",
+    "studentId": "23ECM2R26",
+    "department": "ECE",
+    "certificateType": "BONAFIDE",
+    "purpose": "HIGHER_STUDIES",
+    "additionalDetails": "",
+    "requestDate": "2026-04-21T15:11:34.370Z",
+    "status": "hod_approved",
+    "userId": "student-1776784122486",
+    "processedDate": "2026-04-21T15:11:56.650Z",
+    "processedBy": "ece_hod"
+  },
+  {
+    "requestId": "REQ-1776784295613",
+    "studentId": "23CSM2R26",
+    "department": "CSE",
+    "certificateType": "DEGREE",
+    "purpose": "HIGHER_STUDIES",
+    "additionalDetails": "",
+    "requestDate": "2026-04-21T15:11:35.613Z",
+    "status": "hod_approved",
+    "userId": "student-1776784056446",
+    "processedDate": "2026-04-21T15:12:21.331Z",
+    "processedBy": "cse_hod"
+  },
+  {
+    "requestId": "REQ-1776784407310",
+    "studentId": "23CSM2R26",
+    "department": "CSE",
+    "certificateType": "CONSOLIDATED_MARKSHEET",
+    "purpose": "EMPLOYMENT",
+    "additionalDetails": "",
+    "requestDate": "2026-04-21T15:13:27.310Z",
+    "status": "hod_approved",
+    "userId": "student-1776784056446",
+    "processedDate": "2026-04-21T15:13:50.837Z",
+    "processedBy": "cse_hod"
+  },
+  {
+    "requestId": "REQ-1776784458399",
+    "studentId": "23CSM2R26",
+    "department": "CSE",
+    "certificateType": "BONAFIDE",
+    "purpose": "VISA",
+    "additionalDetails": "",
+    "requestDate": "2026-04-21T15:14:18.399Z",
+    "status": "hod_approved",
+    "userId": "student-1776784056446",
+    "processedDate": "2026-04-21T15:14:45.214Z",
     "processedBy": "cse_hod"
   }
 ]

@@ -506,5 +506,31 @@
     "currentCGPA": 0,
     "createdAt": "2026-04-21T14:40:14.722Z",
     "_blockchainPending": true
+  },
+  {
+    "studentId": "23CSM2R26",
+    "rollNumber": "23CSM2R26",
+    "name": "Bhargavi Sai",
+    "department": "CSE",
+    "enrollmentYear": 2026,
+    "email": "23csm2r26@student.nitw.ac.in",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-21T15:07:36.318Z",
+    "_blockchainPending": true
+  },
+  {
+    "studentId": "23ECM2R26",
+    "rollNumber": "23ECM2R26",
+    "name": "Sai Bhargavi",
+    "department": "ECE",
+    "enrollmentYear": 2026,
+    "email": "23ecm2r26@student.nitw.ac.in",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-21T15:08:42.364Z",
+    "_blockchainPending": true
   }
 ]
