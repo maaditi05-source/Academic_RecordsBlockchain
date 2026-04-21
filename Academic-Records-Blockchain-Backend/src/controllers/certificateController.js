@@ -99,21 +99,53 @@ class CertificateController {
         }
     }
 
-    // Get certificate
+    // Get certificate — used for verification by ID
     static async getCertificate(req, res) {
-        const gateway = new FabricGateway();
+        const { certificateID } = req.params;
 
+        // ── FAST PATH: try dataSync first (instant, no gateway timeout) ──
         try {
-            const { certificateID } = req.params;
-            // Use admin for anonymous access, or authenticated user if available
-            const userId = req.user ? req.user.userId : 'admin';
+            const certRequests = await dataSync.readCollection('certificate-requests');
+            const found = certRequests.find(r =>
+                r.requestId === certificateID || r.certificateId === certificateID ||
+                (r.requestId && r.requestId.toLowerCase() === certificateID.toLowerCase()) ||
+                (r.certificateId && r.certificateId.toLowerCase() === certificateID.toLowerCase())
+            );
+            if (found) {
+                const isRevoked = found.status === 'REVOKED' || found.revoked === true;
+                const isIssued = found.status === 'issued' || found.status === 'admin_approved';
+                return res.status(200).json({
+                    success: true,
+                    data: {
+                        certificateId: found.requestId || found.certificateId,
+                        studentId: found.studentId,
+                        type: found.certificateType || found.type,
+                        department: found.department,
+                        purpose: found.purpose,
+                        status: isRevoked ? 'revoked' : (isIssued ? 'valid' : found.status),
+                        isValid: isIssued && !isRevoked,
+                        revoked: isRevoked,
+                        revocationReason: found.revocationReason || '',
+                        issuedAt: found.processedDate || found.issuedAt,
+                        requestedAt: found.requestDate,
+                        processedBy: found.processedBy,
+                        _source: 'dataSync'
+                    }
+                });
+            }
+        } catch (syncErr) {
+            logger.warn(`DataSync lookup failed: ${syncErr.message}`);
+        }
 
+        // ── SLOW PATH: try blockchain (may take 10-30s) ──
+        const gateway = new FabricGateway();
+        try {
+            const userId = req.user ? req.user.userId : 'admin';
             await gateway.connect(userId);
 
             const result = await gateway.evaluateTransaction('GetCertificate', certificateID);
             const cert = typeof result === 'string' ? JSON.parse(result) : result;
 
-            // Append IPFS URL if available
             if (cert && cert.ipfsHash) {
                 cert.ipfsUrl = getIPFSUrl(cert.ipfsHash);
                 cert.downloadUrl = cert.ipfsUrl;
@@ -124,44 +156,8 @@ class CertificateController {
                 data: cert
             });
         } catch (error) {
-            logger.warn(`Blockchain lookup failed for certificate ${req.params.certificateID}: ${error.message}`);
-
-            // Fallback: check certificate-requests via dataSync (cross-node)
-            try {
-                const certRequests = await dataSync.readCollection('certificate-requests');
-                const id = req.params.certificateID;
-                const found = certRequests.find(r =>
-                    r.requestId === id || r.certificateId === id ||
-                    (r.requestId && r.requestId.toLowerCase() === id.toLowerCase()) ||
-                    (r.certificateId && r.certificateId.toLowerCase() === id.toLowerCase())
-                );
-                if (found) {
-                    const isRevoked = found.status === 'REVOKED' || found.revoked === true;
-                    const isIssued = found.status === 'issued' || found.status === 'admin_approved';
-                    return res.status(200).json({
-                        success: true,
-                        data: {
-                            certificateId: found.requestId || found.certificateId,
-                            studentId: found.studentId,
-                            type: found.certificateType || found.type,
-                            department: found.department,
-                            purpose: found.purpose,
-                            status: isRevoked ? 'revoked' : (isIssued ? 'valid' : found.status),
-                            isValid: isIssued && !isRevoked,
-                            revoked: isRevoked,
-                            revocationReason: found.revocationReason || '',
-                            issuedAt: found.processedDate || found.issuedAt,
-                            requestedAt: found.requestDate,
-                            processedBy: found.processedBy,
-                            _source: 'dataSync'
-                        }
-                    });
-                }
-            } catch (syncErr) {
-                logger.warn(`DataSync fallback failed: ${syncErr.message}`);
-            }
-
-            res.status(404).json({ success: false, message: `Certificate ${req.params.certificateID} not found` });
+            logger.warn(`Blockchain lookup also failed for ${certificateID}: ${error.message}`);
+            res.status(404).json({ success: false, message: `Certificate ${certificateID} not found` });
         } finally {
             await gateway.disconnect();
         }
@@ -169,20 +165,36 @@ class CertificateController {
 
     // Download certificate — redirect to IPFS gateway
     static async downloadCertificate(req, res) {
+        const { certificateID } = req.params;
+
+        // ── FAST PATH: check dataSync for revoked status first ──
+        try {
+            const certRequests = await dataSync.readCollection('certificate-requests');
+            const found = certRequests.find(r =>
+                r.requestId === certificateID ||
+                (r.requestId && r.requestId.toLowerCase() === certificateID.toLowerCase())
+            );
+            if (found && (found.status === 'REVOKED' || found.revoked === true)) {
+                return res.status(403).json({
+                    success: false,
+                    message: `Certificate ${certificateID} has been REVOKED. Reason: ${found.revocationReason || 'Not specified'}. Download is not available.`
+                });
+            }
+        } catch (e) { /* dataSync failed, continue to blockchain */ }
+
+        // ── Try blockchain for IPFS hash ──
         const gateway = new FabricGateway();
         try {
-            const { certificateID } = req.params;
             const userId = req.user ? req.user.userId : 'admin';
             await gateway.connect(userId);
 
             const result = await gateway.evaluateTransaction('GetCertificate', certificateID);
             const cert = typeof result === 'string' ? JSON.parse(result) : result;
 
-            // Block download if certificate is revoked
             if (cert && cert.revoked) {
                 return res.status(403).json({
                     success: false,
-                    message: `Certificate ${certificateID} has been REVOKED. Reason: ${cert.revocationReason || 'Not specified'}. Download is not available.`
+                    message: `Certificate ${certificateID} has been REVOKED. Download is not available.`
                 });
             }
 
@@ -190,26 +202,10 @@ class CertificateController {
                 return res.status(404).json({ success: false, message: 'No IPFS file linked to this certificate' });
             }
 
-            // Redirect browser to IPFS gateway — PDF downloads automatically
             res.redirect(getIPFSUrl(cert.ipfsHash));
         } catch (error) {
-            // Also check dataSync for revoked status
-            try {
-                const certRequests = await dataSync.readCollection('certificate-requests');
-                const found = certRequests.find(r =>
-                    r.requestId === req.params.certificateID ||
-                    (r.requestId && r.requestId.toLowerCase() === req.params.certificateID.toLowerCase())
-                );
-                if (found && found.status === 'REVOKED') {
-                    return res.status(403).json({
-                        success: false,
-                        message: `Certificate has been REVOKED. Download is not available.`
-                    });
-                }
-            } catch (e) { /* ignore sync errors */ }
-
             logger.error(`Error downloading certificate: ${error.message}`);
-            res.status(500).json({ success: false, message: error.message });
+            res.status(404).json({ success: false, message: 'Certificate not found or download unavailable' });
         } finally {
             await gateway.disconnect();
         }
@@ -434,7 +430,32 @@ class CertificateController {
                 data: result
             });
         } catch (error) {
-            logger.error(`Error revoking certificate: ${error.message}`);
+            logger.error(`Blockchain revoke failed for ${certificateID}: ${error.message}`);
+
+            // Fallback: revoke in dataSync even if blockchain fails
+            try {
+                let requests = await dataSync.readCollection('certificate-requests');
+                const idx = requests.findIndex(r =>
+                    r.requestId === certificateID || r.certificateId === certificateID ||
+                    (r.requestId && r.requestId.toLowerCase() === certificateID.toLowerCase())
+                );
+                if (idx !== -1) {
+                    requests[idx].status = 'REVOKED';
+                    requests[idx].revoked = true;
+                    requests[idx].revocationReason = reason || '';
+                    requests[idx].revokedAt = new Date().toISOString();
+                    requests[idx].revokedBy = req.user.username;
+                    await dataSync.writeCollection('certificate-requests', requests);
+                    return res.status(200).json({
+                        success: true,
+                        message: 'Certificate revoked via offline storage (blockchain sync pending)',
+                        data: { certificateID, status: 'REVOKED' }
+                    });
+                }
+            } catch (syncErr) {
+                logger.warn(`DataSync revoke fallback also failed: ${syncErr.message}`);
+            }
+
             res.status(500).json({
                 success: false,
                 message: error.message
