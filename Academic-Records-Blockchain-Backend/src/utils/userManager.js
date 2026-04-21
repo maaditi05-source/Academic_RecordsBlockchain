@@ -72,7 +72,8 @@ const saveUsers = (users) => {
  */
 const findUserByUsername = (username) => {
     const users = loadUsers();
-    return users.find(u => u.username === username) || null;
+    const lower = username.toLowerCase();
+    return users.find(u => u.username && u.username.toLowerCase() === lower) || null;
 };
 
 /**

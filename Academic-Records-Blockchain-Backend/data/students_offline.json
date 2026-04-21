@@ -404,5 +404,19 @@
     "currentCGPA": 0,
     "createdAt": "2026-04-20T19:16:03.947Z",
     "_offlineCreated": true
+  },
+  {
+    "studentId": "25CSM2R65",
+    "name": "Amul Kool",
+    "department": "CSE",
+    "enrollmentYear": 2026,
+    "rollNumber": "25CSM2R65",
+    "email": "25csm2r65@student.nitw.ac.in",
+    "admissionCategory": "OBC",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-21T10:52:21.401Z",
+    "_offlineCreated": true
   }
 ]

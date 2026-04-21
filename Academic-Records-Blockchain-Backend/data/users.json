@@ -394,5 +394,19 @@
     "isActive": true,
     "passwordChangeRequired": true,
     "firstLogin": true
+  },
+  {
+    "id": "student-1776768742156",
+    "username": "25CSM2R65",
+    "email": "25csm2r65@student.nitw.ac.in",
+    "passwordHash": "$2a$10$/hX8MlQSAP4ePE.DDqNbcOqR4weLNiHPWRIPv.Qh5Jz74ck7XMn2G",
+    "name": "Amul Kool",
+    "role": "student",
+    "department": "CSE",
+    "mspId": "NITWarangalMSP",
+    "createdAt": "2026-04-21T10:52:22.156Z",
+    "isActive": true,
+    "passwordChangeRequired": true,
+    "firstLogin": true
   }
 ]
