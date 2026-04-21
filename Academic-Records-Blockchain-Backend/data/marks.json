@@ -372,5 +372,55 @@
     "uploadedAt": "2026-04-21T12:16:16.451Z",
     "submittedAt": "2026-04-21T12:16:16.451Z",
     "submittedBy": "cse_faculty"
+  },
+  {
+    "id": "mark-1776777115626-67zlr",
+    "studentId": "25CSM2R45",
+    "courseCode": "ece601",
+    "semester": 2,
+    "department": "ECE",
+    "year": 2026,
+    "marksData": {
+      "internal": null,
+      "external": null,
+      "total": 80
+    },
+    "marksObtained": 80,
+    "maxMarks": 100,
+    "grade": "A",
+    "gradePoint": 9,
+    "proposedGrade": null,
+    "credits": 3,
+    "status": "dean_approved",
+    "approvalChain": [
+      {
+        "role": "faculty",
+        "user": "ece_faculty",
+        "action": "submitted",
+        "at": "2026-04-21T13:11:55.627Z"
+      },
+      {
+        "role": "hod",
+        "user": "ece_hod",
+        "action": "approved",
+        "at": "2026-04-21T13:12:28.136Z"
+      },
+      {
+        "role": "exam_section",
+        "user": "exam_section",
+        "action": "approved",
+        "at": "2026-04-21T13:14:38.072Z"
+      },
+      {
+        "role": "dean",
+        "user": "dean_academic",
+        "action": "approved",
+        "at": "2026-04-21T13:17:03.138Z"
+      }
+    ],
+    "uploadedBy": "ece_faculty",
+    "uploadedAt": "2026-04-21T13:11:55.627Z",
+    "submittedAt": "2026-04-21T13:11:55.627Z",
+    "submittedBy": "ece_faculty"
   }
 ]

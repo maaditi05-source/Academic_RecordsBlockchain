@@ -106,5 +106,20 @@
     ],
     "createdBy": "cse_hod",
     "createdAt": "2026-04-21T12:09:45.753Z"
+  },
+  {
+    "id": "course-1776777184954-0ay3c",
+    "code": "ece602",
+    "name": "signal and systems",
+    "department": "ECE",
+    "semester": 3,
+    "credits": 4,
+    "maxMarks": 100,
+    "faculty": "suresh bablu",
+    "enrolledFaculty": [
+      "suresh bablu"
+    ],
+    "createdBy": "ece_hod",
+    "createdAt": "2026-04-21T13:13:04.954Z"
   }
 ]

@@ -3,7 +3,7 @@
     "id": "usr_1776605204931_900_admin",
     "username": "admin",
     "email": "admin@nitw.edu",
-    "passwordHash": "$2a$10$iCg.GeAlmvsdPbCrge5R7OiqDHgdr3Y6eKURFSonq12mlsAhVMPK2",
+    "passwordHash": "$2a$10$MacYpdqa8Ehoy/UjcPXQcuyZK9QxKtWPK6cI5//2124lxEtuIFA.2",
     "role": "admin",
     "department": null,
     "createdAt": "2026-04-19T13:26:45.005Z",
