@@ -8,5 +8,15 @@
     "academicYear": "2025-26",
     "status": "ACTIVE",
     "_offlineCreated": true
+  },
+  {
+    "department": "CSE",
+    "code": "CS354",
+    "name": "Foundations of Blockchain",
+    "credits": 4,
+    "semester": 2,
+    "academicYear": "2025-26",
+    "status": "ACTIVE",
+    "_offlineCreated": true
   }
 ]

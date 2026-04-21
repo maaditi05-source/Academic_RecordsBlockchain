@@ -76,5 +76,35 @@
     "enrolledFaculty": [],
     "createdBy": "cse_hod",
     "createdAt": "2026-04-20T16:34:16.854Z"
+  },
+  {
+    "id": "course-1776773192448-goaba",
+    "code": "ece601",
+    "name": "digital electronics",
+    "department": "ECE",
+    "semester": 2,
+    "credits": 3,
+    "maxMarks": 100,
+    "faculty": "lal chand",
+    "enrolledFaculty": [
+      "lal chand"
+    ],
+    "createdBy": "ece_hod",
+    "createdAt": "2026-04-21T12:06:32.448Z"
+  },
+  {
+    "id": "course-1776773385753-vo9g2",
+    "code": "CS601",
+    "name": "Data Science",
+    "department": "CSE",
+    "semester": 6,
+    "credits": 3,
+    "maxMarks": 100,
+    "faculty": "cse_faculty",
+    "enrolledFaculty": [
+      "cse_faculty"
+    ],
+    "createdBy": "cse_hod",
+    "createdAt": "2026-04-21T12:09:45.753Z"
   }
 ]

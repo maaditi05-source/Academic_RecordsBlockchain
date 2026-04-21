@@ -340,5 +340,37 @@
     "submittedAt": "2026-04-21T11:36:37.736Z",
     "submittedBy": "ece_faculty",
     "finalizedAt": "2026-04-21T11:38:31.325Z"
+  },
+  {
+    "id": "mark-1776773776451-3qyuh",
+    "studentId": "25CSM2R02",
+    "courseCode": "CS601",
+    "semester": 6,
+    "department": "CSE",
+    "year": 2026,
+    "marksData": {
+      "internal": null,
+      "external": null,
+      "total": 67
+    },
+    "marksObtained": 67,
+    "maxMarks": 100,
+    "grade": "B",
+    "gradePoint": 7,
+    "proposedGrade": null,
+    "credits": 3,
+    "status": "submitted",
+    "approvalChain": [
+      {
+        "role": "faculty",
+        "user": "cse_faculty",
+        "action": "submitted",
+        "at": "2026-04-21T12:16:16.451Z"
+      }
+    ],
+    "uploadedBy": "cse_faculty",
+    "uploadedAt": "2026-04-21T12:16:16.451Z",
+    "submittedAt": "2026-04-21T12:16:16.451Z",
+    "submittedBy": "cse_faculty"
   }
 ]

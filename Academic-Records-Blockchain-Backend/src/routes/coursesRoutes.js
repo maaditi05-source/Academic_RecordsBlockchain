@@ -21,12 +21,16 @@ router.get('/', async (req, res) => {
     const { department, faculty, semester } = req.query;
     let filtered = courses;
 
-    // Faculty and HOD should only see their own department's courses
+    // Department filtering:
+    // - Admin sees ALL courses (no filter)
+    // - Faculty/HOD/Student sees only their own department's courses
     const userRole = req.user.role;
     const userDept = (req.user.department || '').toUpperCase();
     if (department) {
         filtered = filtered.filter(c => (c.department || '').toUpperCase() === department.toUpperCase());
-    } else if (['faculty', 'hod', 'department'].includes(userRole) && userDept) {
+    } else if (userRole === 'admin') {
+        // Admin sees all — no filtering
+    } else if (userDept) {
         filtered = filtered.filter(c => (c.department || '').toUpperCase() === userDept);
     }
 

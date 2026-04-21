@@ -166,5 +166,29 @@
     "userId": "student-1776771090406",
     "processedDate": "2026-04-21T11:45:18.837Z",
     "processedBy": "admin"
+  },
+  {
+    "requestId": "REQ-1776773707506",
+    "studentId": "25CSM2R11",
+    "certificateType": "CONSOLIDATED_MARKSHEET",
+    "purpose": "HIGHER_STUDIES",
+    "additionalDetails": "",
+    "requestDate": "2026-04-21T12:15:07.506Z",
+    "status": "admin_approved",
+    "userId": "student-1776773531673",
+    "processedDate": "2026-04-21T12:17:25.520Z",
+    "processedBy": "admin"
+  },
+  {
+    "requestId": "REQ-1776773717987",
+    "studentId": "25CSM2R11",
+    "certificateType": "BONAFIDE",
+    "purpose": "VISA",
+    "additionalDetails": "",
+    "requestDate": "2026-04-21T12:15:17.987Z",
+    "status": "admin_approved",
+    "userId": "student-1776773531673",
+    "processedDate": "2026-04-21T12:16:52.441Z",
+    "processedBy": "admin"
   }
 ]

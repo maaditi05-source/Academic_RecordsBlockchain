@@ -442,5 +442,17 @@
     "totalCreditsEarned": 0,
     "currentCGPA": 0,
     "createdAt": "2026-04-21T11:31:30.407Z"
+  },
+  {
+    "studentId": "25CSM2R11",
+    "rollNumber": "25CSM2R11",
+    "name": "Suresh Babu",
+    "department": "ECE",
+    "enrollmentYear": 2026,
+    "email": "25csm2r11@student.nitw.ac.in",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-21T12:12:11.674Z"
   }
 ]

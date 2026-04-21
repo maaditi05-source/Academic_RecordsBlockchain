@@ -132,20 +132,24 @@ class CertificateController {
                 const id = req.params.certificateID;
                 const found = certRequests.find(r =>
                     r.requestId === id || r.certificateId === id ||
-                    (r.requestId && r.requestId.toLowerCase() === id.toLowerCase())
+                    (r.requestId && r.requestId.toLowerCase() === id.toLowerCase()) ||
+                    (r.certificateId && r.certificateId.toLowerCase() === id.toLowerCase())
                 );
                 if (found) {
-                    const isIssued = found.status === 'issued';
+                    const isRevoked = found.status === 'REVOKED' || found.revoked === true;
+                    const isIssued = found.status === 'issued' || found.status === 'admin_approved';
                     return res.status(200).json({
                         success: true,
                         data: {
-                            certificateId: found.requestId,
+                            certificateId: found.requestId || found.certificateId,
                             studentId: found.studentId,
-                            type: found.certificateType,
+                            type: found.certificateType || found.type,
+                            department: found.department,
                             purpose: found.purpose,
-                            status: isIssued ? 'valid' : found.status,
-                            isValid: isIssued,
-                            revoked: false,
+                            status: isRevoked ? 'revoked' : (isIssued ? 'valid' : found.status),
+                            isValid: isIssued && !isRevoked,
+                            revoked: isRevoked,
+                            revocationReason: found.revocationReason || '',
                             issuedAt: found.processedDate || found.issuedAt,
                             requestedAt: found.requestDate,
                             processedBy: found.processedBy,
@@ -311,7 +315,7 @@ class CertificateController {
             try {
                 const certRequests = await dataSync.readCollection('certificate-requests');
                 const studentReqs = certRequests.filter(r =>
-                    r.studentId === studentID && (r.status === 'issued' || r.status === 'REVOKED')
+                    r.studentId === studentID && (r.status === 'issued' || r.status === 'admin_approved' || r.status === 'REVOKED')
                 );
                 const existingIds = new Set(certs.map(c => c.certificateId || c.certificateID));
                 for (const r of studentReqs) {
@@ -404,6 +408,26 @@ class CertificateController {
                 }
             }
 
+            // Also mark as revoked in dataSync so cross-node status is updated
+            try {
+                let requests = await dataSync.readCollection('certificate-requests');
+                const idx = requests.findIndex(r =>
+                    r.requestId === certificateID || r.certificateId === certificateID ||
+                    (r.requestId && r.requestId.toLowerCase() === certificateID.toLowerCase())
+                );
+                if (idx !== -1) {
+                    requests[idx].status = 'REVOKED';
+                    requests[idx].revoked = true;
+                    requests[idx].revocationReason = reason || '';
+                    requests[idx].revokedAt = new Date().toISOString();
+                    requests[idx].revokedBy = req.user.username;
+                    await dataSync.writeCollection('certificate-requests', requests);
+                    logger.info(`DataSync cert-request ${certificateID} marked as REVOKED`);
+                }
+            } catch (syncErr) {
+                logger.warn(`DataSync revoke update failed: ${syncErr.message}`);
+            }
+
             res.status(200).json({
                 success: true,
                 message: 'Certificate revoked successfully',
@@ -448,6 +472,7 @@ class CertificateController {
             const certificateRequest = {
                 requestId: `REQ-${Date.now()}`,
                 studentId: username, // Roll number
+                department: (req.user.department || '').toUpperCase(),
                 certificateType,
                 purpose,
                 additionalDetails: additionalDetails || '',
@@ -493,9 +518,24 @@ class CertificateController {
             // Filter based on role
             if (role === 'student') {
                 // Students can only see their own requests
-                requests = requests.filter(req => req.studentId === username);
+                requests = requests.filter(r => r.studentId === username);
+            } else if (role === 'hod' || role === 'department') {
+                // HOD/department sees only their department's student requests
+                const hodDept = (req.user.department || '').toUpperCase();
+                if (hodDept) {
+                    // Match by department field on request, or by looking up student's dept in users
+                    const users = await dataSync.readCollection('users');
+                    const deptStudents = new Set(
+                        users.filter(u => u.role === 'student' && (u.department || '').toUpperCase() === hodDept)
+                            .map(u => u.username)
+                    );
+                    requests = requests.filter(r =>
+                        (r.department || '').toUpperCase() === hodDept ||
+                        deptStudents.has(r.studentId)
+                    );
+                }
             }
-            // Admin and faculty can see all requests
+            // Admin, exam_section, dean_academic can see all requests
 
             res.status(200).json({
                 success: true,
