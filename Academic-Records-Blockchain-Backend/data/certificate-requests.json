@@ -190,5 +190,18 @@
     "userId": "student-1776773531673",
     "processedDate": "2026-04-21T12:16:52.441Z",
     "processedBy": "admin"
+  },
+  {
+    "requestId": "REQ-1776777838552",
+    "studentId": "TEST2001",
+    "department": "ECE",
+    "certificateType": "BONAFIDE",
+    "purpose": "HIGHER_STUDIES",
+    "additionalDetails": "FOR MASTERS",
+    "requestDate": "2026-04-21T13:23:58.552Z",
+    "status": "admin_approved",
+    "userId": "student-1776687309644",
+    "processedDate": "2026-04-21T13:25:12.651Z",
+    "processedBy": "dean_academic"
   }
 ]

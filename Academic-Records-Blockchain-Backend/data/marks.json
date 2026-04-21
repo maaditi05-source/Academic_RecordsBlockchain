@@ -391,7 +391,7 @@
     "gradePoint": 9,
     "proposedGrade": null,
     "credits": 3,
-    "status": "dean_approved",
+    "status": "locked",
     "approvalChain": [
       {
         "role": "faculty",
@@ -416,11 +416,75 @@
         "user": "dean_academic",
         "action": "approved",
         "at": "2026-04-21T13:17:03.138Z"
+      },
+      {
+        "role": "admin",
+        "user": "admin",
+        "action": "finalized",
+        "at": "2026-04-21T13:26:06.603Z"
       }
     ],
     "uploadedBy": "ece_faculty",
     "uploadedAt": "2026-04-21T13:11:55.627Z",
     "submittedAt": "2026-04-21T13:11:55.627Z",
-    "submittedBy": "ece_faculty"
+    "submittedBy": "ece_faculty",
+    "finalizedAt": "2026-04-21T13:26:06.603Z"
+  },
+  {
+    "id": "mark-1776777635147-lggn6",
+    "studentId": "TEST2001",
+    "courseCode": "ece605",
+    "semester": 3,
+    "department": "ECE",
+    "year": 2026,
+    "marksData": {
+      "internal": null,
+      "external": null,
+      "total": 100
+    },
+    "marksObtained": 100,
+    "maxMarks": 100,
+    "grade": "A+",
+    "gradePoint": 10,
+    "proposedGrade": null,
+    "credits": 2,
+    "status": "locked",
+    "approvalChain": [
+      {
+        "role": "faculty",
+        "user": "ece_faculty",
+        "action": "submitted",
+        "at": "2026-04-21T13:20:35.147Z"
+      },
+      {
+        "role": "hod",
+        "user": "ece_hod",
+        "action": "approved",
+        "at": "2026-04-21T13:20:11.420Z"
+      },
+      {
+        "role": "exam_section",
+        "user": "exam_section",
+        "action": "approved",
+        "at": "2026-04-21T13:21:21.419Z"
+      },
+      {
+        "role": "dean",
+        "user": "dean_academic",
+        "action": "approved",
+        "at": "2026-04-21T13:21:27.591Z"
+      },
+      {
+        "role": "admin",
+        "user": "admin",
+        "action": "finalized",
+        "at": "2026-04-21T13:26:09.795Z"
+      }
+    ],
+    "uploadedBy": "ece_faculty",
+    "uploadedAt": "2026-04-21T13:20:35.147Z",
+    "submittedAt": "2026-04-21T13:20:35.147Z",
+    "submittedBy": "ece_faculty",
+    "finalizedAt": "2026-04-21T13:26:09.795Z"
   }
 ]

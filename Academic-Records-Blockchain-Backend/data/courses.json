@@ -121,5 +121,20 @@
     ],
     "createdBy": "ece_hod",
     "createdAt": "2026-04-21T13:13:04.954Z"
+  },
+  {
+    "id": "course-1776777534431-y3wc7",
+    "code": "ece605",
+    "name": "emfc",
+    "department": "ECE",
+    "semester": 3,
+    "credits": 2,
+    "maxMarks": 100,
+    "faculty": "manoj bajpayee",
+    "enrolledFaculty": [
+      "manoj bajpayee"
+    ],
+    "createdBy": "ece_hod",
+    "createdAt": "2026-04-21T13:18:54.431Z"
   }
 ]
