@@ -1,0 +1,12 @@
+[
+  {
+    "department": "ECE",
+    "code": "EC301",
+    "name": "Digital Signal Processing",
+    "credits": 4,
+    "semester": 5,
+    "academicYear": "2025-26",
+    "status": "ACTIVE",
+    "_offlineCreated": true
+  }
+]
