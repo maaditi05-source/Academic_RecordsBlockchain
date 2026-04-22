@@ -839,5 +839,144 @@
     "uploadedAt": "2026-04-21T15:17:24.575Z",
     "submittedAt": "2026-04-21T15:17:24.575Z",
     "submittedBy": "cse_faculty"
+  },
+  {
+    "id": "mark-1776785571386-ado6m",
+    "studentId": "25CSM2R10",
+    "courseCode": "CS601",
+    "semester": 6,
+    "department": "CSE",
+    "year": 2026,
+    "marksData": {
+      "internal": null,
+      "external": null,
+      "total": 80
+    },
+    "marksObtained": 80,
+    "maxMarks": 100,
+    "grade": "A",
+    "gradePoint": 9,
+    "proposedGrade": null,
+    "credits": 3,
+    "status": "hod_approved",
+    "approvalChain": [
+      {
+        "role": "faculty",
+        "user": "cse_faculty",
+        "action": "submitted",
+        "at": "2026-04-21T15:32:51.386Z"
+      },
+      {
+        "role": "hod",
+        "user": "cse_hod",
+        "action": "approved",
+        "at": "2026-04-21T15:38:02.738Z"
+      }
+    ],
+    "uploadedBy": "cse_faculty",
+    "uploadedAt": "2026-04-21T15:32:51.386Z",
+    "submittedAt": "2026-04-21T15:32:51.386Z",
+    "submittedBy": "cse_faculty"
+  },
+  {
+    "id": "mark-1776785845326-kymwq",
+    "studentId": "25CSM2R19",
+    "courseCode": "CS301",
+    "semester": 3,
+    "department": "CSE",
+    "year": 2026,
+    "marksData": {
+      "internal": null,
+      "external": null,
+      "total": 95
+    },
+    "marksObtained": 95,
+    "maxMarks": 100,
+    "grade": "A+",
+    "gradePoint": 10,
+    "proposedGrade": null,
+    "credits": 3,
+    "status": "locked",
+    "approvalChain": [
+      {
+        "role": "faculty",
+        "user": "cse_faculty",
+        "action": "submitted",
+        "at": "2026-04-21T15:37:25.327Z"
+      },
+      {
+        "role": "hod",
+        "user": "cse_hod",
+        "action": "approved",
+        "at": "2026-04-21T15:38:05.921Z"
+      },
+      {
+        "role": "exam_section",
+        "user": "exam_section",
+        "action": "approved",
+        "at": "2026-04-21T15:38:18.505Z"
+      },
+      {
+        "role": "dean",
+        "user": "dean_academic",
+        "action": "approved",
+        "at": "2026-04-21T15:38:44.671Z"
+      },
+      {
+        "role": "admin",
+        "user": "admin",
+        "action": "finalized",
+        "at": "2026-04-21T15:39:54.476Z"
+      }
+    ],
+    "uploadedBy": "cse_faculty",
+    "uploadedAt": "2026-04-21T15:37:25.327Z",
+    "submittedAt": "2026-04-21T15:37:25.327Z",
+    "submittedBy": "cse_faculty",
+    "finalizedAt": "2026-04-21T15:39:54.476Z"
+  },
+  {
+    "id": "mark-1776786206516-lox6g",
+    "studentId": "25CSM2R19",
+    "courseCode": "CS401",
+    "semester": 4,
+    "department": "CSE",
+    "year": 2026,
+    "marksData": {
+      "internal": null,
+      "external": null,
+      "total": 89
+    },
+    "marksObtained": 89,
+    "maxMarks": 100,
+    "grade": "A",
+    "gradePoint": 9,
+    "proposedGrade": null,
+    "credits": 4,
+    "status": "exam_approved",
+    "approvalChain": [
+      {
+        "role": "faculty",
+        "user": "cse_faculty",
+        "action": "submitted",
+        "at": "2026-04-21T15:43:26.516Z"
+      },
+      {
+        "role": "hod",
+        "user": "cse_hod",
+        "action": "approved",
+        "at": "2026-04-21T15:43:35.880Z"
+      },
+      {
+        "role": "exam_section",
+        "user": "exam_section",
+        "action": "approved",
+        "at": "2026-04-21T15:43:49.065Z"
+      }
+    ],
+    "uploadedBy": "cse_faculty",
+    "uploadedAt": "2026-04-21T15:43:26.516Z",
+    "submittedAt": "2026-04-21T15:43:26.516Z",
+    "submittedBy": "cse_faculty"
   }
 ]

@@ -213,8 +213,6 @@ class CertificateController {
 
     // PDF-Blockchain Cryptographic Verification (verify by file or hash)
     static async verifyCertificate(req, res) {
-        const gateway = new FabricGateway();
-
         try {
             let { pdfHash } = req.body;
 
@@ -224,7 +222,7 @@ class CertificateController {
                 const fs = require('fs');
                 const fileBuffer = fs.readFileSync(req.file.path);
                 pdfHash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
-                fs.unlinkSync(req.file.path); // Clean up the temp file
+                try { fs.unlinkSync(req.file.path); } catch (e) { /* cleanup */ }
             }
 
             if (!pdfHash) {
@@ -234,48 +232,77 @@ class CertificateController {
                 });
             }
 
-            // Use admin for anonymous verification, or authenticated user if available
-            const userId = req.user ? req.user.userId : 'admin';
-            await gateway.connect(userId);
+            logger.info(`Verifying certificate with hash: ${pdfHash.substring(0, 16)}...`);
 
+            // ── FAST PATH: Check dataSync certificate-requests for matching hash ──
             try {
-                // Request the blockchain to verify if this cryptographic fingerprint exists
-                const result = await gateway.evaluateTransaction('VerifyCertificateByHash', pdfHash);
-                const certificate = JSON.parse(result.toString());
-
-                // Condition 2: Authentic but Invalid (Revoked)
-                if (certificate.revoked) {
+                const certRequests = await dataSync.readCollection('certificate-requests');
+                const match = certRequests.find(r =>
+                    r.pdfHash === pdfHash || r.ipfsHash === pdfHash ||
+                    r.documentHash === pdfHash
+                );
+                if (match) {
+                    const isRevoked = match.status === 'REVOKED' || match.revoked === true;
+                    if (isRevoked) {
+                        return res.status(200).json({
+                            success: true,
+                            message: "⚠️ Document is Authentic but INVALID (Revoked). " + (match.revocationReason || ""),
+                            data: { status: "REVOKED", certificate: match }
+                        });
+                    }
                     return res.status(200).json({
                         success: true,
-                        message: "⚠️ Document is Authentic but INVALID (Revoked). " + (certificate.revocationReason || ""),
-                        data: {
-                            status: "REVOKED",
-                            certificate
-                        }
+                        message: "✅ Document is Authentic and Valid",
+                        data: { status: "VALID", certificate: match }
                     });
                 }
+            } catch (syncErr) {
+                logger.warn(`DataSync verify lookup failed: ${syncErr.message}`);
+            }
 
-                // Condition 1: Authentic and Valid
-                return res.status(200).json({
-                    success: true,
-                    message: "✅ Document is Authentic and Valid",
-                    data: {
-                        status: "VALID",
-                        certificate
+            // ── SLOW PATH: Try blockchain verification ──
+            const gateway = new FabricGateway();
+            try {
+                const userId = req.user ? req.user.userId : 'admin';
+                await gateway.connect(userId);
+
+                try {
+                    const result = await gateway.evaluateTransaction('VerifyCertificateByHash', pdfHash);
+                    const certificate = JSON.parse(result.toString());
+
+                    if (certificate.revoked) {
+                        return res.status(200).json({
+                            success: true,
+                            message: "⚠️ Document is Authentic but INVALID (Revoked). " + (certificate.revocationReason || ""),
+                            data: { status: "REVOKED", certificate }
+                        });
                     }
-                });
-            } catch (error) {
-                // Condition 3: Fake or Modified
-                if (error.message.includes("no certificate found matching the provided hash")) {
+
                     return res.status(200).json({
-                        success: false,
-                        message: "❌ Document is Fake or has been Modified (Fingerprint not securely registered on ledger).",
-                        data: {
-                            status: "FAKE"
-                        }
+                        success: true,
+                        message: "✅ Document is Authentic and Valid",
+                        data: { status: "VALID", certificate }
                     });
+                } catch (error) {
+                    if (error.message.includes("no certificate found") || error.message.includes("not found") || error.message.includes("does not exist")) {
+                        return res.status(200).json({
+                            success: false,
+                            message: "❌ Document is Fake or has been Modified (Fingerprint not securely registered on ledger).",
+                            data: { status: "FAKE" }
+                        });
+                    }
+                    throw error;
                 }
-                throw error;
+            } catch (error) {
+                logger.error(`Blockchain verify failed: ${error.message}`);
+                // If blockchain is unreachable, and we didn't find in dataSync either → FAKE
+                return res.status(200).json({
+                    success: false,
+                    message: "❌ Document is Fake or has been Modified (Fingerprint not securely registered on ledger).",
+                    data: { status: "FAKE" }
+                });
+            } finally {
+                await gateway.disconnect();
             }
         } catch (error) {
             logger.error(`Error verifying certificate: ${error.message}`);
@@ -283,8 +310,6 @@ class CertificateController {
                 success: false,
                 message: error.message
             });
-        } finally {
-            await gateway.disconnect();
         }
     }
 

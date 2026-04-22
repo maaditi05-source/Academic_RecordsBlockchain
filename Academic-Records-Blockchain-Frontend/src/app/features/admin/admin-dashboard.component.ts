@@ -161,9 +161,9 @@ import { AddCourseDialogComponent } from './add-course-dialog/add-course-dialog.
                     <td><span class="course-code">{{ c.id || c.certificateId }}</span></td>
                     <td>{{ c.studentId }}</td>
                     <td>{{ c.type || c.certificateType }}</td>
-                    <td><span class="status-badge" [class]="c.status === 'revoked' || !c.isValid ? 'cancelled' : 'active'">{{ c.status === 'revoked' || !c.isValid ? 'REVOKED' : 'VALID' }}</span></td>
+                    <td><span class="status-badge" [class]="c.status === 'REVOKED' || c.revoked === true ? 'cancelled' : (c.status === 'issued' || c.status === 'admin_approved' ? 'active' : 'pending')">{{ c.status === 'REVOKED' || c.revoked === true ? 'REVOKED' : (c.status === 'issued' ? 'ISSUED' : (c.status === 'admin_approved' ? 'APPROVED' : (c.status || 'ACTIVE').toUpperCase())) }}</span></td>
                     <td>
-                      <button *ngIf="c.status !== 'revoked' && c.isValid !== false" mat-stroked-button color="warn" class="view-btn" (click)="revokeCert(c.id || c.certificateId)" matTooltip="Revoke Certificate">
+                      <button *ngIf="c.status !== 'REVOKED' && c.revoked !== true" mat-stroked-button color="warn" class="view-btn" (click)="revokeCert(c.id || c.certificateId)" matTooltip="Revoke Certificate">
                         <mat-icon>gavel</mat-icon> Revoke
                       </button>
                     </td>

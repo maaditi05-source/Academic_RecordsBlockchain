@@ -251,10 +251,10 @@
     "purpose": "HIGHER_STUDIES",
     "additionalDetails": "",
     "requestDate": "2026-04-21T15:11:34.370Z",
-    "status": "hod_approved",
+    "status": "admin_approved",
     "userId": "student-1776784122486",
-    "processedDate": "2026-04-21T15:11:56.650Z",
-    "processedBy": "ece_hod"
+    "processedDate": "2026-04-21T15:39:16.320Z",
+    "processedBy": "dean_academic"
   },
   {
     "requestId": "REQ-1776784295613",
@@ -302,5 +302,48 @@
     "revocationReason": "xyz",
     "revokedAt": "2026-04-21T15:17:44.417Z",
     "revokedBy": "admin"
+  },
+  {
+    "requestId": "REQ-1776785959819",
+    "studentId": "25CSM2R19",
+    "department": "CSE",
+    "certificateType": "BONAFIDE",
+    "purpose": "VISA",
+    "additionalDetails": "",
+    "requestDate": "2026-04-21T15:39:19.819Z",
+    "status": "admin_approved",
+    "userId": "student-1776785665429",
+    "processedDate": "2026-04-21T15:41:08.494Z",
+    "processedBy": "admin"
+  },
+  {
+    "requestId": "REQ-1776785969359",
+    "studentId": "25CSM2R19",
+    "department": "CSE",
+    "certificateType": "CONSOLIDATED_MARKSHEET",
+    "purpose": "HIGHER_STUDIES",
+    "additionalDetails": "",
+    "requestDate": "2026-04-21T15:39:29.359Z",
+    "status": "REVOKED",
+    "userId": "student-1776785665429",
+    "processedDate": "2026-04-21T15:41:26.457Z",
+    "processedBy": "exam_section",
+    "revoked": true,
+    "revocationReason": "illegal actions",
+    "revokedAt": "2026-04-21T15:45:30.225Z",
+    "revokedBy": "admin"
+  },
+  {
+    "requestId": "REQ-1776786154621",
+    "studentId": "25ECM2R19",
+    "department": "ECE",
+    "certificateType": "BONAFIDE",
+    "purpose": "EMPLOYMENT",
+    "additionalDetails": "",
+    "requestDate": "2026-04-21T15:42:34.621Z",
+    "status": "admin_approved",
+    "userId": "student-1776785722839",
+    "processedDate": "2026-04-21T15:50:24.534Z",
+    "processedBy": "admin"
   }
 ]
