@@ -48,12 +48,12 @@ sudo bash -c 'cat >> /etc/hosts << EOF
 172.20.233.222  orderer1.nitw.edu
 172.20.242.77   orderer2.nitw.edu
 172.20.241.65   orderer3.nitw.edu
-172.20.229.166  peer0.nitwarangal.nitw.edu ca-nitwarangal
+172.20.248.26   peer0.nitwarangal.nitw.edu ca-nitwarangal
 172.20.238.52   peer1.nitwarangal.nitw.edu
 172.20.255.20   peer2.nitwarangal.nitw.edu
-172.20.247.9    peer0.cse.departments.nitw.edu ca-departments
-172.20.252.32   peer1.cse.departments.nitw.edu
-172.20.244.81   peer0.ece.departments.nitw.edu
+172.20.253.70   peer0.cse.departments.nitw.edu ca-departments
+172.20.252.35   peer1.cse.departments.nitw.edu
+172.20.244.89   peer0.ece.departments.nitw.edu
 172.20.235.77   peer1.ece.departments.nitw.edu
 172.20.254.157  peer0.verifiers.nitw.edu ca-verifiers
 172.20.252.188  peer1.verifiers.nitw.edu
@@ -92,12 +92,12 @@ source env.sh
 # Option A: SCP (replace user/IP for each system)
 scp multihost-crypto-bundle.tar.gz user@172.20.242.77:~/Academic_RecordsBlockchain/Academic_RecordsBlockchain/
 scp multihost-crypto-bundle.tar.gz user@172.20.241.65:~/Academic_RecordsBlockchain/Academic_RecordsBlockchain/
-scp multihost-crypto-bundle.tar.gz user@172.20.229.166:~/Academic_RecordsBlockchain/Academic_RecordsBlockchain/
+scp multihost-crypto-bundle.tar.gz user@172.20.248.26:~/Academic_RecordsBlockchain/Academic_RecordsBlockchain/
 scp multihost-crypto-bundle.tar.gz user@172.20.238.52:~/Academic_RecordsBlockchain/Academic_RecordsBlockchain/
 scp multihost-crypto-bundle.tar.gz user@172.20.255.20:~/Academic_RecordsBlockchain/Academic_RecordsBlockchain/
-scp multihost-crypto-bundle.tar.gz user@172.20.247.9:~/Academic_RecordsBlockchain/Academic_RecordsBlockchain/
-scp multihost-crypto-bundle.tar.gz user@172.20.252.32:~/Academic_RecordsBlockchain/Academic_RecordsBlockchain/
-scp multihost-crypto-bundle.tar.gz user@172.20.244.81:~/Academic_RecordsBlockchain/Academic_RecordsBlockchain/
+scp multihost-crypto-bundle.tar.gz user@172.20.253.70:~/Academic_RecordsBlockchain/Academic_RecordsBlockchain/
+scp multihost-crypto-bundle.tar.gz user@172.20.252.35:~/Academic_RecordsBlockchain/Academic_RecordsBlockchain/
+scp multihost-crypto-bundle.tar.gz user@172.20.244.89:~/Academic_RecordsBlockchain/Academic_RecordsBlockchain/
 scp multihost-crypto-bundle.tar.gz user@172.20.235.77:~/Academic_RecordsBlockchain/Academic_RecordsBlockchain/
 scp multihost-crypto-bundle.tar.gz user@172.20.254.157:~/Academic_RecordsBlockchain/Academic_RecordsBlockchain/
 scp multihost-crypto-bundle.tar.gz user@172.20.252.188:~/Academic_RecordsBlockchain/Academic_RecordsBlockchain/
@@ -175,7 +175,7 @@ docker exec orderer3.nitw.edu osnadmin channel join --channelID academic-records
 
 ---
 
-## 💻 SYSTEM 4: Admin Peer (172.20.229.166)
+## 💻 SYSTEM 4: Admin Peer (172.20.248.26)
 
 **Step 1:** Wait to receive `multihost-crypto-bundle.tar.gz` from System 1.
 
@@ -271,7 +271,7 @@ npm run dev
 
 ---
 
-## 💻 SYSTEM 7: CSE HOD Peer (172.20.247.9)
+## 💻 SYSTEM 7: CSE HOD Peer (172.20.253.70)
 
 **Step 1:** Wait to receive `multihost-crypto-bundle.tar.gz` from System 1.
 
@@ -303,7 +303,7 @@ npm run dev
 
 ---
 
-## 💻 SYSTEM 8: CSE Faculty Peer (172.20.252.32)
+## 💻 SYSTEM 8: CSE Faculty Peer (172.20.252.35)
 
 **Step 1:** Wait to receive `multihost-crypto-bundle.tar.gz` from System 1.
 
@@ -335,7 +335,7 @@ npm run dev
 
 ---
 
-## 💻 SYSTEM 9: ECE HOD Peer (172.20.244.81)
+## 💻 SYSTEM 9: ECE HOD Peer (172.20.244.89)
 
 **Step 1:** Wait to receive `multihost-crypto-bundle.tar.gz` from System 1.
 
