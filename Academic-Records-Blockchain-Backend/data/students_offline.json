@@ -558,5 +558,57 @@
     "currentCGPA": 0,
     "createdAt": "2026-04-21T15:35:22.623Z",
     "_blockchainPending": true
+  },
+  {
+    "studentId": "25CSM2R45",
+    "rollNumber": "25CSM2R45",
+    "name": "Demo Student 123",
+    "department": "CSE",
+    "enrollmentYear": 2026,
+    "email": "25csm2r45@student.nitw.ac.in",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-22T04:33:31.518Z",
+    "_blockchainPending": true
+  },
+  {
+    "studentId": "25ECM2R00",
+    "name": "abcdef",
+    "department": "ECE",
+    "enrollmentYear": 2026,
+    "rollNumber": "25ECM2R00",
+    "email": "25ecm2r00@student.nitw.ac.in",
+    "admissionCategory": "GENERAL",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-22T04:38:39.952Z",
+    "_offlineCreated": true
+  },
+  {
+    "studentId": "25ECM2R00",
+    "rollNumber": "25ECM2R00",
+    "name": "abcdef",
+    "department": "ECE",
+    "enrollmentYear": 2026,
+    "email": "25ecm2r00@student.nitw.ac.in",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-22T04:38:40.635Z"
+  },
+  {
+    "studentId": "25CSM2R30",
+    "rollNumber": "25CSM2R30",
+    "name": "Test abc",
+    "department": "CSE",
+    "enrollmentYear": 2026,
+    "email": "25csm2r30@student.nitw.ac.in",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-22T04:52:29.126Z",
+    "_blockchainPending": true
   }
 ]

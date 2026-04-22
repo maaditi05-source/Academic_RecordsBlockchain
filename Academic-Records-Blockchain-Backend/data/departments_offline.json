@@ -16,5 +16,14 @@
     "phone": "0000000000",
     "status": "ACTIVE",
     "_offlineCreated": true
+  },
+  {
+    "departmentId": "MECH",
+    "name": "Mechanical",
+    "hod": "Shreya Shukla",
+    "email": "shreeeya@cse.nitw.ac.in",
+    "phone": "0000000000",
+    "status": "ACTIVE",
+    "_offlineCreated": true
   }
 ]

@@ -953,7 +953,7 @@
     "gradePoint": 9,
     "proposedGrade": null,
     "credits": 4,
-    "status": "exam_approved",
+    "status": "dean_approved",
     "approvalChain": [
       {
         "role": "faculty",
@@ -972,11 +972,176 @@
         "user": "exam_section",
         "action": "approved",
         "at": "2026-04-21T15:43:49.065Z"
+      },
+      {
+        "role": "dean",
+        "user": "dean_academic",
+        "action": "approved",
+        "at": "2026-04-22T04:32:20.738Z"
       }
     ],
     "uploadedBy": "cse_faculty",
     "uploadedAt": "2026-04-21T15:43:26.516Z",
     "submittedAt": "2026-04-21T15:43:26.516Z",
+    "submittedBy": "cse_faculty"
+  },
+  {
+    "id": "mark-1776832488457-nwksz",
+    "studentId": "25CSM2R45",
+    "courseCode": "CS401",
+    "semester": 4,
+    "department": "CSE",
+    "year": 2026,
+    "marksData": {
+      "internal": null,
+      "external": null,
+      "total": 70
+    },
+    "marksObtained": 70,
+    "maxMarks": 100,
+    "grade": "B+",
+    "gradePoint": 8,
+    "proposedGrade": null,
+    "credits": 4,
+    "status": "hod_approved",
+    "approvalChain": [
+      {
+        "role": "faculty",
+        "user": "cse_faculty",
+        "action": "submitted",
+        "at": "2026-04-22T04:34:48.457Z"
+      },
+      {
+        "role": "hod",
+        "user": "cse_hod",
+        "action": "approved",
+        "at": "2026-04-22T05:16:15.113Z"
+      }
+    ],
+    "uploadedBy": "cse_faculty",
+    "uploadedAt": "2026-04-22T04:34:48.457Z",
+    "submittedAt": "2026-04-22T04:34:48.457Z",
+    "submittedBy": "cse_faculty"
+  },
+  {
+    "id": "mark-1776832805988-szag7",
+    "studentId": "25ECM2R00",
+    "courseCode": "CS401",
+    "semester": 4,
+    "department": "CSE",
+    "year": 2026,
+    "marksData": {
+      "internal": null,
+      "external": null,
+      "total": 89
+    },
+    "marksObtained": 89,
+    "maxMarks": 100,
+    "grade": "A",
+    "gradePoint": 9,
+    "proposedGrade": null,
+    "credits": 4,
+    "status": "submitted",
+    "approvalChain": [
+      {
+        "role": "faculty",
+        "user": "cse_faculty",
+        "action": "submitted",
+        "at": "2026-04-22T04:40:05.988Z"
+      }
+    ],
+    "uploadedBy": "cse_faculty",
+    "uploadedAt": "2026-04-22T04:40:05.988Z",
+    "submittedAt": "2026-04-22T04:40:05.988Z",
+    "submittedBy": "cse_faculty"
+  },
+  {
+    "id": "mark-1776834496915-473kp",
+    "studentId": "25CSM2R26",
+    "courseCode": "CS301",
+    "semester": 3,
+    "department": "CSE",
+    "year": 2026,
+    "marksData": {
+      "internal": null,
+      "external": null,
+      "total": 90
+    },
+    "marksObtained": 90,
+    "maxMarks": 100,
+    "grade": "A+",
+    "gradePoint": 10,
+    "proposedGrade": null,
+    "credits": 3,
+    "status": "locked",
+    "approvalChain": [
+      {
+        "role": "faculty",
+        "user": "cse_faculty",
+        "action": "submitted",
+        "at": "2026-04-22T05:08:16.915Z"
+      },
+      {
+        "role": "hod",
+        "user": "cse_hod",
+        "action": "approved",
+        "at": "2026-04-22T05:10:52.205Z"
+      },
+      {
+        "role": "exam_section",
+        "user": "exam_section",
+        "action": "approved",
+        "at": "2026-04-22T05:17:09.522Z"
+      },
+      {
+        "role": "dean",
+        "user": "dean_academic",
+        "action": "approved",
+        "at": "2026-04-22T05:18:06.191Z"
+      },
+      {
+        "role": "admin",
+        "user": "admin",
+        "action": "finalized",
+        "at": "2026-04-22T05:20:37.410Z"
+      }
+    ],
+    "uploadedBy": "cse_faculty",
+    "uploadedAt": "2026-04-22T05:08:16.915Z",
+    "submittedAt": "2026-04-22T05:08:16.915Z",
+    "submittedBy": "cse_faculty",
+    "finalizedAt": "2026-04-22T05:20:37.410Z"
+  },
+  {
+    "id": "mark-1776836813720-6uhht",
+    "studentId": "25CSM2T20",
+    "courseCode": "CS301",
+    "semester": 3,
+    "department": "CSE",
+    "year": 2026,
+    "marksData": {
+      "internal": null,
+      "external": null,
+      "total": 75
+    },
+    "marksObtained": 75,
+    "maxMarks": 100,
+    "grade": "B+",
+    "gradePoint": 8,
+    "proposedGrade": null,
+    "credits": 3,
+    "status": "submitted",
+    "approvalChain": [
+      {
+        "role": "faculty",
+        "user": "cse_faculty",
+        "action": "submitted",
+        "at": "2026-04-22T05:46:53.720Z"
+      }
+    ],
+    "uploadedBy": "cse_faculty",
+    "uploadedAt": "2026-04-22T05:46:53.720Z",
+    "submittedAt": "2026-04-22T05:46:53.720Z",
     "submittedBy": "cse_faculty"
   }
 ]

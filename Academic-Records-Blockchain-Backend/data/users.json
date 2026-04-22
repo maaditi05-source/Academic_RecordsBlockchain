@@ -534,5 +534,44 @@
     "isActive": true,
     "passwordChangeRequired": true,
     "firstLogin": true
+  },
+  {
+    "id": "student-1776832720633",
+    "username": "25ECM2R00",
+    "email": "25ecm2r00@student.nitw.ac.in",
+    "passwordHash": "$2a$10$qLU2vhNFUebYlO4PCFQknu1myswtvavA.pv.FOQSmtF78/nEdAtXG",
+    "name": "abcdef",
+    "role": "student",
+    "department": "ECE",
+    "mspId": "NITWarangalMSP",
+    "createdAt": "2026-04-22T04:38:40.634Z",
+    "isActive": true,
+    "passwordChangeRequired": true,
+    "firstLogin": true
+  },
+  {
+    "id": "student-1776833549259",
+    "username": "25CSM2R30",
+    "email": "25csm2r30@student.nitw.ac.in",
+    "passwordHash": "$2a$10$As8ICNKCnICmXjpYVX4JRuZ8yeNnK/IZ4UwMn4jNpTljIz4U4bl6G",
+    "name": "Test abc",
+    "role": "student",
+    "department": "CSE",
+    "mspId": "NITWarangalMSP",
+    "createdAt": "2026-04-22T04:52:29.259Z",
+    "isActive": true,
+    "passwordChangeRequired": true,
+    "firstLogin": true
+  },
+  {
+    "id": "department-1776835175387",
+    "username": "MECH",
+    "email": "shreeeya@cse.nitw.ac.in",
+    "passwordHash": "$2a$10$FeFxonRV2NyxT.ExhZvHke.fTSLJTOBuvYqN1ytr/TCqOfEqsPbQe",
+    "role": "department",
+    "department": "MECH",
+    "createdAt": "2026-04-22T05:19:35.387Z",
+    "updatedAt": "2026-04-22T05:19:35.387Z",
+    "isActive": true
   }
 ]
