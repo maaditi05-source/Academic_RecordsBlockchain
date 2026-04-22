@@ -610,5 +610,93 @@
     "currentCGPA": 0,
     "createdAt": "2026-04-22T04:52:29.126Z",
     "_blockchainPending": true
+  },
+  {
+    "studentId": "23CSM2R99",
+    "rollNumber": "23CSM2R99",
+    "name": "Ramesh Babu",
+    "department": "CSE",
+    "enrollmentYear": 2026,
+    "email": "23csm2r99@student.nitw.ac.in",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-22T06:32:00.374Z",
+    "_blockchainPending": true
+  },
+  {
+    "studentId": "23ECM2R99",
+    "rollNumber": "23ECM2R99",
+    "name": "Babu Ramesh",
+    "department": "ECE",
+    "enrollmentYear": 2026,
+    "email": "23ecm2r99@student.nitw.ac.in",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-22T06:32:54.147Z",
+    "_blockchainPending": true
+  },
+  {
+    "studentId": "23CSM2R98",
+    "rollNumber": "23CSM2R98",
+    "name": "Manasvi Sadam",
+    "department": "CSE",
+    "enrollmentYear": 2026,
+    "email": "23csm2r98@student.nitw.ac.in",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-22T07:20:12.406Z"
+  },
+  {
+    "studentId": "23ECM2R98",
+    "rollNumber": "23ECM2R98",
+    "name": "Sadam Manasvi",
+    "department": "ECE",
+    "enrollmentYear": 2026,
+    "email": "23ecm2r98@student.nitw.ac.in",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-22T07:20:52.690Z"
+  },
+  {
+    "studentId": "28CSM2R26",
+    "rollNumber": "28CSM2R26",
+    "name": "Virat Kohli",
+    "department": "CSE",
+    "enrollmentYear": 2026,
+    "email": "28csm2r26@student.nitw.ac.in",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-22T07:40:59.309Z"
+  },
+  {
+    "studentId": "28ECM2R26",
+    "name": "Kohli Virat",
+    "department": "ECE",
+    "enrollmentYear": 2026,
+    "rollNumber": "28ECM2R26",
+    "email": "28ecm2r26@student.nitw.ac.in",
+    "admissionCategory": "OBC",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-22T07:42:25.056Z",
+    "_offlineCreated": true
+  },
+  {
+    "studentId": "28ECM2R26",
+    "rollNumber": "28ECM2R26",
+    "name": "Kohli Virat",
+    "department": "ECE",
+    "enrollmentYear": 2026,
+    "email": "28ecm2r26@student.nitw.ac.in",
+    "status": "ACTIVE",
+    "totalCreditsEarned": 0,
+    "currentCGPA": 0,
+    "createdAt": "2026-04-22T07:42:25.496Z"
   }
 ]
