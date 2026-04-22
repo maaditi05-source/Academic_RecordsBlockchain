@@ -29,23 +29,66 @@ function computeSHA256(buffer) {
 }
 
 /**
- * Lazily initialize Pinata SDK (only when actually called).
- * Requires PINATA_API_KEY and PINATA_SECRET_API_KEY in .env
+ * Upload to Pinata via direct REST API using JWT Bearer token.
+ * More reliable than the SDK — avoids dependency issues and uses the V2 API.
  */
-let _pinata = null;
-function getPinata() {
-    if (!_pinata) {
-        try {
-            const pinataSDK = require('@pinata/sdk');
-            const key = process.env.PINATA_API_KEY;
-            const secret = process.env.PINATA_SECRET_API_KEY;
-            if (!key || !secret) return null;
-            _pinata = new pinataSDK(key, secret);
-        } catch {
-            return null;  // @pinata/sdk not installed
-        }
+async function uploadToPinataDirect(buffer, fileName) {
+    const jwt = process.env.PINATA_JWT;
+    if (!jwt) {
+        logger.debug('[IPFS] PINATA_JWT not set, skipping Pinata');
+        return null;
     }
-    return _pinata;
+
+    try {
+        const FormData = require('form-data');
+        const https = require('https');
+
+        const form = new FormData();
+        form.append('file', buffer, { filename: fileName, contentType: 'application/pdf' });
+        form.append('pinataMetadata', JSON.stringify({
+            name: fileName,
+            keyvalues: { app: 'nitw-academic-records', env: process.env.NODE_ENV || 'development' }
+        }));
+        form.append('pinataOptions', JSON.stringify({ cidVersion: 0 }));
+
+        return new Promise((resolve, reject) => {
+            const options = {
+                hostname: 'api.pinata.cloud',
+                path: '/pinning/pinFileToIPFS',
+                method: 'POST',
+                headers: {
+                    ...form.getHeaders(),
+                    'Authorization': `Bearer ${jwt}`
+                },
+                timeout: 30000
+            };
+
+            const req = https.request(options, (res) => {
+                let data = '';
+                res.on('data', chunk => data += chunk);
+                res.on('end', () => {
+                    try {
+                        const result = JSON.parse(data);
+                        if (result.IpfsHash) {
+                            resolve(result);
+                        } else {
+                            reject(new Error(`Pinata response missing IpfsHash: ${data}`));
+                        }
+                    } catch (e) {
+                        reject(new Error(`Pinata response parse error: ${data}`));
+                    }
+                });
+            });
+
+            req.on('error', reject);
+            req.on('timeout', () => { req.destroy(); reject(new Error('Pinata upload timed out')); });
+
+            form.pipe(req);
+        });
+    } catch (err) {
+        logger.warn(`[IPFS] Pinata direct upload error: ${err.message}`);
+        return null;
+    }
 }
 
 /**
@@ -79,7 +122,7 @@ async function uploadToIPFS(filePath) {
 
 /**
  * Upload a Buffer to IPFS (used by certificate issuance flow).
- * Strategy order: Pinata → Kubo → Infura → local fallback.
+ * Strategy order: Pinata (JWT) → Kubo → Infura → local fallback.
  * @param {Buffer} buffer - File content in memory
  * @param {string} fileName - e.g. "CERT-123.pdf"
  * @returns {{ cid: string, url: string, mode: string }}
@@ -87,29 +130,16 @@ async function uploadToIPFS(filePath) {
 async function uploadBufferToIPFS(buffer, fileName) {
     const sha256 = computeSHA256(buffer);
 
-    // 1. Try Pinata (preferred for production — globally pinned + gateway)
-    const pinata = getPinata();
-    if (pinata) {
-        try {
-            const { Readable } = require('stream');
-            const stream = Readable.from(buffer);
-            stream.path = fileName;   // Pinata SDK uses this as file name
-
-            const options = {
-                pinataMetadata: {
-                    name: fileName,
-                    keyvalues: { app: 'nitw-academic-records', env: process.env.NODE_ENV || 'development' }
-                },
-                pinataOptions: { cidVersion: 0 }
-            };
-
-            const result = await pinata.pinFileToIPFS(stream, options);
+    // 1. Try Pinata direct API with JWT (preferred — globally pinned + gateway)
+    try {
+        const result = await uploadToPinataDirect(buffer, fileName);
+        if (result && result.IpfsHash) {
             const cid = result.IpfsHash;
             logger.info(`[IPFS] Uploaded via Pinata. CID: ${cid}`);
             return { cid, url: `${PUBLIC_GATEWAY}/${cid}`, mode: 'pinata' };
-        } catch (err) {
-            logger.warn(`[IPFS] Pinata upload failed: ${err.message}`);
         }
+    } catch (err) {
+        logger.warn(`[IPFS] Pinata upload failed: ${err.message}`);
     }
 
     // 2. Try local Kubo
@@ -211,7 +241,7 @@ async function pinCID(cid) {
 
 /**
  * Unpin a file from IPFS (called on certificate revocation).
- * Tries Pinata first, then Kubo.
+ * Tries Pinata JWT API first, then Kubo.
  */
 async function unpinFromIPFS(cid) {
     if (!cid || cid.startsWith('LOCAL-')) {
@@ -224,11 +254,30 @@ async function unpinFromIPFS(cid) {
         return;
     }
 
-    // Try Pinata unpin
-    const pinata = getPinata();
-    if (pinata) {
+    // Try Pinata unpin via JWT
+    const jwt = process.env.PINATA_JWT;
+    if (jwt) {
         try {
-            await pinata.unpin(cid);
+            const https = require('https');
+            await new Promise((resolve, reject) => {
+                const req = https.request({
+                    hostname: 'api.pinata.cloud',
+                    path: `/pinning/unpin/${cid}`,
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${jwt}` },
+                    timeout: 15000
+                }, (res) => {
+                    let data = '';
+                    res.on('data', chunk => data += chunk);
+                    res.on('end', () => {
+                        if (res.statusCode === 200) resolve();
+                        else reject(new Error(`HTTP ${res.statusCode}: ${data}`));
+                    });
+                });
+                req.on('error', reject);
+                req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+                req.end();
+            });
             logger.info(`[IPFS] Unpinned via Pinata: ${cid}`);
             return;
         } catch (err) {
@@ -260,14 +309,33 @@ function getIPFSUrl(cid) {
  * Test Pinata credentials (call on startup to detect misconfig early).
  */
 async function testConnection() {
-    const pinata = getPinata();
-    if (pinata) {
+    const jwt = process.env.PINATA_JWT;
+    if (jwt) {
         try {
-            await pinata.testAuthentication();
-            logger.info('Pinata IPFS connection: OK');
-            return true;
+            const https = require('https');
+            const result = await new Promise((resolve, reject) => {
+                const req = https.request({
+                    hostname: 'api.pinata.cloud',
+                    path: '/data/testAuthentication',
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${jwt}` },
+                    timeout: 10000
+                }, (res) => {
+                    let data = '';
+                    res.on('data', chunk => data += chunk);
+                    res.on('end', () => resolve({ status: res.statusCode, body: data }));
+                });
+                req.on('error', reject);
+                req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+                req.end();
+            });
+            if (result.status === 200) {
+                logger.info('[IPFS] Pinata JWT connection: OK');
+                return true;
+            }
+            logger.warn(`[IPFS] Pinata auth returned HTTP ${result.status}`);
         } catch (err) {
-            logger.warn(`Pinata IPFS connection failed: ${err.message}`);
+            logger.warn(`[IPFS] Pinata connection failed: ${err.message}`);
         }
     }
     // Try Kubo
@@ -281,3 +349,4 @@ async function testConnection() {
 }
 
 module.exports = { uploadToIPFS, uploadBufferToIPFS, getFromIPFS, pinCID, unpinFromIPFS, getIPFSUrl, testConnection, computeSHA256 };
+
